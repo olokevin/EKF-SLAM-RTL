@@ -6,14 +6,25 @@ module RSA
 
     parameter RSA_DW = 16,
     parameter TB_AW = 12,
-    parameter CB_AW = 19
+    parameter CB_AW = 19,
+    parameter MAX_LANDMARK = 500,
+    parameter ROW_LEN = 10
 ) 
 (
     input   clk,
-    input   sys_rst
+    input   sys_rst,
 
-    //initialize handshake
+//handshake of stage change
+    input   [2:0]   stage_val,
+    output  [2:0]   stage_rdy,
 
+//handshake of nonlinear calculation start & complete
+    //nonlinear start(3 stages are conbined)
+    output   [2:0]   nonlinear_m_rdy,
+    input    [2:0]   nonlinear_s_val,
+    //nonlinear cplt(3 stages are conbined)
+    output   [2:0]   nonlinear_m_val,
+    input    [2:0]   nonlinear_s_rdy
 );
 
 //PE互连信号线
@@ -489,5 +500,58 @@ generate
         );
     end
 endgenerate
+
+PE_config 
+#(
+    .X             (X             ),
+    .Y             (Y             ),
+    .L             (L             ),
+    .RSA_DW        (RSA_DW        ),
+    .TB_AW         (TB_AW         ),
+    .CB_AW         (CB_AW         ),
+    .MAX_LANDMARK  (MAX_LANDMARK  ),
+    .ROW_LEN       (ROW_LEN       )
+)
+u_PE_config(
+    .clk             (clk             ),
+    .sys_rst         (sys_rst         ),
+    .stage_val       (stage_val       ),
+    .stage_rdy       (stage_rdy       ),
+    .nonlinear_m_rdy (nonlinear_m_rdy ),
+    .nonlinear_s_val (nonlinear_s_val ),
+    .nonlinear_m_val (nonlinear_m_val ),
+    .nonlinear_s_rdy (nonlinear_s_rdy ),
+    .A_in_sel        (A_in_sel        ),
+    .A_in_en         (A_in_en         ),
+    .B_in_sel        (B_in_sel        ),
+    .B_in_en         (B_in_en         ),
+    .M_in_sel        (M_in_sel        ),
+    .M_in_en         (M_in_en         ),
+    .C_out_sel       (C_out_sel       ),
+    .C_out_en        (C_out_en        ),
+    .TB_dinb_sel     (TB_dinb_sel     ),
+    .TB_douta_sel    (TB_douta_sel    ),
+    .TB_doutb_sel    (TB_doutb_sel    ),
+    .TB_ena          (TB_ena          ),
+    .TB_enb          (TB_enb          ),
+    .TB_wea          (TB_wea          ),
+    .TB_web          (TB_web          ),
+    .init_TB_dina    (init_TB_dina    ),
+    .TB_addra        (TB_addra        ),
+    .TB_addrb        (TB_addrb        ),
+    .CB_dinb_sel     (CB_dinb_sel     ),
+    .CB_douta_sel    (CB_douta_sel    ),
+    .CB_doutb_sel    (CB_doutb_sel    ),
+    .CB_ena          (CB_ena          ),
+    .CB_enb          (CB_enb          ),
+    .CB_wea          (CB_wea          ),
+    .CB_web          (CB_web          ),
+    .init_CB_dina    (init_CB_dina    ),
+    .CB_addra        (CB_addra        ),
+    .CB_dinb         (CB_dinb         ),
+    .CB_addrb        (CB_addrb        ),
+    .cal_en          (n_cal_en[0]     ),
+    .cal_done        (n_cal_done[0]   )
+);
 
 endmodule

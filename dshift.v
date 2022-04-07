@@ -1,3 +1,9 @@
+/*
+  移位模块
+  无使能信号
+  dir==0：左移
+  dir==1: 右移
+*/
 module dshift #(
   parameter DW = 16,
   parameter DEPTH = 4
@@ -13,7 +19,7 @@ module dshift #(
       dout <= {dout[0 +: (DEPTH-1)*DW], din};
     end
     else if(dir == 1'b1) begin
-      dout <= {din, dout[DW : (DEPTH-1)*DW]};
+      dout <= {din, dout[DW +: (DEPTH-1)*DW]};
     end
     else
       dout <= 0;    

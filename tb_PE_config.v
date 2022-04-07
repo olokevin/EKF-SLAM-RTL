@@ -12,7 +12,7 @@ parameter RSA_DW       = 16    ;
 parameter TB_AW    = 12    ;
 parameter CB_AW    = 19    ;
 parameter MAX_LANDMARK   = 500   ;
-parameter GROUP_LEN      = 16    ;
+parameter ROW_LEN      = 10    ;
 parameter IDLE           = 3'b000;
 parameter STAGE_PRD      = 3'b001;
 parameter STAGE_NEW      = 3'b010;
@@ -39,22 +39,23 @@ parameter AGD_DELAY      = 3     ;
 // PE_config Inputs
 reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
-reg   [GROUP_LEN-1 : 0]  landmark_num      = 0 ;
-reg   [GROUP_LEN-1 : 0]  cov_row_num       = 0 ;
-reg   [GROUP_LEN-1 : 0]  group_num         = 0 ;
 reg   [2:0]  stage_val                     = 0 ;
-reg   [2:0]  nonlinear_rdy                 = 0 ;
+reg  [2:0]  nonlinear_s_val                 ;
+reg  [2:0]  nonlinear_s_rdy                 ;
+
 
 // PE_config Outputs
 wire  [2:0]  stage_rdy                     ;
-wire  [2:0]  nonlinear_val                 ;
+wire   [2:0]  nonlinear_m_rdy              ;
+wire   [2:0]  nonlinear_m_val              ;
+
 wire  [X-1 : 0]  A_in_sel                  ;
 wire  [X-1 : 0]  A_in_en                   ;
-wire  [2*(Y-1) : 0]  B_in_sel              ;
+wire  [2*Y-1 : 0]  B_in_sel              ;
 wire  [Y-1 : 0]  B_in_en                   ;
-wire  [2*(X-1) : 0]  M_in_sel              ;
+wire  [2*X-1 : 0]  M_in_sel              ;
 wire  [X-1 : 0]  M_in_en                   ;
-wire  [2*(X-1) : 0]  C_out_sel             ;
+wire  [2*X-1 : 0]  C_out_sel             ;
 wire  [X-1 : 0]  C_out_en                  ;
 wire  [L-1 : 0]  TB_dinb_sel               ;
 wire  [L-1 : 0]  TB_douta_sel              ;
@@ -99,10 +100,18 @@ end
 
 initial begin
     #(PERIOD*RST_START)
-    #(PERIOD * 10)
-    nonlinear_rdy = 1;
+    #(PERIOD * 5)
+    nonlinear_s_val = 1;
     #(PERIOD * 2)
-    nonlinear_rdy = 0;
+    nonlinear_s_val = 0;
+end
+
+initial begin
+    #(PERIOD*RST_START)
+    #(PERIOD * 10)
+    nonlinear_s_rdy = 1;
+    #(PERIOD * 2)
+    nonlinear_s_rdy = 0;
 end
 
 PE_config #(
@@ -113,26 +122,26 @@ PE_config #(
     .TB_AW   ( TB_AW   ),
     .CB_AW   ( CB_AW   ),
     .MAX_LANDMARK  ( MAX_LANDMARK  ),
-    .GROUP_LEN     ( GROUP_LEN     )
+    .ROW_LEN     ( ROW_LEN     )
 )
  u_PE_config (
     .clk                     ( clk                                  ),
     .sys_rst                 ( sys_rst                              ),
-    .landmark_num            ( landmark_num   [GROUP_LEN-1 : 0]     ),
-    .cov_row_num             ( cov_row_num    [GROUP_LEN-1 : 0]     ),
-    .group_num               ( group_num      [GROUP_LEN-1 : 0]     ),
+
     .stage_val               ( stage_val      [2:0]                 ),
-    .nonlinear_rdy           ( nonlinear_rdy  [2:0]                 ),
+    .nonlinear_s_val           ( nonlinear_s_val  [2:0]                 ),
+    .nonlinear_s_rdy           ( nonlinear_s_rdy  [2:0]                 ),
 
     .stage_rdy               ( stage_rdy      [2:0]                 ),
-    .nonlinear_val           ( nonlinear_val  [2:0]                 ),
+    .nonlinear_m_rdy              ( nonlinear_m_rdy      [2:0]                 ),
+    .nonlinear_m_val               ( nonlinear_m_val      [2:0]                 ),
     .A_in_sel                ( A_in_sel       [X-1 : 0]             ),
     .A_in_en                 ( A_in_en        [X-1 : 0]             ),
-    .B_in_sel                ( B_in_sel       [2*(Y-1) : 0]         ),
+    .B_in_sel                ( B_in_sel       [2*Y-1 : 0]         ),
     .B_in_en                 ( B_in_en        [Y-1 : 0]             ),
-    .M_in_sel                ( M_in_sel       [2*(X-1) : 0]         ),
+    .M_in_sel                ( M_in_sel       [2*X-1 : 0]         ),
     .M_in_en                 ( M_in_en        [X-1 : 0]             ),
-    .C_out_sel               ( C_out_sel      [2*(X-1) : 0]         ),
+    .C_out_sel               ( C_out_sel      [2*X-1 : 0]         ),
     .C_out_en                ( C_out_en       [X-1 : 0]             ),
     .TB_dinb_sel             ( TB_dinb_sel    [L-1 : 0]             ),
     .TB_douta_sel            ( TB_douta_sel   [L-1 : 0]             ),
