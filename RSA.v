@@ -218,14 +218,14 @@ wire [X-1 : 0]                  A_in_en;
 //B in
 wire [Y*RSA_DW-1 : 0]         B_TB_doutb; 
 wire [Y*RSA_DW-1 : 0]         B_CB_douta;
-wire [2*(Y-1) : 0]              B_in_sel;   
+wire [2*Y-1 : 0]              B_in_sel;   
 wire [Y-1 : 0]                  B_in_en;   
 
 //M in
 wire [X*RSA_DW-1 : 0]         M_TB_douta; 
 wire [X*RSA_DW-1 : 0]         M_CB_doutb_0;
 wire [X*RSA_DW-1 : 0]         M_CB_doutb_1;
-wire [2*(X-1) : 0]              M_in_sel;  
+wire [2*X-1 : 0]              M_in_sel;  
 wire [X-1 : 0]                  M_in_en;  
 
 //C out
@@ -233,7 +233,7 @@ wire [X*RSA_DW-1 : 0]         C_TB_dinb_0;
 wire [X*RSA_DW-1 : 0]         C_TB_dinb_1; 
 wire [X*RSA_DW-1 : 0]         C_CB_dinb_0;
 wire [X*RSA_DW-1 : 0]         C_CB_dinb_1;
-wire [2*(X-1) : 0]              C_out_sel; 
+wire [2*X-1 : 0]              C_out_sel; 
 wire [X-1 : 0]                  C_out_en; 
 
 //adder
@@ -269,7 +269,7 @@ generate
             .din_00  (0  ),
             .din_01  (M_TB_douta[RSA_DW*i_X +: RSA_DW]  ),
             .din_10  (M_CB_doutb_0[RSA_DW*i_X +: RSA_DW]  ),
-            .din_11  (M_CB_doutb_1[RSA_DW*(X-i_X) +: RSA_DW]  ),
+            .din_11  (M_CB_doutb_1[RSA_DW*(X-1-i_X) +: RSA_DW]  ),
             .dout    (M_adder_in[RSA_DW*i_X +: RSA_DW]    )
         );
 
@@ -284,9 +284,9 @@ generate
             .sel     (M_in_sel[2*i_X +: 2]     ),
             .din     (C_adder_out[RSA_DW*i_X +: RSA_DW]     ),
             .dout_00 (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
-            .dout_01 (C_TB_dinb_1[RSA_DW*(X-i_X) +: RSA_DW] ),
+            .dout_01 (C_TB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] ),
             .dout_10 (C_CB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
-            .dout_11 (C_CB_dinb_1[RSA_DW*(X-i_X) +: RSA_DW] )
+            .dout_11 (C_CB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] )
         );
 
         sync_adder 
@@ -298,7 +298,7 @@ generate
             .sys_rst (sys_rst ),
             .mode    (M_in_sel[2*i_X +: 2]     ),
             .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
-            .adder_C (dout[RSA_DW*i_X*Y +: RSA_DW] ),
+            .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
             .sum     (C_adder_out[RSA_DW*i_X +: RSA_DW]     )
         );
         
@@ -388,14 +388,14 @@ generate
     for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
         TEMP_BANK TB (
             .clka(clk),    // input wire clka
-            .rsta(sys_rst), 
+            // .rsta(sys_rst), 
             .ena(TB_ena[i_BANK]),      // input wire ena
             .wea(TB_wea[i_BANK]),      // input wire [0 : 0] wea
             .addra(TB_addra[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addra
             .dina(init_TB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
             .douta(TB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
             .clkb(clk),    // input wire clkb
-            .rstb(rstb), 
+            // .rstb(rstb), 
             .enb(TB_enb[i_BANK]),      // input wire enb
             .web(TB_web[i_BANK]),      // input wire [0 : 0] web
             .addrb(TB_addrb[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
@@ -426,9 +426,9 @@ generate
             .sys_rst (sys_rst ),
             .en      (TB_enb[i_BANK]      ),
             .sel     (TB_dinb_sel     ),
-            .din_0   (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]   ),
-            .din_1   (C_TB_dinb_1[RSA_DW*(X-i_X) +: RSA_DW]   ),
-            .dout    (dout    )
+            .din_0   (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
+            .din_1   (C_TB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+            .dout    (TB_dinb[RSA_DW*i_BANK +: RSA_DW]    )
         );
 
         regdeMUX_sel1 
@@ -447,14 +447,14 @@ generate
         
         COV_BANK CB (
             .clka(clk),    // input wire clka
-            .rsta(sys_rst), 
+            // .rsta(sys_rst), 
             .ena(CB_ena[i_BANK]),      // input wire ena
             .wea(CB_wea[i_BANK]),      // input wire [0 : 0] wea
             .addra(CB_addra[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addra
             .dina(init_CB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
             .douta(CB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
             .clkb(clk),    // input wire clkb
-            .rstb(rstb), 
+            // .rstb(rstb), 
             .enb(CB_enb[i_BANK]),      // input wire enb
             .web(CB_web[i_BANK]),      // input wire [0 : 0] web
             .addrb(CB_addrb[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addrb
@@ -485,8 +485,8 @@ generate
             .sys_rst (sys_rst ),
             .en      (CB_enb[i_BANK]      ),
             .sel     (CB_dinb_sel     ),
-            .din_0   (C_CB_dinb_0[RSA_DW*i_X +: RSA_DW]   ),
-            .din_1   (C_CB_dinb_1[RSA_DW*(X-i_X) +: RSA_DW]   ),
+            .din_0   (C_CB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
+            .din_1   (C_CB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
             .dout    (dout    )
         );
 
@@ -555,8 +555,8 @@ u_PE_config(
     .CB_addra        (CB_addra        ),
     .CB_dinb         (CB_dinb         ),
     .CB_addrb        (CB_addrb        ),
-    .cal_en          (n_cal_en[0]     ),
-    .cal_done        (n_cal_done[0]   )
+    .new_cal_en          (n_cal_en[0]     ),
+    .new_cal_done        (n_cal_done[0]   )
 );
 
 endmodule
