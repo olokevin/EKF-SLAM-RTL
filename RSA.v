@@ -49,15 +49,20 @@ generate
             n_cal_en n_cal_done dout_val: PE sig, 对应本PE的坐标
             westin southin dout: PE data, 对应本PE的坐标
 
-            westin 向右传递
-            southin 向上传递
+            westin 向右传递  -> eastout  对应 j+1 的westin
+            southin 向上传递 -> northout 对应 i+1 的southin
+            cal_en cal_done ->          对应 i-1 的n_cal_en
+            din                         对应 j+1 的dout
+
+            定义：实际左下角的PE为PE11 对应第1行 第1列 结TB_0 CB_0
+
             最后一行的n_cal_en, n_cal_done 向右传递
             其他行的n_cal_en, n_cal_done   向上传递
             dout dout_val 向左传递
         */
-            //最后一行 cal_en cal_done
-            //最后一行的cal_en cal_done来自所在列上一列 j-1
-            if(i==X && j!=Y) begin
+            //第一行 cal_en cal_done
+            //第一行的cal_en cal_done来自所在列上一列 j-1
+            if(i==1 && j!=Y) begin
                 PE_MAC 
                 #(
                     .RSA_DW (RSA_DW )
@@ -79,8 +84,8 @@ generate
                     .dout       (dout[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]       )
                 );
             end
-            //最后一行的最后一个，没有din din_val eastout
-            else if(i==X && j==Y) begin
+            //第一行的最后一个，没有din din_val eastout
+            else if(i==1 && j==Y) begin
                 PE_MAC 
                 #(
                     .RSA_DW  (RSA_DW )
@@ -97,7 +102,7 @@ generate
                     .n_cal_en   (n_cal_en[(i-1)*Y+j]   ),
                     .n_cal_done (n_cal_done[(i-1)*Y+j] ),
                     .eastout    (    ),
-                    .northout   (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]   ),
+                    .northout   (southin[RSA_DW*(i*Y+j) : RSA_DW*(i*Y+j-1)+1]   ),
                     .dout_val   (dout_val[(i-1)*Y+j]   ),  
                     .dout       (dout[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]       )
                 );
@@ -111,8 +116,8 @@ generate
                 u_PE_MAC(
                     .clk        (clk        ),
                     .sys_rst  (sys_rst  ),
-                    .cal_en     (n_cal_en[(i)*Y+j]     ),                                       //cal_en cal_done来自下一行
-                    .cal_done   (n_cal_done[(i)*Y+j]   ),
+                    .cal_en     (n_cal_en[(i-2)*Y+j]     ),                                       //cal_en cal_done来自下一行
+                    .cal_done   (n_cal_done[(i-2)*Y+j]   ),
                     .westin     (westin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]     ),     //westin，southin 按PE模块位置设置
                     .southin    (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]    ),
                     .din_val    (dout_val[(i-1)*Y+j+1]    ),                                    //din来自右边 j+1
@@ -120,12 +125,12 @@ generate
                     .n_cal_en   (n_cal_en[(i-1)*Y+j]   ),                                       //n_cal_en 按PE模块位置设置
                     .n_cal_done (n_cal_done[(i-1)*Y+j] ),
                     .eastout    (westin[RSA_DW*((i-1)*Y+j+1) : RSA_DW*((i-1)*Y+j)+1]    ),      //eastout传到右边 j+1
-                    .northout   (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]   ),      //northout传到下边 i+1
+                    .northout   (southin[RSA_DW*(i*Y+j) : RSA_DW*(i*Y+j-1)+1]   ),      //northout传到下边 i+1
                     .dout_val   (dout_val[(i-1)*Y+j]   ),                                       //dout  按PE模块位置设置
                     .dout       (dout[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]       )
                 );
             end
-            //第一行，没有northout, n_cal_en, n_cal_done
+            //最后一行，没有northout, n_cal_en, n_cal_done
             else if(i==X && j!=Y) begin
                 PE_MAC 
                 #(
@@ -333,7 +338,7 @@ generate
             .din_01  (B_CONS[i_Y]  ),
             .din_10  (B_CB_douta[RSA_DW*i_Y +: RSA_DW]  ),
             .din_11  (0  ),
-            .dout    (southin[RSA_DW*X*i_Y+1 +: RSA_DW]    )
+            .dout    (southin[RSA_DW*i_Y+1 +: RSA_DW]    )
         );
     end
 endgenerate

@@ -78,6 +78,8 @@ wire  [L*RSA_DW-1 : 0]  init_CB_dina     ;
 wire  [L*CB_AW-1 : 0]  CB_addra      ;
 wire  [L*RSA_DW-1 : 0]  CB_dinb          ;
 wire  [L*CB_AW-1 : 0]  CB_addrb      ;
+wire  new_cal_en;
+wire  new_cal_done;
 
 
 initial
@@ -163,7 +165,9 @@ PE_config #(
     .init_CB_dina            ( init_CB_dina   [L*RSA_DW-1 : 0]    ),
     .CB_addra                ( CB_addra       [L*CB_AW-1 : 0] ),
     .CB_dinb                 ( CB_dinb        [L*RSA_DW-1 : 0]    ),
-    .CB_addrb                ( CB_addrb       [L*CB_AW-1 : 0] )
+    .CB_addrb                ( CB_addrb       [L*CB_AW-1 : 0] ),
+    .new_cal_en              (new_cal_en),
+    .new_cal_done            (new_cal_done)
 );
 
 

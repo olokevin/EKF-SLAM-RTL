@@ -71,8 +71,8 @@ module PE_config #(
     output reg [L*RSA_DW-1 : 0]         CB_dinb,
     output reg [L*CB_AW-1 : 0]          CB_addrb,
 
-    output reg cal_en,
-    output reg cal_done
+    output reg new_cal_en,
+    output reg new_cal_done
 
 );
 //delay
@@ -85,7 +85,7 @@ module PE_config #(
     parameter            STAGE_PRD  = 3'b001 ;
     parameter            STAGE_NEW  = 3'b010 ;
     parameter            STAGE_UPD  = 3'b100 ;
-    parameter            STAGE_INIT = 3'b111 ;
+    // parameter            STAGE_INIT = 3'b111 ;
 
 //stage_rdy
     parameter BUSY    = 3'b000;
@@ -127,7 +127,6 @@ reg               TB_wea_new;
 reg               TB_douta_sel_new;
 reg [TB_AW-1 : 0] TB_addra_new;
 
-reg               TB_B_shift_dir;
 reg               TB_enb_new;
 reg               TB_web_new;
 reg               TB_dinb_sel_new;
@@ -145,7 +144,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   A_in_sel_dshift(
       .clk  (clk  ),
-      .dir  (RIGHT_SHIFT   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (A_in_sel_new  ),
       .dout (A_in_sel )
   );
@@ -169,7 +168,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   M_in_sel_dshift(
       .clk  (clk  ),
-      .dir  (RIGHT_SHIFT   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (M_in_sel_new  ),
       .dout (M_in_sel )
   );
@@ -181,7 +180,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
  C_out_sel_dshift(
       .clk  (clk  ),
-      .dir   (RIGHT_SHIFT   ),
+      .dir   (LEFT_SHIFT   ),
       .din  (C_out_sel_new  ),
       .dout (C_out_sel )
   );
@@ -194,7 +193,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_ena_dshift(
       .clk  (clk  ),
-      .dir  (RIGHT_SHIFT   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (TB_ena_new  ),
       .dout (TB_ena )
   );
@@ -206,7 +205,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_wea_dshift(
       .clk  (clk  ),
-      .dir   (RIGHT_SHIFT   ),
+      .dir   (LEFT_SHIFT   ),
       .din  (TB_wea_new  ),
       .dout (TB_wea )
   );
@@ -218,7 +217,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_douta_sel_dshift(
       .clk  (clk  ),
-      .dir  (RIGHT_SHIFT   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (TB_douta_sel_new  ),
       .dout (TB_douta_sel )
   );
@@ -230,7 +229,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_addra_dshift(
       .clk  (clk  ),
-      .dir   (RIGHT_SHIFT   ),
+      .dir   (LEFT_SHIFT   ),
       .din  (TB_addra_new  ),
       .dout (TB_addra )
   );
@@ -243,7 +242,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_enb_dshift(
       .clk  (clk  ),
-      .dir  (TB_B_shift_dir   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (TB_enb_new  ),
       .dout (TB_enb )
   );
@@ -255,7 +254,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_web_dshift(
       .clk  (clk  ),
-      .dir   (TB_B_shift_dir   ),
+      .dir   (LEFT_SHIFT   ),
       .din  (TB_web_new  ),
       .dout (TB_web )
   );
@@ -267,7 +266,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_doutb_sel_dshift(
       .clk  (clk  ),
-      .dir   (TB_B_shift_dir   ),
+      .dir   (LEFT_SHIFT   ),
       .din  (TB_doutb_sel_new  ),
       .dout (TB_doutb_sel )
   );
@@ -279,7 +278,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_addrb_dshift(
       .clk  (clk  ),
-      .dir  (TB_B_shift_dir   ),
+      .dir  (LEFT_SHIFT   ),
       .din  (TB_addrb_new  ),
       .dout (TB_addrb )
   );
@@ -311,7 +310,6 @@ u_CB_AGD(
     //stage variables
     reg [2:0]            stage_cur ;
     reg                  stage_change_err;  
-    reg [TB_AW-1:0]      init_cnt; 
 
     //(1)&(2) state switch
     always @(posedge clk) begin
@@ -326,7 +324,6 @@ u_CB_AGD(
                         STAGE_PRD:  stage_cur <= STAGE_PRD;
                         STAGE_NEW:  stage_cur <= STAGE_NEW;
                         STAGE_UPD:  stage_cur <= STAGE_UPD;
-                        STAGE_INIT: stage_cur <= STAGE_INIT;
                         default: begin
                             stage_cur <= IDLE;
                             stage_change_err <= 1'b1;
@@ -354,69 +351,6 @@ u_CB_AGD(
             stage_rdy <= READY;
     end
 
-    //(4) init_cnt
-    always @(posedge clk) begin
-        if(sys_rst)
-            init_cnt <= 0;
-        else if(stage_cur == STAGE_INIT) begin
-            init_cnt <= init_cnt + 1'b1;
-        end
-        else begin
-            init_cnt <= 0;
-        end
-            
-    end
-
-    //(5) init_TB_dina
-    always @(posedge clk) begin
-        if(sys_rst)
-            init_TB_dina <= 0;
-        else if(stage_cur == STAGE_INIT) begin
-            if(init_cnt == 1) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 1;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 0;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-            if(init_cnt == 2) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 0;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 1;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-            if(init_cnt == 3) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 2;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 3;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 1;
-            end
-            if(init_cnt == 4) begin
-                init_TB_dina[0 +: TB_AW]       <= 1;
-                init_TB_dina[TB_AW +: TB_AW]   <= 0;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 2;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-            if(init_cnt == 5) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 1;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 3;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-            if(init_cnt == 6) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 0;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 1;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-            if(init_cnt == 6) begin
-                init_TB_dina[0 +: TB_AW]       <= 0;
-                init_TB_dina[TB_AW +: TB_AW]   <= 0;
-                init_TB_dina[2*TB_AW +: TB_AW] <= 1;
-                init_TB_dina[3*TB_AW +: TB_AW] <= 0;
-            end
-        end
-            
-    end
 /*
     Prediction(PRD)
 */
@@ -537,7 +471,6 @@ u_CB_AGD(
             M_in_sel_new <= 2'b00;
             C_out_sel_new <= 2'b00;
 
-            TB_B_shift_dir <= 1'b0;
             TB_douta_sel_new <= 1'b0;    
             TB_dinb_sel_new <= 1'b0;
             TB_doutb_sel_new <= 1'b0;
@@ -563,7 +496,6 @@ u_CB_AGD(
                     M_in_sel_new <= 2'b00;
                     C_out_sel_new <= 2'b00;
 
-                    TB_B_shift_dir <= 1'b0;
                     TB_douta_sel_new <= 1'b0;    
                     TB_dinb_sel_new <= 1'b0;
                     TB_doutb_sel_new <= 1'b0;
@@ -571,30 +503,6 @@ u_CB_AGD(
                     TB_ena_new <= 1'b0;
                     TB_wea_new <= 1'b0;
                     TB_addra_new <= 0;
-
-                    TB_enb_new <= 1'b0;
-                    TB_web_new <= 1'b0;
-                    TB_addrb_new <= 0;
-                end
-                STAGE_INIT: begin
-                    A_in_en <= 4'b0000;  
-                    B_in_en <= 4'b0000;
-                    M_in_en <= 4'b0000;
-                    C_out_en <= 4'b0000;
-                    
-                    A_in_sel_new <= 1'b0;   
-                    B_in_sel_new <= 2'b00;
-                    M_in_sel_new <= 2'b00;
-                    C_out_sel_new <= 2'b00;
-
-                    TB_B_shift_dir <= 1'b0;
-                    TB_douta_sel_new <= 1'b0;    
-                    TB_dinb_sel_new <= 1'b0;
-                    TB_doutb_sel_new <= 1'b0;
-
-                    TB_ena_new <= 1'b1;
-                    TB_wea_new <= 1'b1;
-                    TB_addra_new <= init_cnt;
 
                     TB_enb_new <= 1'b0;
                     TB_web_new <= 1'b0;
@@ -610,10 +518,10 @@ u_CB_AGD(
                             bin: TB-B
                             Cout: TB-A
                         */
-                            A_in_en <= 4'b1110;  
+                            A_in_en <= 4'b0111;  
                             B_in_en <= 4'b0111;
                             M_in_en <= 4'b0000;
-                            C_out_en <= 4'b1110;
+                            C_out_en <= 4'b0111;
                             
                             A_in_sel_new <= 1'b0;   
                             B_in_sel_new <= 2'b00;
@@ -629,7 +537,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_xi + prd_cnt;
 
-                                TB_B_shift_dir <= 1'b0;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= t_cov + prd_cnt;
@@ -639,7 +546,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= F_cov;
@@ -649,7 +555,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= F_cov + 1'b1;
@@ -659,7 +564,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= F_cov + 2'b10;
@@ -669,7 +573,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= TB_B_shift_dir;
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
@@ -684,10 +587,10 @@ u_CB_AGD(
                             Min: 0      //actual M input time is in PRD_3
                             Cout: CB-B
                         */
-                            A_in_en <= 4'b1110;  
+                            A_in_en <= 4'b0111;  
                             B_in_en <= 4'b0111;
-                            M_in_en <= 4'b1110;
-                            C_out_en <= 4'b1110;
+                            M_in_en <= 4'b0111;
+                            C_out_en <= 4'b0111;
                             
                             A_in_sel_new <= 1'b0;   
                             B_in_sel_new <= 2'b00;
@@ -703,7 +606,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov - PRD_2_START + prd_cnt;
 
-                                TB_B_shift_dir <= 1'b0;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= F_xi_T - PRD_2_START + prd_cnt;
@@ -713,7 +615,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
 
-                                TB_B_shift_dir <= 1'b0;
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
@@ -723,7 +624,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t + 1'b1;
 
-                                TB_B_shift_dir <= 1'b0;
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
@@ -733,7 +633,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t + 2'b10;
 
-                                TB_B_shift_dir <= 1'b0;
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
@@ -743,7 +642,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= t_cov;
@@ -753,7 +651,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= t_cov + 1'b1;
@@ -763,7 +660,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= 1'b1;
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= t_cov + 2'b10;
@@ -773,7 +669,6 @@ u_CB_AGD(
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
 
-                                TB_B_shift_dir <= TB_B_shift_dir;
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
@@ -800,7 +695,6 @@ u_CB_AGD(
                             M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b00;
 
-                            TB_B_shift_dir <= 1'b0;
                             TB_douta_sel_new <= 1'b0;    
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
@@ -829,25 +723,25 @@ u_CB_AGD(
 
     always @(posedge clk) begin
         if(sys_rst) begin
-            cal_en <= 0;
+            new_cal_en <= 0;
         end
         else begin
             case(prd_cur)
                 PRD_1: begin
                     if(prd_cnt >= NEW_2_PEin && prd_cnt < NEW_2_PEin + PRD_1_N) begin
-                        cal_en <= 1'b1;
+                        new_cal_en <= 1'b1;
                     end
                     else
-                        cal_en <= 1'b0;
+                        new_cal_en <= 1'b0;
                 end
                 PRD_2: begin
                     if(prd_cnt >= PRD_2_START + NEW_2_PEin && prd_cnt < PRD_2_START + NEW_2_PEin + PRD_1_N) begin
-                        cal_en <= 1'b1;
+                        new_cal_en <= 1'b1;
                     end
                     else
-                        cal_en <= 1'b0;
+                        new_cal_en <= 1'b0;
                 end
-                default:  cal_en <= 1'b0;
+                default:  new_cal_en <= 1'b0;
             endcase
         end
             
@@ -855,24 +749,24 @@ u_CB_AGD(
 
     always @(posedge clk) begin
         if(sys_rst)
-            cal_done <= 0;
+            new_cal_done <= 0;
         else begin
             case(prd_cur)
                 PRD_1: begin
                     if(prd_cnt == NEW_2_PEin + PRD_1_N) begin
-                        cal_done <= 1'b1;
+                        new_cal_done <= 1'b1;
                     end
                     else
-                        cal_done <= 1'b0;
+                        new_cal_done <= 1'b0;
                 end
                 PRD_2: begin
                     if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N) begin
-                        cal_done <= 1'b1;
+                        new_cal_done <= 1'b1;
                     end
                     else
-                        cal_done <= 1'b0;
+                        new_cal_done <= 1'b0;
                 end
-                default:  cal_done <= 1'b0;
+                default:  new_cal_done <= 1'b0;
             endcase
         end
             
