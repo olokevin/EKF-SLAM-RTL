@@ -36,12 +36,13 @@ wire    [Y*RSA_DW*X:1]    southin;
 
 wire    [X*Y:1]           dout_val;
 wire    [X*RSA_DW*Y:1]   dout;
+wire    [RSA_DW : 1]     dout_test;
 
 //PE阵列
 genvar i,j;
 generate
-    for(i=1; i<=X; i=i+1) begin:PE_MAC_X
-        for(j=1; j<=Y; j=j+1) begin:PE_MAC_Y
+    for(i=1; i<=X; i=i+1) begin: PE_X
+        for(j=1; j<=Y; j=j+1) begin: PE_Y
         /*
             第(i,j)个PE data：[ LEN*((i-1)*Y+j) : LEN*((i-1)*Y+j-1) + 1 ]
             第(i,j)个PE sig:  [(i-1)*Y+j]
@@ -62,7 +63,29 @@ generate
         */
             //第一行 cal_en cal_done
             //第一行的cal_en cal_done来自所在列上一列 j-1
-            if(i==1 && j!=Y) begin
+            if(i==1 && j==1) begin
+                PE_MAC 
+                #(
+                    .RSA_DW (RSA_DW )
+                )
+                u_PE_MAC(
+                    .clk        (clk        ),
+                    .sys_rst    (sys_rst  ),
+                    .cal_en     (n_cal_en[j-1]     ),  //第一行的cal_en cal_done来自所在列上一列 j-1
+                    .cal_done   (n_cal_done[j-1]   ),
+                    .westin     (westin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]     ),
+                    .southin    (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]    ),
+                    .din_val    (dout_val[(i-1)*Y+j+1]    ),
+                    .din        (dout[RSA_DW*((i-1)*Y+j+1) : RSA_DW*((i-1)*Y+j)+1]        ),
+                    .n_cal_en   (n_cal_en[(i-1)*Y+j]   ),
+                    .n_cal_done (n_cal_done[(i-1)*Y+j] ),
+                    .eastout    (westin[RSA_DW*((i-1)*Y+j+1) : RSA_DW*((i-1)*Y+j)+1]    ),
+                    .northout   (southin[RSA_DW*(i*Y+j) : RSA_DW*(i*Y+j-1)+1]   ),
+                    .dout_val   (dout_val[(i-1)*Y+j]   ),  
+                    .dout       (dout_test       )
+                );
+            end
+            else if(i==1 && j!=1 && j!=Y) begin
                 PE_MAC 
                 #(
                     .RSA_DW (RSA_DW )
@@ -97,8 +120,8 @@ generate
                     .cal_done   (n_cal_done[j-1]   ),
                     .westin     (westin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]     ),
                     .southin    (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]    ),
-                    .din_val    (din_val_gnd   ),
-                    .din        (din_gnd      ),
+                    .din_val    (   ),
+                    .din        (      ),
                     .n_cal_en   (n_cal_en[(i-1)*Y+j]   ),
                     .n_cal_done (n_cal_done[(i-1)*Y+j] ),
                     .eastout    (    ),
@@ -154,7 +177,7 @@ generate
                 );
             end
             //最右一列，没有eastout，没有din
-            else if(i!=X && j==Y) begin
+            else if(i!=1 && i!=X && j==Y) begin
                 PE_MAC 
                 #(
                     .RSA_DW (RSA_DW )
@@ -166,8 +189,8 @@ generate
                     .cal_done   (n_cal_done[(i-2)*Y+j]   ),
                     .westin     (westin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]     ),  
                     .southin    (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]    ),
-                    .din_val    (din_val_gnd    ),    
-                    .din        (din_gnd  ),
+                    .din_val    (    ),    
+                    .din        (  ),
                     .n_cal_en   (n_cal_en[(i-1)*Y+j]   ),       
                     .n_cal_done (n_cal_done[(i-1)*Y+j] ),
                     .eastout    (    ),  
@@ -189,8 +212,8 @@ generate
                     .cal_done   (n_cal_done[(i-2)*Y+j]   ),
                     .westin     (westin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]     ),  
                     .southin    (southin[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]    ),
-                    .din_val    (din_val_gnd    ),    
-                    .din        (din_gnd   ),
+                    .din_val    (    ),    
+                    .din        (   ),
                     .n_cal_en   ( ),     
                     .n_cal_done ( ),
                     .eastout    ( ),  
@@ -242,7 +265,7 @@ wire [X*RSA_DW-1 : 0]         C_adder_out;
 
 genvar i_X;
 generate
-    for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: PE_DATA_X
+    for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
         regMUX_sel1 
         #(
             .RSA_DW (RSA_DW )
@@ -289,7 +312,22 @@ generate
             .dout_11 (C_CB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] )
         );
 
-        sync_adder 
+        if(i_X==0) begin
+            sync_adder 
+            #(
+                .RSA_DW (RSA_DW )
+            )
+            MC_adder(
+                .clk     (clk     ),
+                .sys_rst (sys_rst ),
+                .mode    (M_in_sel[2*i_X +: 2]     ),
+                .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
+                .adder_C (dout_test ),
+                .sum     (C_adder_out[RSA_DW*i_X +: RSA_DW]     )
+            );
+        end
+        else begin
+            sync_adder 
         #(
             .RSA_DW (RSA_DW )
         )
@@ -301,7 +339,7 @@ generate
             .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
             .sum     (C_adder_out[RSA_DW*i_X +: RSA_DW]     )
         );
-        
+        end
     end
 endgenerate
 
@@ -324,7 +362,7 @@ end
 
 genvar i_Y;
 generate
-    for(i_Y=0; i_Y<=Y-1; i_Y=i_Y+1) begin: PE_DATA_Y
+    for(i_Y=0; i_Y<=Y-1; i_Y=i_Y+1) begin: DATA_Y
         regMUX_sel2 
         #(
             .RSA_DW (RSA_DW )
@@ -355,7 +393,7 @@ wire [L-1 : 0]          TB_enb;
 wire [L-1 : 0]          TB_wea;
 wire [L-1 : 0]          TB_web;
 
-wire [L*RSA_DW-1 : 0] init_TB_dina;
+wire [L*RSA_DW-1 : 0] TB_dina;
 wire [L*TB_AW-1 : 0] TB_addra;
 wire [L*RSA_DW-1 : 0] TB_dinb;
 wire [L*TB_AW-1 : 0] TB_addrb;
@@ -374,7 +412,7 @@ wire [L-1 : 0]          CB_enb;
 wire [L-1 : 0]          CB_wea;
 wire [L-1 : 0]          CB_web;
 
-wire [L*RSA_DW-1 : 0] init_CB_dina;
+wire [L*RSA_DW-1 : 0] CB_dina;
 wire [L*CB_AW-1 : 0] CB_addra;
 wire [L*RSA_DW-1 : 0] CB_dinb;
 wire [L*CB_AW-1 : 0] CB_addrb;
@@ -383,25 +421,147 @@ wire [L*RSA_DW-1 : 0] CB_douta;
 wire [L*RSA_DW-1 : 0] CB_doutb;
 
 //BRAM_BANK 
+    //instantiate of TEMP BANK
+    TB_0 u_TB_0 (
+    .clka(clk),    // input wire clka
+    .ena(TB_ena[0]),      // input wire ena
+    .wea(TB_wea[0]),      // input wire [0 : 0] wea
+    .addra(TB_addra[0 +: TB_AW]),  // input wire [11 : 0] addra
+    .dina(TB_dina[0 +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(TB_douta[0 +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(TB_enb[0]),      // input wire enb
+    .web(TB_web[0]),      // input wire [0 : 0] web
+    .addrb(TB_addrb[0 +: TB_AW]),  // input wire [11 : 0] addrb
+    .dinb(TB_dinb[0 +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(TB_doutb[0 +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+   
+    TB_1 u_TB_1 (
+    .clka(clk),    // input wire clka
+    .ena(TB_ena[1]),      // input wire ena
+    .wea(TB_wea[1]),      // input wire [0 : 0] wea
+    .addra(TB_addra[TB_AW +: TB_AW]),  // input wire [11 : 0] addra
+    .dina(TB_dina[RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(TB_douta[RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(TB_enb[1]),      // input wire enb
+    .web(TB_web[1]),      // input wire [0 : 0] web
+    .addrb(TB_addrb[TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
+    .dinb(TB_dinb[RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(TB_doutb[RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+
+    TB_2 u_TB_2 (
+    .clka(clk),    // input wire clka
+    .ena(TB_ena[2]),      // input wire ena
+    .wea(TB_wea[2]),      // input wire [0 : 0] wea
+    .addra(TB_addra[2*TB_AW +: TB_AW]),  // input wire [11 : 0] addra
+    .dina(TB_dina[2*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(TB_douta[2*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(TB_enb[2]),      // input wire enb
+    .web(TB_web[2]),      // input wire [0 : 0] web
+    .addrb(TB_addrb[2*TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
+    .dinb(TB_dinb[2*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(TB_doutb[2*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+
+    TB_3 u_TB_3 (
+    .clka(clk),    // input wire clka
+    .ena(TB_ena[3]),      // input wire ena
+    .wea(TB_wea[3]),      // input wire [0 : 0] wea
+    .addra(TB_addra[3*TB_AW +: TB_AW]),  // input wire [11 : 0] addra
+    .dina(TB_dina[3*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(TB_douta[3*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(TB_enb[3]),      // input wire enb
+    .web(TB_web[3]),      // input wire [0 : 0] web
+    .addrb(TB_addrb[3*TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
+    .dinb(TB_dinb[3*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(TB_doutb[3*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+
+    //instantiate of COV BANK
+    CB_0 u_CB_0 (
+    .clka(clk),    // input wire clka
+    .ena(CB_ena[0]),      // input wire ena
+    .wea(CB_wea[0]),      // input wire [0 : 0] wea
+    .addra(CB_addra[0 +: CB_AW]),  // input wire [11 : 0] addra
+    .dina(CB_dina[0 +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(CB_douta[0 +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(CB_enb[0]),      // input wire enb
+    .web(CB_web[0]),      // input wire [0 : 0] web
+    .addrb(CB_addrb[0 +: CB_AW]),  // input wire [11 : 0] addrb
+    .dinb(CB_dinb[0 +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(CB_doutb[0 +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+   
+    CB_1 u_CB_1 (
+    .clka(clk),    // input wire clka
+    .ena(CB_ena[1]),      // input wire ena
+    .wea(CB_wea[1]),      // input wire [0 : 0] wea
+    .addra(CB_addra[CB_AW +: CB_AW]),  // input wire [11 : 0] addra
+    .dina(CB_dina[RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(CB_douta[RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(CB_enb[1]),      // input wire enb
+    .web(CB_web[1]),      // input wire [0 : 0] web
+    .addrb(CB_addrb[CB_AW +: CB_AW]),  // input wire [11 : 0] addrb
+    .dinb(CB_dinb[RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(CB_doutb[RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+
+    CB_2 u_CB_2 (
+    .clka(clk),    // input wire clka
+    .ena(CB_ena[2]),      // input wire ena
+    .wea(CB_wea[2]),      // input wire [0 : 0] wea
+    .addra(CB_addra[2*CB_AW +: CB_AW]),  // input wire [11 : 0] addra
+    .dina(CB_dina[2*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(CB_douta[2*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(CB_enb[2]),      // input wire enb
+    .web(CB_web[2]),      // input wire [0 : 0] web
+    .addrb(CB_addrb[2*CB_AW +: CB_AW]),  // input wire [11 : 0] addrb
+    .dinb(CB_dinb[2*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(CB_doutb[2*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+
+    CB_3 u_CB_3 (
+    .clka(clk),    // input wire clka
+    .ena(CB_ena[3]),      // input wire ena
+    .wea(CB_wea[3]),      // input wire [0 : 0] wea
+    .addra(CB_addra[3*CB_AW +: CB_AW]),  // input wire [11 : 0] addra
+    .dina(CB_dina[3*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+    .douta(CB_douta[3*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+    .clkb(clk),    // input wire clkb
+    .enb(CB_enb[3]),      // input wire enb
+    .web(CB_web[3]),      // input wire [0 : 0] web
+    .addrb(CB_addrb[3*CB_AW +: CB_AW]),  // input wire [11 : 0] addrb
+    .dinb(CB_dinb[3*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+    .doutb(CB_doutb[3*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+    );
+    
 genvar i_BANK;
 generate
     for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
-        TEMP_BANK TB (
-            .clka(clk),    // input wire clka
-            // .rsta(sys_rst), 
-            .ena(TB_ena[i_BANK]),      // input wire ena
-            .wea(TB_wea[i_BANK]),      // input wire [0 : 0] wea
-            .addra(TB_addra[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addra
-            .dina(init_TB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
-            .douta(TB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
-            .clkb(clk),    // input wire clkb
-            // .rstb(rstb), 
-            .enb(TB_enb[i_BANK]),      // input wire enb
-            .web(TB_web[i_BANK]),      // input wire [0 : 0] web
-            .addrb(TB_addrb[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
-            .dinb(TB_dinb[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
-            .doutb(TB_doutb[i_BANK*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
-        );
+        // TEMP_BANK TB (
+        //     .clka(clk),    // input wire clka
+        //     // .rsta(sys_rst), 
+        //     .ena(TB_ena[i_BANK]),      // input wire ena
+        //     .wea(TB_wea[i_BANK]),      // input wire [0 : 0] wea
+        //     .addra(TB_addra[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addra
+        //     .dina(TB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+        //     .douta(TB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+        //     .clkb(clk),    // input wire clkb
+        //     // .rstb(rstb), 
+        //     .enb(TB_enb[i_BANK]),      // input wire enb
+        //     .web(TB_web[i_BANK]),      // input wire [0 : 0] web
+        //     .addrb(TB_addrb[i_BANK*TB_AW +: TB_AW]),  // input wire [11 : 0] addrb
+        //     .dinb(TB_dinb[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+        //     .doutb(TB_doutb[i_BANK*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+        // );
 
         regdeMUX_sel1 
         #(
@@ -410,7 +570,7 @@ generate
         TB_douta_regdeMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (TB_ena[i_BANK]       ),
+            .en      (1      ),
             .sel     (TB_douta_sel     ),
             .din     (TB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (A_TB_douta[i_BANK*RSA_DW +: RSA_DW]  ),
@@ -424,7 +584,7 @@ generate
         TB_dinb_regMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (TB_enb[i_BANK]      ),
+            .en      (1      ),
             .sel     (TB_dinb_sel     ),
             .din_0   (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
             .din_1   (C_TB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
@@ -438,29 +598,29 @@ generate
         TB_doutb_regdeMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (TB_enb[i_BANK]       ),
+            .en      (1       ),
             .sel     (TB_doutb_sel     ),
             .din     (TB_doutb[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (B_TB_doutb[i_BANK*RSA_DW +: RSA_DW]  ),
             .dout_1  (B_CONS_din[i_BANK*RSA_DW +: RSA_DW]   )
         );
         
-        COV_BANK CB (
-            .clka(clk),    // input wire clka
-            // .rsta(sys_rst), 
-            .ena(CB_ena[i_BANK]),      // input wire ena
-            .wea(CB_wea[i_BANK]),      // input wire [0 : 0] wea
-            .addra(CB_addra[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addra
-            .dina(init_CB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
-            .douta(CB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
-            .clkb(clk),    // input wire clkb
-            // .rstb(rstb), 
-            .enb(CB_enb[i_BANK]),      // input wire enb
-            .web(CB_web[i_BANK]),      // input wire [0 : 0] web
-            .addrb(CB_addrb[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addrb
-            .dinb(CB_dinb[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
-            .doutb(CB_doutb[i_BANK*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
-        );
+        // COV_BANK CB (
+        //     .clka(clk),    // input wire clka
+        //     // .rsta(sys_rst), 
+        //     .ena(CB_ena[i_BANK]),      // input wire ena
+        //     .wea(CB_wea[i_BANK]),      // input wire [0 : 0] wea
+        //     .addra(CB_addra[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addra
+        //     .dina(CB_dina[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dina
+        //     .douta(CB_douta[i_BANK*RSA_DW +: RSA_DW]),  // output wire [15 : 0] douta
+        //     .clkb(clk),    // input wire clkb
+        //     // .rstb(rstb), 
+        //     .enb(CB_enb[i_BANK]),      // input wire enb
+        //     .web(CB_web[i_BANK]),      // input wire [0 : 0] web
+        //     .addrb(CB_addrb[i_BANK*CB_AW +: CB_AW]),  // input wire [18 : 0] addrb
+        //     .dinb(CB_dinb[i_BANK*RSA_DW +: RSA_DW]),    // input wire [15 : 0] dinb
+        //     .doutb(CB_doutb[i_BANK*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
+        // );
 
         regdeMUX_sel1 
         #(
@@ -469,7 +629,7 @@ generate
         CB_douta_regdeMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (CB_ena[i_BANK]       ),
+            .en      (1       ),
             .sel     (CB_douta_sel     ),
             .din     (CB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (A_CB_douta[i_BANK*RSA_DW +: RSA_DW]  ),
@@ -483,7 +643,7 @@ generate
         CB_dinb_regMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (CB_enb[i_BANK]      ),
+            .en      (1      ),
             .sel     (CB_dinb_sel     ),
             .din_0   (C_CB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
             .din_1   (C_CB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
@@ -497,7 +657,7 @@ generate
         CB_doutB_regdeMUX_sel1(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .en      (CB_enb[i_BANK]       ),
+            .en      (1       ),
             .sel     (CB_doutb_sel     ),
             .din     (CB_doutb[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (M_CB_doutb_0[i_BANK*RSA_DW +: RSA_DW]  ),
@@ -541,7 +701,7 @@ u_PE_config(
     .TB_enb          (TB_enb          ),
     .TB_wea          (TB_wea          ),
     .TB_web          (TB_web          ),
-    .init_TB_dina    (init_TB_dina    ),
+    .TB_dina    (TB_dina    ),
     .TB_addra        (TB_addra        ),
     .TB_addrb        (TB_addrb        ),
     .CB_dinb_sel     (CB_dinb_sel     ),
@@ -551,7 +711,7 @@ u_PE_config(
     .CB_enb          (CB_enb          ),
     .CB_wea          (CB_wea          ),
     .CB_web          (CB_web          ),
-    .init_CB_dina    (init_CB_dina    ),
+    .CB_dina    (CB_dina    ),
     .CB_addra        (CB_addra        ),
     .CB_dinb         (CB_dinb         ),
     .CB_addrb        (CB_addrb        ),

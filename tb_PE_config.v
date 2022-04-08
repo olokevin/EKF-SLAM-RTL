@@ -64,7 +64,7 @@ wire  [L-1 : 0]  TB_ena                    ;
 wire  [L-1 : 0]  TB_enb                    ;
 wire  [L-1 : 0]  TB_wea                    ;
 wire  [L-1 : 0]  TB_web                    ;
-wire  [L*RSA_DW-1 : 0]  init_TB_dina     ;
+wire  [L*RSA_DW-1 : 0]  TB_dina     ;
 wire  [L*TB_AW-1 : 0]  TB_addra      ;
 wire  [L*TB_AW-1 : 0]  TB_addrb      ;
 wire  [L-1 : 0]  CB_dinb_sel               ;
@@ -74,7 +74,7 @@ wire  [L-1 : 0]  CB_ena                    ;
 wire  [L-1 : 0]  CB_enb                    ;
 wire  [L-1 : 0]  CB_wea                    ;
 wire  [L-1 : 0]  CB_web                    ;
-wire  [L*RSA_DW-1 : 0]  init_CB_dina     ;
+wire  [L*RSA_DW-1 : 0]  CB_dina     ;
 wire  [L*CB_AW-1 : 0]  CB_addra      ;
 wire  [L*RSA_DW-1 : 0]  CB_dinb          ;
 wire  [L*CB_AW-1 : 0]  CB_addrb      ;
@@ -152,7 +152,7 @@ PE_config #(
     .TB_enb                  ( TB_enb         [L-1 : 0]             ),
     .TB_wea                  ( TB_wea         [L-1 : 0]             ),
     .TB_web                  ( TB_web         [L-1 : 0]             ),
-    .init_TB_dina            ( init_TB_dina   [L*RSA_DW-1 : 0]    ),
+    .TB_dina            ( TB_dina   [L*RSA_DW-1 : 0]    ),
     .TB_addra                ( TB_addra       [L*TB_AW-1 : 0] ),
     .TB_addrb                ( TB_addrb       [L*TB_AW-1 : 0] ),
     .CB_dinb_sel             ( CB_dinb_sel    [L-1 : 0]             ),
@@ -162,7 +162,7 @@ PE_config #(
     .CB_enb                  ( CB_enb         [L-1 : 0]             ),
     .CB_wea                  ( CB_wea         [L-1 : 0]             ),
     .CB_web                  ( CB_web         [L-1 : 0]             ),
-    .init_CB_dina            ( init_CB_dina   [L*RSA_DW-1 : 0]    ),
+    .CB_dina            ( CB_dina   [L*RSA_DW-1 : 0]    ),
     .CB_addra                ( CB_addra       [L*CB_AW-1 : 0] ),
     .CB_dinb                 ( CB_dinb        [L*RSA_DW-1 : 0]    ),
     .CB_addrb                ( CB_addrb       [L*CB_AW-1 : 0] ),

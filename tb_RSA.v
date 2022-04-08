@@ -5,7 +5,7 @@ module tb_RSA;
 parameter RST_START = 20;
 
 // RSA Parameters
-parameter PERIOD        = 2 ;
+parameter PERIOD        = 10 ;
 parameter X             = 4  ;
 parameter Y             = 4  ;
 parameter L             = 4  ;
@@ -16,7 +16,7 @@ parameter MAX_LANDMARK  = 500;
 parameter ROW_LEN       = 10 ;
 
 // RSA Inputs
-reg   clk                                  = 0 ;
+reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg   [2:0]  nonlinear_s_val               = 0 ;

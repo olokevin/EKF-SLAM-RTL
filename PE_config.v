@@ -52,7 +52,7 @@ module PE_config #(
     output  [L-1 : 0]                TB_wea,
     output  [L-1 : 0]                TB_web,
 
-    output reg [L*RSA_DW-1 : 0]         init_TB_dina,
+    output reg [L*RSA_DW-1 : 0]         TB_dina,
     output  [L*TB_AW-1 : 0]          TB_addra,
     output  [L*TB_AW-1 : 0]          TB_addrb,
 
@@ -66,7 +66,7 @@ module PE_config #(
     output reg [L-1 : 0]                CB_wea,
     output reg [L-1 : 0]                CB_web,
 
-    output reg [L*RSA_DW-1 : 0]         init_CB_dina,
+    output reg [L*RSA_DW-1 : 0]         CB_dina,
     output reg [L*CB_AW-1 : 0]          CB_addra,
     output reg [L*RSA_DW-1 : 0]         CB_dinb,
     output reg [L*CB_AW-1 : 0]          CB_addrb,
