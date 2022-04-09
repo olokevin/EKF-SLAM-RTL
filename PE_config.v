@@ -105,16 +105,18 @@ module PE_config #(
     parameter PRD_3 = 'b1000;
 
     localparam PRD_1_START = 0;
-    localparam PRD_2_START = 'd18;
-    localparam PRD_3_START = 'd36;
+    localparam PRD_2_START = 'd19;
+    localparam PRD_3_START = 'd39;
     localparam PRD_3_END = 'd80;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
     localparam PRD_3_N = 3;
 
-    localparam NEW_2_PEin = 4;      //给出addr_new到westin
-    localparam ADDER_2_NEW = 1;     //adder输出到给addr_new
+    localparam NEW_2_ADDR = 2;
+    localparam ADDR_2_PEin = 3;
+    localparam NEW_2_PEin = 5;      //给出addr_new到westin
+    localparam ADDER_2_NEW = 0;     //adder输出到给addr_new
 
 //shift def
 reg       A_in_sel_new;
@@ -231,7 +233,7 @@ localparam RIGHT_SHIFT = 1'b1;
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
       .din  (TB_addra_new  ),
-      .dout (TB_addra )
+      .dout (TB_addra_base )
   );
 
 //shift of TB_portB
@@ -569,6 +571,15 @@ u_CB_AGD(
                             Min: TB-A   //PRD_2 adder
                             Cout: CB-B
                         */
+                            A_in_en <= 4'b1111;  
+                            B_in_en <= 4'b0111;
+                            M_in_en <= 4'b0000;
+                            C_out_en <= 4'b1111;
+                            
+                            A_in_sel_new <= 1'b1;   
+                            B_in_sel_new <= 2'b00;
+                            M_in_sel_new <= 2'b00;
+                            C_out_sel_new <= 2'b10;
                         end
                         default: begin
                             A_in_en <= 4'b0000;  
@@ -809,6 +820,232 @@ u_CB_AGD(
             endcase
         end    
             
+    end
+
+//配置 CB A B端口 输入数据及数据选择
+    always @(posedge clk) begin
+        if(sys_rst) begin
+            CB_douta_sel_new <= 1'b0;    
+            CB_dinb_sel_new <= 1'b0;
+            CB_doutb_sel_new <= 1'b0;
+
+            CB_ena_new <= 1'b0;
+            CB_wea_new <= 1'b0;
+            CB_addra_new <= 0;
+
+            CB_enb_new <= 1'b0;
+            CB_web_new <= 1'b0;
+            CB_addrb_new <= 0;
+        end
+        else begin
+            case(stage_cur)
+                IDLE: begin
+                    CB_douta_sel_new <= 1'b0;    
+                    CB_dinb_sel_new <= 1'b0;
+                    CB_doutb_sel_new <= 1'b0;
+
+                    CB_ena_new <= 1'b0;
+                    CB_wea_new <= 1'b0;
+                    CB_addra_new <= 0;
+
+                    CB_enb_new <= 1'b0;
+                    CB_web_new <= 1'b0;
+                    CB_addrb_new <= 0;
+                end
+                STAGE_PRD: begin
+                    case(prd_cur)
+                        PRD_1: begin
+                        /*
+                            F_xi * t_cov = F_cov
+                            X=3 Y=3 N=3
+                            Ain: TB-A
+                            bin: TB-B
+                            Cout: TB-A
+                        */
+                            CB_douta_sel_new <= 1'b0;    
+                            CB_dinb_sel_new <= 1'b0;
+                            CB_doutb_sel_new <= 1'b0;
+                            
+                            if (prd_cnt < PRD_1_START + PRD_1_N) begin
+                                CB_ena_new <= 1'b1;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= F_xi + prd_cnt;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= t_cov + prd_cnt;
+                            end
+                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= F_cov;
+                            end
+                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2 + 2) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= F_cov + 1'b1;
+                            end
+                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2 + 4) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= F_cov + 2'b10;
+                            end
+                            else begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b0;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                            end
+                        end
+                        PRD_2: begin
+                        /*
+                            F_cov * t_cov + M= cov
+                            X=3 Y=3 N=3
+                            Ain: TB-A
+                            Bin: TB-B
+                            Min: 0      //actual M input time is in PRD_3
+                            Cout: CB-B
+                        */
+                            CB_dinb_sel_new <= 1'b0;
+                            CB_doutb_sel_new <= 1'b0;
+                            
+                            if (prd_cnt < PRD_2_START+PRD_1_N) begin
+                                CB_ena_new <= 1'b1;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= F_cov - PRD_2_START + prd_cnt;
+                                
+                                CB_douta_sel_new <= 1'b0;    
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= F_xi - PRD_2_START + prd_cnt;
+                            end
+                            else if(prd_cnt == PRD_2_START + PRD_2_N + 1) begin
+                                CB_ena_new <= 1'b1;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= M_t;
+                                
+                                CB_douta_sel_new <= 1'b1; 
+
+                                CB_enb_new <= 1'b0;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                            end
+                            else if(prd_cnt == PRD_2_START + PRD_2_N + 3) begin
+                                CB_ena_new <= 1'b1;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= M_t + 1'b1;
+
+                                CB_enb_new <= 1'b0;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                            end
+                            else if(prd_cnt == PRD_2_START + PRD_2_N + 5) begin
+                                CB_ena_new <= 1'b1;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= M_t + 2'b10;
+
+                                CB_enb_new <= 1'b0;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                            end
+                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_2_N+2) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= t_cov;
+                            end
+                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N+2 + 2) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= t_cov + 1'b1;
+                            end
+                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N+2 + 4) begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b1;
+                                CB_web_new <= 1'b1;
+                                CB_addrb_new <= t_cov + 2'b10;
+                            end
+                            else begin
+                                CB_ena_new <= 1'b0;
+                                CB_wea_new <= 1'b0;
+                                CB_addra_new <= 0;
+
+                                CB_enb_new <= 1'b0;
+                                CB_web_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                            end
+                        end
+                        PRD_3: begin
+                        /*
+                            cov_mv * F_xi_T = cov_mv
+                            X=3 Y=3 N=3
+                            Ain: CB-A
+                            Bin: TB-B
+                            Min: TB-A   //PRD_2 adder
+                            Cout: CB-B
+                        */
+                            CB_douta_sel_new <= 1'b0;    
+                            CB_dinb_sel_new <= 1'b0;
+                            CB_doutb_sel_new <= 1'b0;
+
+                            CB_ena_new <= 1'b0;
+                            CB_wea_new <= 1'b0;
+                            CB_addra_new <= 0;
+
+                            CB_enb_new <= 1'b0;
+                            CB_web_new <= 1'b0;
+                            CB_addrb_new <= 0;
+                        end
+                        default: begin
+                            CB_douta_sel_new <= 1'b0;    
+                            CB_dinb_sel_new <= 1'b0;
+                            CB_doutb_sel_new <= 1'b0;
+
+                            CB_ena_new <= 1'b0;
+                            CB_wea_new <= 1'b0;
+                            CB_addra_new <= 0;
+
+                            CB_enb_new <= 1'b0;
+                            CB_web_new <= 1'b0;
+                            CB_addrb_new <= 0;
+                        end
+                    endcase
+                end
+                STAGE_NEW: begin
+                    
+                end
+                STAGE_UPD: begin
+                    
+                end
+                
+            endcase
+        end           
     end
 
     always @(posedge clk) begin

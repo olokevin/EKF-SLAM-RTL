@@ -292,7 +292,7 @@ generate
             .din_00  (0  ),
             .din_01  (M_TB_douta[RSA_DW*i_X +: RSA_DW]  ),
             .din_10  (M_CB_doutb_0[RSA_DW*i_X +: RSA_DW]  ),
-            .din_11  (M_CB_doutb_1[RSA_DW*(X-1-i_X) +: RSA_DW]  ),
+            .din_11  (M_CB_doutb_1[RSA_DW*i_X +: RSA_DW]  ),
             .dout    (M_adder_in[RSA_DW*i_X +: RSA_DW]    )
         );
 
@@ -540,7 +540,7 @@ generate
             .sel     (CB_doutb_sel[i_BANK]     ),
             .din     (CB_doutb[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (M_CB_doutb_0[i_BANK*RSA_DW +: RSA_DW]  ),
-            .dout_1  (M_CB_doutb_1[i_BANK*RSA_DW +: RSA_DW]   )
+            .dout_1  (M_CB_doutb_1[(X-1-i_BANK)*RSA_DW +: RSA_DW]   )
         );
     end
 endgenerate
