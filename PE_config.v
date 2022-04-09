@@ -264,6 +264,18 @@ localparam RIGHT_SHIFT = 1'b1;
       .DW    (1 ),
       .DEPTH (4 )
   )
+  TB_dinb_sel_dshift(
+      .clk  (clk  ),
+      .dir   (LEFT_SHIFT   ),
+      .din  (TB_dinb_sel_new  ),
+      .dout (TB_dinb_sel )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
   TB_doutb_sel_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
@@ -597,7 +609,6 @@ u_CB_AGD(
                             M_in_sel_new <= 2'b01;
                             C_out_sel_new <= 2'b00;
 
-                            TB_douta_sel_new <= 1'b0;    
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
@@ -605,15 +616,17 @@ u_CB_AGD(
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov - PRD_2_START + prd_cnt;
+                                TB_douta_sel_new <= 1'b0;    
 
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
-                                TB_addrb_new <= F_xi_T - PRD_2_START + prd_cnt;
+                                TB_addrb_new <= F_xi - PRD_2_START + prd_cnt;
                             end
                             else if(prd_cnt == PRD_2_START + PRD_2_N + 1) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
+                                TB_douta_sel_new <= 1'b1; 
 
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
@@ -735,7 +748,7 @@ u_CB_AGD(
                         new_cal_en <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt >= PRD_2_START + NEW_2_PEin && prd_cnt < PRD_2_START + NEW_2_PEin + PRD_1_N) begin
+                    if(prd_cnt >= PRD_2_START + NEW_2_PEin && prd_cnt < PRD_2_START + NEW_2_PEin + PRD_2_N) begin
                         new_cal_en <= 1'b1;
                     end
                     else
@@ -760,7 +773,7 @@ u_CB_AGD(
                         new_cal_done <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N) begin
+                    if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_2_N) begin
                         new_cal_done <= 1'b1;
                     end
                     else
