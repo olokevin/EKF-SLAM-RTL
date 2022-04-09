@@ -105,18 +105,18 @@ module PE_config #(
     parameter PRD_3 = 'b1000;
 
     localparam PRD_1_START = 0;
-    localparam PRD_2_START = 'd19;
-    localparam PRD_3_START = 'd39;
+    localparam PRD_2_START = 'd18;
+    localparam PRD_3_START = 'd36;
     localparam PRD_3_END = 'd80;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
     localparam PRD_3_N = 3;
 
-    localparam NEW_2_ADDR = 2;
+    localparam NEW_2_ADDR = 1;
     localparam ADDR_2_PEin = 3;
-    localparam NEW_2_PEin = 5;      //给出addr_new到westin
-    localparam ADDER_2_NEW = 0;     //adder输出到给addr_new
+    localparam NEW_2_PEin = 4;      //给出addr_new到westin
+    localparam ADDER_2_NEW = 1;     //adder输出到给addr_new
 
 //shift def
 reg       A_in_sel_new;
