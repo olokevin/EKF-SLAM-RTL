@@ -539,7 +539,102 @@ u_CB_AGD(
                             B_in_sel_new <= 2'b00;
                             M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b00;
+                        
+                        end
+                        PRD_2: begin
+                        /*
+                            F_cov * t_cov + M= cov
+                            X=3 Y=3 N=3
+                            Ain: TB-A
+                            Bin: TB-B
+                            Min: 0      //actual M input time is in PRD_3
+                            Cout: CB-B
+                        */
+                            A_in_en <= 4'b0111;  
+                            B_in_en <= 4'b0111;
+                            M_in_en <= 4'b0111;
+                            C_out_en <= 4'b0111;
+                            
+                            A_in_sel_new <= 1'b0;   
+                            B_in_sel_new <= 2'b00;
+                            M_in_sel_new <= 2'b01;
+                            C_out_sel_new <= 2'b00;
+                        end
+                        PRD_3: begin
+                        /*
+                            cov_mv * F_xi_T = cov_mv
+                            X=3 Y=3 N=3
+                            Ain: CB-A
+                            Bin: TB-B
+                            Min: TB-A   //PRD_2 adder
+                            Cout: CB-B
+                        */
+                        end
+                        default: begin
+                            A_in_en <= 4'b0000;  
+                            B_in_en <= 4'b0000;
+                            M_in_en <= 4'b0000;
+                            C_out_en <= 4'b0000;
+                            
+                            A_in_sel_new <= 1'b0;   
+                            B_in_sel_new <= 2'b00;
+                            M_in_sel_new <= 2'b00;
+                            C_out_sel_new <= 2'b00;
+                        end
+                    endcase
+                end
+                STAGE_NEW: begin
+                    
+                end
+                STAGE_UPD: begin
+                    
+                end
+                
+            endcase
+        end    
+            
+    end
 
+//配置TB A B端口 输入数据及数据选择
+    always @(posedge clk) begin
+        if(sys_rst) begin
+            TB_douta_sel_new <= 1'b0;    
+            TB_dinb_sel_new <= 1'b0;
+            TB_doutb_sel_new <= 1'b0;
+
+            TB_ena_new <= 1'b0;
+            TB_wea_new <= 1'b0;
+            TB_addra_new <= 0;
+
+            TB_enb_new <= 1'b0;
+            TB_web_new <= 1'b0;
+            TB_addrb_new <= 0;
+        end
+        else begin
+            case(stage_cur)
+                IDLE: begin
+                    TB_douta_sel_new <= 1'b0;    
+                    TB_dinb_sel_new <= 1'b0;
+                    TB_doutb_sel_new <= 1'b0;
+
+                    TB_ena_new <= 1'b0;
+                    TB_wea_new <= 1'b0;
+                    TB_addra_new <= 0;
+
+                    TB_enb_new <= 1'b0;
+                    TB_web_new <= 1'b0;
+                    TB_addrb_new <= 0;
+                end
+                STAGE_PRD: begin
+                    case(prd_cur)
+                        PRD_1: begin
+                        /*
+                            F_xi * t_cov = F_cov
+                            X=3 Y=3 N=3
+                            Ain: TB-A
+                            bin: TB-B
+                            Cout: TB-A
+                        */
                             TB_douta_sel_new <= 1'b0;    
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
@@ -599,23 +694,14 @@ u_CB_AGD(
                             Min: 0      //actual M input time is in PRD_3
                             Cout: CB-B
                         */
-                            A_in_en <= 4'b0111;  
-                            B_in_en <= 4'b0111;
-                            M_in_en <= 4'b0111;
-                            C_out_en <= 4'b0111;
-                            
-                            A_in_sel_new <= 1'b0;   
-                            B_in_sel_new <= 2'b00;
-                            M_in_sel_new <= 2'b01;
-                            C_out_sel_new <= 2'b00;
-
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                        if (prd_cnt < PRD_2_START+PRD_1_N) begin
+                            if (prd_cnt < PRD_2_START+PRD_1_N) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov - PRD_2_START + prd_cnt;
+                                
                                 TB_douta_sel_new <= 1'b0;    
 
                                 TB_enb_new <= 1'b1;
@@ -626,6 +712,7 @@ u_CB_AGD(
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
+                                
                                 TB_douta_sel_new <= 1'b1; 
 
                                 TB_enb_new <= 1'b0;
@@ -698,16 +785,6 @@ u_CB_AGD(
                         */
                         end
                         default: begin
-                            A_in_en <= 4'b0000;  
-                            B_in_en <= 4'b0000;
-                            M_in_en <= 4'b0000;
-                            C_out_en <= 4'b0000;
-                            
-                            A_in_sel_new <= 1'b0;   
-                            B_in_sel_new <= 2'b00;
-                            M_in_sel_new <= 2'b00;
-                            C_out_sel_new <= 2'b00;
-
                             TB_douta_sel_new <= 1'b0;    
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;

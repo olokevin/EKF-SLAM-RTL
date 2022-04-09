@@ -39,8 +39,8 @@ wire    [X*RSA_DW*Y:1]   dout;
 wire    [RSA_DW : 1]     dout_test;
 
 //PE阵列
-genvar i,j;
 generate
+    genvar i,j;
     for(i=1; i<=X; i=i+1) begin: PE_X
         for(j=1; j<=Y; j=j+1) begin: PE_Y
         /*
@@ -82,7 +82,7 @@ generate
                     .eastout    (westin[RSA_DW*((i-1)*Y+j+1) : RSA_DW*((i-1)*Y+j)+1]    ),
                     .northout   (southin[RSA_DW*(i*Y+j) : RSA_DW*(i*Y+j-1)+1]   ),
                     .dout_val   (dout_val[(i-1)*Y+j]   ),  
-                    .dout       (dout_test       )
+                    .dout       (dout[RSA_DW*((i-1)*Y+j) : RSA_DW*((i-1)*Y+j-1)+1]       )
                 );
             end
             else if(i==1 && j!=1 && j!=Y) begin
@@ -263,8 +263,8 @@ wire [X-1 : 0]                  C_out_en;
 wire [X*RSA_DW-1 : 0]         M_adder_in;  
 wire [X*RSA_DW-1 : 0]         C_adder_out;
 
-genvar i_X;
-generate
+generate 
+    genvar i_X;
     for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
         regMUX_sel1 
         #(
@@ -322,7 +322,7 @@ generate
                 .sys_rst (sys_rst ),
                 .mode    (M_in_sel[2*i_X +: 2]     ),
                 .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
-                .adder_C (dout_test ),
+                .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
                 .sum     (C_adder_out[RSA_DW*i_X +: RSA_DW]     )
             );
         end
@@ -360,8 +360,8 @@ always @(posedge clk) begin
     end 
 end
 
-genvar i_Y;
 generate
+    genvar i_Y;
     for(i_Y=0; i_Y<=Y-1; i_Y=i_Y+1) begin: DATA_Y
         regMUX_sel2 
         #(
@@ -422,8 +422,8 @@ wire [L*RSA_DW-1 : 0] CB_doutb;
 
 //BRAM_BANK 
     
-genvar i_BANK;
 generate
+    genvar i_BANK;
     for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
         // TEMP_BANK TB (
         //     .clka(clk),    // input wire clka
@@ -450,7 +450,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1      ),
-            .sel     (TB_douta_sel     ),
+            .sel     (TB_douta_sel[i_BANK]     ),
             .din     (TB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (A_TB_douta[i_BANK*RSA_DW +: RSA_DW]  ),
             .dout_1  (M_TB_douta[i_BANK*RSA_DW +: RSA_DW]   )
@@ -464,7 +464,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1      ),
-            .sel     (TB_dinb_sel     ),
+            .sel     (TB_dinb_sel[i_BANK]     ),
             .din_0   (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
             .din_1   (C_TB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
             .dout    (TB_dinb[RSA_DW*i_BANK +: RSA_DW]    )
@@ -478,7 +478,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1       ),
-            .sel     (TB_doutb_sel     ),
+            .sel     (TB_doutb_sel[i_BANK]     ),
             .din     (TB_doutb[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (B_TB_doutb[i_BANK*RSA_DW +: RSA_DW]  ),
             .dout_1  (B_CONS_din[i_BANK*RSA_DW +: RSA_DW]   )
@@ -509,7 +509,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1       ),
-            .sel     (CB_douta_sel     ),
+            .sel     (CB_douta_sel[i_BANK]     ),
             .din     (CB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (A_CB_douta[i_BANK*RSA_DW +: RSA_DW]  ),
             .dout_1  (B_CB_douta[i_BANK*RSA_DW +: RSA_DW]   )
@@ -523,10 +523,10 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1      ),
-            .sel     (CB_dinb_sel     ),
+            .sel     (CB_dinb_sel[i_BANK]     ),
             .din_0   (C_CB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
             .din_1   (C_CB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-            .dout    (dout    )
+            .dout    (CB_dinb[RSA_DW*i_BANK +: RSA_DW]    )
         );
 
         regdeMUX_sel1 
@@ -537,7 +537,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1       ),
-            .sel     (CB_doutb_sel     ),
+            .sel     (CB_doutb_sel[i_BANK]     ),
             .din     (CB_doutb[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_0  (M_CB_doutb_0[i_BANK*RSA_DW +: RSA_DW]  ),
             .dout_1  (M_CB_doutb_1[i_BANK*RSA_DW +: RSA_DW]   )
