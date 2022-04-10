@@ -109,7 +109,7 @@ module PE_config #(
 
     localparam PRD_1_END = 'd18;
     localparam PRD_2_END = 'd18;
-    localparam PRD_3_END = 'd80;
+    localparam PRD_3_END = 'd6;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
@@ -664,6 +664,10 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                     if(group_cnt == group_num) begin
                         prd_cnt <= 0;
                         prd_cur <= PRD_IDLE;
+                    end
+                    else if(prd_cnt == PRD_3_END) begin
+                        prd_cnt <= 1;
+                        prd_cur <= PRD_3;
                     end
                     else begin
                         prd_cnt <= prd_cnt + 1'b1;
@@ -1284,6 +1288,32 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     end
 
 //配置 CB A B端口 输入数据及数据选择
+reg [CB_AW-1 : 0] CB_addra_base;
+reg CB_addra_base_gen;
+CB_addr_shift #(
+    .L       ( L       ),
+    .CB_AW   ( CB_AW   ),
+    .ROW_LEN ( ROW_LEN ))
+ u_CB_addr_shift (
+    .clk                     ( clk                          ),
+    .sys_rst                 ( sys_rst                      ),
+    .CB_en                   ( CB_ena           [L-1 : 0]       ),
+    .group_cnt_0             ( group_cnt[0]                  ),
+    .din                     ( CB_addra_new          [CB_AW-1 : 0]   ),
+    .dout                    ( CB_addra         [CB_AW*L-1 : 0] )
+);
+
+CB_vm_AGD #(
+    .CB_AW   ( CB_AW   ),
+    .ROW_LEN ( ROW_LEN ))
+ u_CB_vm_AGD (
+    .clk                     ( clk                           ),
+    .sys_rst                 ( sys_rst                       ),
+    .en                      ( CB_addra_base_gen                            ),
+    .group_cnt               ( group_cnt     [ROW_LEN-1 : 0] ),
+    .CB_base_addr            ( CB_addra_base  [CB_AW-1 : 0]   )
+);
+
     always @(posedge clk) begin
         if(sys_rst) begin
             CB_douta_sel_new <= 1'b0;    
@@ -1297,6 +1327,8 @@ reg [CB_AW-1 : 0] CB_addrb_new;
             CB_enb_new <= 1'b0;
             CB_web_new <= 1'b0;
             CB_addrb_new <= 0;
+
+            CB_addra_base_gen <= 0;
         end
         else begin
             case(stage_cur)
@@ -1328,13 +1360,43 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             CB_dinb_sel_new <= 1'b0;
                             CB_doutb_sel_new <= 1'b0;
 
-                            CB_ena_new <= 1'b0;
                             CB_wea_new <= 1'b0;
-                            CB_addra_new <= 0;
-
-                            CB_enb_new <= 1'b0;
-                            CB_web_new <= 1'b0;
-                            CB_addrb_new <= 0;
+                            case(prd_cnt)
+                                'd0: begin
+                                    CB_ena_new <= 1'b1;
+                                    CB_addra_new <= CB_addra_base;
+                                end   
+                                'd6: begin
+                                    CB_ena_new <= 1'b1;
+                                    CB_addra_new <= CB_addra_base;
+                                end     
+                                'd1: begin
+                                    CB_ena_new <= 1'b1;
+                                    CB_addra_new <= CB_addra_base + 'b1;
+                                end
+                                'd2: begin
+                                    CB_ena_new <= 1'b1;
+                                    CB_addra_new <= CB_addra_base + 'b10;
+                                    CB_addra_base_gen <= 1'b1;
+                                end
+                                'd3: begin
+                                    CB_ena_new <= 1'b0;
+                                    CB_addra_new <= 0;
+                                end
+                                'd4: begin
+                                    CB_ena_new <= 1'b0;
+                                    CB_addra_new <= 0;
+                                    CB_addra_base_gen <= 1'b0;
+                                end
+                                'd5: begin
+                                    CB_ena_new <= 1'b0;
+                                    CB_addra_new <= 0;
+                                end
+                                default: begin
+                                    CB_ena_new <= 1'b0;
+                                    CB_addra_new <= 0;
+                                end
+                            endcase 
                         end
                         default: begin
                             CB_douta_sel_new <= 1'b0;    
