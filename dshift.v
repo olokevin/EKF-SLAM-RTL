@@ -9,19 +9,23 @@ module dshift #(
   parameter DEPTH = 4
 ) (
   input clk,
+  input sys_rst,
   input dir,
   
   input   [DW-1 : 0] din,
   output  reg   [DW*DEPTH-1 : 0]  dout
 );
   always @(posedge clk) begin
-    if(dir == 1'b0) begin
-      dout <= {dout[0 +: (DEPTH-1)*DW], din};
+    if(sys_rst) begin
+      dout <= 0;
     end
-    else if(dir == 1'b1) begin
-      dout <= {din, dout[DW +: (DEPTH-1)*DW]};
+    else begin
+      if(dir == 1'b0) begin
+        dout <= {dout[0 +: (DEPTH-1)*DW], din};
+      end
+      else if(dir == 1'b1) begin
+        dout <= {din, dout[DW +: (DEPTH-1)*DW]};
+      end
     end
-    else
-      dout <= 0;    
   end
 endmodule

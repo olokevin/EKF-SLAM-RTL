@@ -150,6 +150,7 @@ localparam RIGHT_SHIFT = 1'b1;
   A_in_sel_dshift(
       .clk  (clk  ),
       .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (A_in_sel_new  ),
       .dout (A_in_sel )
   );
@@ -162,6 +163,7 @@ localparam RIGHT_SHIFT = 1'b1;
   B_in_sel_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (B_in_sel_new  ),
       .dout (B_in_sel )
   );
@@ -174,6 +176,7 @@ localparam RIGHT_SHIFT = 1'b1;
   M_in_sel_dshift(
       .clk  (clk  ),
       .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (M_in_sel_new  ),
       .dout (M_in_sel )
   );
@@ -186,6 +189,7 @@ localparam RIGHT_SHIFT = 1'b1;
  C_out_sel_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (C_out_sel_new  ),
       .dout (C_out_sel )
   );
@@ -199,6 +203,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_ena_dshift(
       .clk  (clk  ),
       .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_ena_new  ),
       .dout (TB_ena )
   );
@@ -211,6 +216,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_wea_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_wea_new  ),
       .dout (TB_wea )
   );
@@ -223,6 +229,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_douta_sel_dshift(
       .clk  (clk  ),
       .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_douta_sel_new  ),
       .dout (TB_douta_sel )
   );
@@ -235,6 +242,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_addra_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_addra_new  ),
       .dout (TB_addra )
   );
@@ -248,6 +256,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_enb_dshift(
       .clk  (clk  ),
       .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_enb_new  ),
       .dout (TB_enb )
   );
@@ -260,6 +269,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_web_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_web_new  ),
       .dout (TB_web )
   );
@@ -272,6 +282,7 @@ localparam RIGHT_SHIFT = 1'b1;
   TB_dinb_sel_dshift(
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
       .din  (TB_dinb_sel_new  ),
       .dout (TB_dinb_sel )
   );
@@ -283,6 +294,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_doutb_sel_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir   (LEFT_SHIFT   ),
       .din  (TB_doutb_sel_new  ),
       .dout (TB_doutb_sel )
@@ -295,6 +307,7 @@ localparam RIGHT_SHIFT = 1'b1;
   )
   TB_addrb_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir  (LEFT_SHIFT   ),
       .din  (TB_addrb_new  ),
       .dout (TB_addrb )
@@ -319,6 +332,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_ena_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir  (LEFT_SHIFT   ),
       .din  (CB_ena_new  ),
       .dout (CB_ena )
@@ -331,6 +345,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_wea_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir   (LEFT_SHIFT   ),
       .din  (CB_wea_new  ),
       .dout (CB_wea )
@@ -343,6 +358,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_douta_sel_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir  (LEFT_SHIFT   ),
       .din  (CB_douta_sel_new  ),
       .dout (CB_douta_sel )
@@ -371,6 +387,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_enb_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir  (LEFT_SHIFT   ),
       .din  (CB_enb_new  ),
       .dout (CB_enb )
@@ -383,6 +400,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_web_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir   (LEFT_SHIFT   ),
       .din  (CB_web_new  ),
       .dout (CB_web )
@@ -395,6 +413,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_dinb_sel_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir   (LEFT_SHIFT   ),
       .din  (CB_dinb_sel_new  ),
       .dout (CB_dinb_sel )
@@ -407,6 +426,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   )
   CB_doutb_sel_dshift(
       .clk  (clk  ),
+      .sys_rst ( sys_rst),
       .dir   (LEFT_SHIFT   ),
       .din  (CB_doutb_sel_new  ),
       .dout (CB_doutb_sel )

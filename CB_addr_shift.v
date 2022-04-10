@@ -8,21 +8,22 @@
 */
 module CB_addr_shift #(
   parameter L = 4,
-  parameter DW = 16,
-  parameter DEPTH = 4,
+  parameter CB_AW = 19,
   parameter ROW_LEN    = 10
 ) (
   input clk,
   input sys_rst,
-  input [L-1 : 0] en,
+
+  input [L-1 : 0] CB_en,
+  input group_cnt_0,
   
-  input   [DW-1 : 0] din,
-  output  reg   [DW*DEPTH-1 : 0]  dout
+  input   [CB_AW-1 : 0] din,
+  output  reg   [CB_AW*L-1 : 0]  dout
 );
 
-  localparam STATE_CNT_MAX = 5;
-  reg [2:0] state_cnt;
-  reg [ROW_LEN-1 : 0] group_cnt;
+  // localparam STATE_CNT_MAX = 5;
+  // reg [2:0] state_cnt;
+  // reg [ROW_LEN-1 : 0] group_cnt;
 
   // always @(posedge clk) begin
   //     if(sys_rst)
@@ -59,15 +60,15 @@ module CB_addr_shift #(
       if(sys_rst)
           dout <= 0;
       else begin
-        dout[0 +: DW] <= din;
-        case(group_cnt[0])
+        case(group_cnt_0)
           1'b0: begin
-            for(i=1; i<DEPTH; i=i+1)begin
-              dout[i*DW +: DW] <= (en[i-1]) ? (dout[(i-1)*DW +: DW]  + 1'b1) : 0;
+            for(i=1; i<L; i=i+1)begin
+              dout[0 +: CB_AW] <= din;
+              dout[i*CB_AW +: CB_AW] <= (CB_en[i-1]) ? (dout[(i-1)*CB_AW +: CB_AW]  + 1'b1) : 0;
             end
           end
           1'b1: begin
-            dout <= {dout[0 +: (DEPTH-1)*DW], din};
+            dout <= {dout[0 +: (L-1)*CB_AW], din};
           end
         endcase
       end
