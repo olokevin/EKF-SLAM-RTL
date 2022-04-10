@@ -20,57 +20,43 @@ module CB_addr_shift #(
   input   [CB_AW-1 : 0] din,
   output  reg   [CB_AW*L-1 : 0]  dout
 );
-
-  // localparam STATE_CNT_MAX = 5;
-  // reg [2:0] state_cnt;
-  // reg [ROW_LEN-1 : 0] group_cnt;
-
-  // always @(posedge clk) begin
-  //     if(sys_rst)
-  //       state_cnt <= 0;
-  //     else if(en) begin
-  //       if(state_cnt == STATE_CNT_MAX) begin
-  //         state_cnt <= 0;
-  //       end
-  //       else
-  //         state_cnt <= state_cnt + 1'b1;
-  //     end
-  //     else
-  //       state_cnt <= 0;
-  // end
-
-  // always @(posedge clk) begin
-  //     if(sys_rst)
-  //       group_cnt <= 0;
-  //     else if(en) begin
-  //       if(state_cnt == STATE_CNT_MAX) begin
-  //         if(state_cnt == landmark_num)
-  //           group_cnt <= group_cnt + 1'b1;
-  //       end
-  //       else begin
-  //         group_cnt <= group_cnt;
-  //       end
-  //     end
-  //     else
-  //       group_cnt <= 0;  
-  // end
-
+  reg [L:1] group_cnt_0_d;
+  always @(posedge clk) begin
+      if(sys_rst)
+        group_cnt_0_d <= 0;
+      else 
+        group_cnt_0_d <= {group_cnt_0_d[L-1:1], group_cnt_0};  
+  end
+  
   integer i;
   always @(posedge clk) begin
       if(sys_rst)
           dout <= 0;
       else begin
-        case(group_cnt_0)
+        dout[0 +: CB_AW] <= din;
+        for(i=1; i<L; i=i+1) begin
+          case(group_cnt_0_d[i]) 
           1'b0: begin
-            for(i=1; i<L; i=i+1)begin
-              dout[0 +: CB_AW] <= din;
-              dout[i*CB_AW +: CB_AW] <= (CB_en[i-1]) ? (dout[(i-1)*CB_AW +: CB_AW]  + 1'b1) : 0;
-            end
+            dout[i*CB_AW +: CB_AW] <= (CB_en[i-1]) ? (dout[(i-1)*CB_AW +: CB_AW]  + 1'b1) : 0;
           end
           1'b1: begin
-            dout <= {dout[0 +: (L-1)*CB_AW], din};
+            dout[i*CB_AW +: CB_AW] <= dout[0 +: (L-1)*CB_AW];
           end
-        endcase
+          endcase
+        end
+
+
+        // case(group_cnt_0)
+        //   1'b0: begin
+        //     for(i=1; i<L; i=i+1)begin
+        //       dout[0 +: CB_AW] <= din;
+        //       dout[i*CB_AW +: CB_AW] <= (CB_en[i-1]) ? (dout[(i-1)*CB_AW +: CB_AW]  + 1'b1) : 0;
+        //     end
+        //   end
+        //   1'b1: begin
+        //     dout <= {dout[0 +: (L-1)*CB_AW], din};
+        //   end
+        // endcase
       end
   end
 endmodule

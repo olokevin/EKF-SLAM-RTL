@@ -693,3 +693,7 @@ Port A Options Output Registers 是在读数据输出后面接一个寄存器打
   * 其他要用到的地方
     * cov_l：需设计专用模块读出
     * cov：从头读到尾即可
+
+### 220411
+
+* 读各级延迟后的group_cnt_d，判断是否需要递增！
