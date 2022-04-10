@@ -14,6 +14,9 @@ module RSA
     input   clk,
     input   sys_rst,
 
+//landmark numbers
+    input   [ROW_LEN-1 : 0]  landmark_num,
+
 //handshake of stage change
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
@@ -681,6 +684,7 @@ PE_config
 u_PE_config(
     .clk             (clk             ),
     .sys_rst         (sys_rst         ),
+    .landmark_num    (landmark_num    ),
     .stage_val       (stage_val       ),
     .stage_rdy       (stage_rdy       ),
     .nonlinear_m_rdy (nonlinear_m_rdy ),
@@ -714,7 +718,6 @@ u_PE_config(
     .CB_web          (CB_web          ),
     .CB_dina    (CB_dina    ),
     .CB_addra        (CB_addra        ),
-    .CB_dinb         (CB_dinb         ),
     .CB_addrb        (CB_addrb        ),
     .new_cal_en          (n_cal_en[0]     ),
     .new_cal_done        (n_cal_done[0]   )

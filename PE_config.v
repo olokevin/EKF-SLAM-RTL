@@ -13,8 +13,8 @@ module PE_config #(
     input clk,
     input sys_rst,
 
-    //landmark numbers
-    // input   [ROW_LEN-1 : 0]  landmark_num,
+//landmark numbers
+    input   [ROW_LEN-1 : 0]  landmark_num,
     // input   [ROW_LEN-1 : 0]  cov_row_num,
     // input   [ROW_LEN-1 : 0]  group_num,
 //handshake of stage change
@@ -56,20 +56,19 @@ module PE_config #(
     output  [L*TB_AW-1 : 0]          TB_addra,
     output  [L*TB_AW-1 : 0]          TB_addrb,
 
-    output reg [L-1 : 0]                CB_dinb_sel,
-    output reg [L-1 : 0]                CB_douta_sel,
-    output reg [L-1 : 0]                CB_doutb_sel,
+    output [L-1 : 0]                CB_dinb_sel,
+    output [L-1 : 0]                CB_douta_sel,
+    output [L-1 : 0]                CB_doutb_sel,
 
-    output reg [L-1 : 0]                CB_ena,
-    output reg [L-1 : 0]                CB_enb,
+    output [L-1 : 0]                CB_ena,
+    output [L-1 : 0]                CB_enb,
 
-    output reg [L-1 : 0]                CB_wea,
-    output reg [L-1 : 0]                CB_web,
+    output [L-1 : 0]                CB_wea,
+    output [L-1 : 0]                CB_web,
 
     output reg [L*RSA_DW-1 : 0]         CB_dina,
-    output reg [L*CB_AW-1 : 0]          CB_addra,
-    output reg [L*RSA_DW-1 : 0]         CB_dinb,
-    output reg [L*CB_AW-1 : 0]          CB_addrb,
+    output [L*CB_AW-1 : 0]          CB_addra,
+    output [L*CB_AW-1 : 0]          CB_addrb,
 
     output reg new_cal_en,
     output reg new_cal_done
@@ -104,14 +103,18 @@ module PE_config #(
     parameter PRD_2 = 'b0100;
     parameter PRD_3 = 'b1000;
 
-    localparam PRD_1_START = 0;
-    localparam PRD_2_START = 'd18;
-    localparam PRD_3_START = 'd36;
+    // localparam PRD_1_START = 0;
+    // localparam  = 'd18;
+    // localparam PRD_3_START = 'd36;
+
+    localparam PRD_1_END = 'd18;
+    localparam PRD_2_END = 'd18;
     localparam PRD_3_END = 'd80;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
     localparam PRD_3_N = 3;
+    localparam PRD_Y = 3;
 
     localparam NEW_2_ADDR = 1;
     localparam ADDR_2_PEin = 3;
@@ -233,7 +236,7 @@ localparam RIGHT_SHIFT = 1'b1;
       .clk  (clk  ),
       .dir   (LEFT_SHIFT   ),
       .din  (TB_addra_new  ),
-      .dout (TB_addra_base )
+      .dout (TB_addra )
   );
 
 //shift of TB_portB
@@ -297,25 +300,151 @@ localparam RIGHT_SHIFT = 1'b1;
       .dout (TB_addrb )
   );
 
-//CB_AGD
-reg [ROW_LEN-1 : 0]  CB_row;
-reg [ROW_LEN-1 : 0]  CB_col;
+reg               CB_ena_new;
+reg               CB_wea_new;
+reg               CB_douta_sel_new;
+reg [CB_AW-1 : 0] CB_addra_new;
 
-wire [CB_AW-1 : 0] CB_base_addr;
+reg               CB_enb_new;
+reg               CB_web_new;
+reg               CB_dinb_sel_new;
+reg               CB_doutb_sel_new;
+reg [CB_AW-1 : 0] CB_addrb_new;
 
-CB_AGD 
-#(
-    .CB_AW  (CB_AW  ),
-    .MAX_LANDMARK (MAX_LANDMARK ),
-    .ROW_LEN      (ROW_LEN      )
-)
-u_CB_AGD(
-    .clk     (clk     ),
-    .sys_rst (sys_rst ),
-    .CB_row  (CB_row  ),
-    .CB_col  (CB_col  ),
-    .CB_base_addr (CB_base_addr )
-);
+//shift of CB_portA
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_ena_dshift(
+      .clk  (clk  ),
+      .dir  (LEFT_SHIFT   ),
+      .din  (CB_ena_new  ),
+      .dout (CB_ena )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_wea_dshift(
+      .clk  (clk  ),
+      .dir   (LEFT_SHIFT   ),
+      .din  (CB_wea_new  ),
+      .dout (CB_wea )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_douta_sel_dshift(
+      .clk  (clk  ),
+      .dir  (LEFT_SHIFT   ),
+      .din  (CB_douta_sel_new  ),
+      .dout (CB_douta_sel )
+  );
+
+    CB_addr_shift 
+    #(
+        .L             (L             ),
+        .CB_AW         (CB_AW            ),
+        .ROW_LEN       (ROW_LEN       )
+    )
+    CB_addra_shift(
+        .clk          (clk          ),
+        .sys_rst      (sys_rst      ),
+        .en           (CB_ena           ),
+        .din          (CB_addra_new          ),
+        .dout         (CB_addra         )
+    );
+
+
+//shift of CB_portB
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_enb_dshift(
+      .clk  (clk  ),
+      .dir  (LEFT_SHIFT   ),
+      .din  (CB_enb_new  ),
+      .dout (CB_enb )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_web_dshift(
+      .clk  (clk  ),
+      .dir   (LEFT_SHIFT   ),
+      .din  (CB_web_new  ),
+      .dout (CB_web )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_dinb_sel_dshift(
+      .clk  (clk  ),
+      .dir   (LEFT_SHIFT   ),
+      .din  (CB_dinb_sel_new  ),
+      .dout (CB_dinb_sel )
+  );
+
+  dshift 
+  #(
+      .DW    (1 ),
+      .DEPTH (4 )
+  )
+  CB_doutb_sel_dshift(
+      .clk  (clk  ),
+      .dir   (LEFT_SHIFT   ),
+      .din  (CB_doutb_sel_new  ),
+      .dout (CB_doutb_sel )
+  );
+
+  CB_addr_shift 
+    #(
+        .L             (L             ),
+        .CB_AW         (CB_AW            ),
+        .ROW_LEN       (ROW_LEN       )
+    )
+    CB_addrb_shift(
+        .clk          (clk          ),
+        .sys_rst      (sys_rst      ),
+        .en           (CB_enb           ),
+        .din          (CB_addrb_new          ),
+        .dout         (CB_addrb         )
+    );
+
+//(not using)CB_AGD
+    // reg [ROW_LEN-1 : 0]  CB_row;
+    // reg [ROW_LEN-1 : 0]  CB_col;
+
+    // wire [CB_AW-1 : 0] CB_base_addr;
+
+    // CB_AGD 
+    // #(
+    //     .CB_AW  (CB_AW  ),
+    //     .MAX_LANDMARK (MAX_LANDMARK ),
+    //     .ROW_LEN      (ROW_LEN      )
+    // )
+    // u_CB_AGD(
+    //     .clk     (clk     ),
+    //     .sys_rst (sys_rst ),
+    //     .CB_row  (CB_row  ),
+    //     .CB_col  (CB_col  ),
+    //     .CB_base_addr (CB_base_addr )
+    // );
 
 /*
     FSM of STAGE(IDLE PRD NEW UPD)
@@ -369,19 +498,113 @@ u_CB_AGD(
     Prediction(PRD)
 */
     reg [3:0]   prd_cur;
-    reg [TB_AW-1:0]   prd_cnt;
+    reg [ROW_LEN-1:0]   prd_cnt;
+    reg [ROW_LEN-1:0]   group_cnt;
     
 /*
-    FSM of PRD stage
+    (old) FSM of PRD stage, with non-stopping prd_cnt
 */
-    //(1)&(2)sequential: state transfer & state switch
+    // //(1)&(2)sequential: state transfer & state switch
+    // always @(posedge clk) begin
+    //     if(stage_val & stage_rdy == STAGE_PRD) begin
+    //         prd_cur <= PRD_IDLE;
+    //     end
+    //     else  begin
+    //         case(prd_cur)
+    //             PRD_IDLE: begin
+    //                 if(nonlinear_m_rdy & nonlinear_s_val == STAGE_PRD) begin
+    //                     prd_cur <= PRD_NONLINEAR;
+    //                 end
+    //                 else
+    //                     prd_cur <= PRD_IDLE;
+    //             end
+    //             PRD_NONLINEAR: begin
+    //                 if(nonlinear_m_val & nonlinear_s_rdy == STAGE_PRD) begin
+    //                     prd_cur <= PRD_1;
+    //                 end
+    //                 else
+    //                     prd_cur <= PRD_NONLINEAR;
+    //             end
+    //             PRD_1: begin
+    //                 if(prd_cnt ==  - 1) begin
+    //                     prd_cur <= PRD_2;
+    //                 end
+    //                 else
+    //                     prd_cur <= PRD_1;
+    //             end
+    //             PRD_2: begin
+    //                 if(prd_cnt == PRD_3_START - 1) begin
+    //                     prd_cur <= PRD_3;
+    //                 end
+    //                 else
+    //                     prd_cur <= PRD_2;
+    //             end
+    //             PRD_3: begin
+    //                 if(prd_cnt == PRD_3_END) begin
+    //                     prd_cur <= PRD_IDLE;
+    //                 end
+    //                 else
+    //                     prd_cur <= PRD_3;
+    //             end
+    //             default: begin
+    //                 prd_cur <= PRD_IDLE;
+    //             end
+    //         endcase
+    //     end
+    // end
+
+    // //Prediciton cnt
+    // always @(posedge clk) begin
+    //     if(sys_rst) begin
+    //         prd_cnt <= 0;
+    //     end
+    //     else if(stage_val & stage_rdy != IDLE)
+    //         prd_cnt <= 0;
+    //     else begin
+    //         case(stage_cur)  
+    //             STAGE_PRD: begin
+    //                 case(prd_cur)
+    //                     PRD_IDLE: prd_cnt <= 0;
+    //                     PRD_NONLINEAR: prd_cnt <= 0;
+    //                     default: prd_cnt <= prd_cnt + 1'b1;
+    //                 endcase
+    //             end
+    //             STAGE_NEW: begin
+                    
+    //             end
+    //             STAGE_UPD: begin
+                    
+    //             end
+    //             default: prd_cnt <= 0;
+    //         endcase
+    //     end
+    // end
+
+/*
+    (using) FSM of PRD stage, with prd_cnt back to 0 when prd_cur changes
+*/
+//(0) after PRD handshake, calculate the group number
+    reg [ROW_LEN-1 : 0] group_num;
+    always @(posedge clk) begin
+        if(sys_rst)
+            group_num <= 0;
+        case(stage_rdy & stage_val)
+            STAGE_PRD: group_num <= (landmark_num+1) >> 1;
+            STAGE_NEW: group_num <= (landmark_num+1) >> 1;
+            STAGE_UPD: group_num <= (landmark_num+1) >> 1;
+            default: group_num <= group_num;
+        endcase    
+    end
+//(1)&(2)sequential: state transfer & state switch
     always @(posedge clk) begin
         if(stage_val & stage_rdy == STAGE_PRD) begin
             prd_cur <= PRD_IDLE;
+            prd_cnt <= 0;
         end
         else  begin
             case(prd_cur)
                 PRD_IDLE: begin
+                    prd_cnt <= 0;
                     if(nonlinear_m_rdy & nonlinear_s_val == STAGE_PRD) begin
                         prd_cur <= PRD_NONLINEAR;
                     end
@@ -389,6 +612,7 @@ u_CB_AGD(
                         prd_cur <= PRD_IDLE;
                 end
                 PRD_NONLINEAR: begin
+                    prd_cnt <= 0;
                     if(nonlinear_m_val & nonlinear_s_rdy == STAGE_PRD) begin
                         prd_cur <= PRD_1;
                     end
@@ -396,25 +620,35 @@ u_CB_AGD(
                         prd_cur <= PRD_NONLINEAR;
                 end
                 PRD_1: begin
-                    if(prd_cnt == PRD_2_START - 1) begin
+                    if(prd_cnt == PRD_1_END) begin
+                        prd_cnt <= 0;
                         prd_cur <= PRD_2;
                     end
-                    else
+                    else begin
+                        prd_cnt <= prd_cnt + 1'b1;
                         prd_cur <= PRD_1;
+                    end
+                        
                 end
                 PRD_2: begin
-                    if(prd_cnt == PRD_3_START - 1) begin
+                    if(prd_cnt == PRD_2_END) begin
+                        prd_cnt <= 0;
                         prd_cur <= PRD_3;
                     end
-                    else
+                    else begin
+                        prd_cnt <= prd_cnt + 1'b1;
                         prd_cur <= PRD_2;
+                    end
                 end
                 PRD_3: begin
-                    if(prd_cnt == PRD_3_END) begin
+                    if(group_cnt == group_num) begin
+                        prd_cnt <= 0;
                         prd_cur <= PRD_IDLE;
                     end
-                    else
+                    else begin
+                        prd_cnt <= prd_cnt + 1'b1;
                         prd_cur <= PRD_3;
+                    end
                 end
                 default: begin
                     prd_cur <= PRD_IDLE;
@@ -423,31 +657,22 @@ u_CB_AGD(
         end
     end
 
-    //Prediciton cnt
     always @(posedge clk) begin
-        if(sys_rst) begin
-            prd_cnt <= 0;
-        end
-        else if(stage_val & stage_rdy != IDLE)
-            prd_cnt <= 0;
+        if(sys_rst)
+            group_cnt <= 0;
         else begin
-            case(stage_cur)  
-                STAGE_PRD: begin
-                    case(prd_cur)
-                        PRD_IDLE: prd_cnt <= 0;
-                        PRD_NONLINEAR: prd_cnt <= 0;
-                        default: prd_cnt <= prd_cnt + 1'b1;
-                    endcase
+            case(prd_cur)
+                PRD_3: begin
+                    if(prd_cnt == 2*PRD_Y)begin
+                        group_cnt <= group_cnt + 1'b1;
+                    end
+                    else begin
+                        group_cnt <= group_cnt;
+                    end
                 end
-                STAGE_NEW: begin
-                    
-                end
-                STAGE_UPD: begin
-                    
-                end
-                default: prd_cnt <= 0;
+                default: group_cnt <= 0;
             endcase
-        end
+        end   
     end
 
 //(3) output: nonlinear_val, addr, en, we, val,
@@ -606,7 +831,223 @@ u_CB_AGD(
             
     end
 
-//配置TB A B端口 输入数据及数据选择
+//(old, using PRD_1_START) 配置TB A B端口 输入数据及数据选择
+    //     always @(posedge clk) begin
+    //         if(sys_rst) begin
+    //             TB_douta_sel_new <= 1'b0;    
+    //             TB_dinb_sel_new <= 1'b0;
+    //             TB_doutb_sel_new <= 1'b0;
+
+    //             TB_ena_new <= 1'b0;
+    //             TB_wea_new <= 1'b0;
+    //             TB_addra_new <= 0;
+
+    //             TB_enb_new <= 1'b0;
+    //             TB_web_new <= 1'b0;
+    //             TB_addrb_new <= 0;
+    //         end
+    //         else begin
+    //             case(stage_cur)
+    //                 IDLE: begin
+    //                     TB_douta_sel_new <= 1'b0;    
+    //                     TB_dinb_sel_new <= 1'b0;
+    //                     TB_doutb_sel_new <= 1'b0;
+
+    //                     TB_ena_new <= 1'b0;
+    //                     TB_wea_new <= 1'b0;
+    //                     TB_addra_new <= 0;
+
+    //                     TB_enb_new <= 1'b0;
+    //                     TB_web_new <= 1'b0;
+    //                     TB_addrb_new <= 0;
+    //                 end
+    //                 STAGE_PRD: begin
+    //                     case(prd_cur)
+    //                         PRD_1: begin
+    //                         /*
+    //                             F_xi * t_cov = F_cov
+    //                             X=3 Y=3 N=3
+    //                             Ain: TB-A
+    //                             bin: TB-B
+    //                             Cout: TB-A
+    //                         */
+    //                             TB_douta_sel_new <= 1'b0;    
+    //                             TB_dinb_sel_new <= 1'b0;
+    //                             TB_doutb_sel_new <= 1'b0;
+                                
+    //                             if (prd_cnt < PRD_1_START+PRD_1_N) begin
+    //                                 TB_ena_new <= 1'b1;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= F_xi + prd_cnt;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= t_cov + prd_cnt;
+    //                             end
+    //                             else if(prd_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= F_cov;
+    //                             end
+    //                             else if(prd_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= F_cov + 1'b1;
+    //                             end
+    //                             else if(prd_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= F_cov + 2'b10;
+    //                             end
+    //                             else begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b0;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= 0;
+    //                             end
+    //                         end
+    //                         PRD_2: begin
+    //                         /*
+    //                             F_cov * t_cov + M= cov
+    //                             X=3 Y=3 N=3
+    //                             Ain: TB-A
+    //                             Bin: TB-B
+    //                             Min: 0      //actual M input time is in PRD_3
+    //                             Cout: CB-B
+    //                         */
+    //                             TB_dinb_sel_new <= 1'b0;
+    //                             TB_doutb_sel_new <= 1'b0;
+                                
+    //                             if (prd_cnt < +PRD_1_N) begin
+    //                                 TB_ena_new <= 1'b1;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= F_cov -  + prd_cnt;
+                                    
+    //                                 TB_douta_sel_new <= 1'b0;    
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= F_xi -  + prd_cnt;
+    //                             end
+    //                             else if(prd_cnt ==  + PRD_2_N + 1) begin
+    //                                 TB_ena_new <= 1'b1;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= M_t;
+                                    
+    //                                 TB_douta_sel_new <= 1'b1; 
+
+    //                                 TB_enb_new <= 1'b0;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= 0;
+    //                             end
+    //                             else if(prd_cnt ==  + PRD_2_N + 3) begin
+    //                                 TB_ena_new <= 1'b1;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= M_t + 1'b1;
+
+    //                                 TB_enb_new <= 1'b0;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= 0;
+    //                             end
+    //                             else if(prd_cnt ==  + PRD_2_N + 5) begin
+    //                                 TB_ena_new <= 1'b1;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= M_t + 2'b10;
+
+    //                                 TB_enb_new <= 1'b0;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= 0;
+    //                             end
+    //                             else if(prd_cnt ==  + NEW_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= t_cov;
+    //                             end
+    //                             else if(prd_cnt ==  + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= t_cov + 1'b1;
+    //                             end
+    //                             else if(prd_cnt ==  + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b1;
+    //                                 TB_web_new <= 1'b1;
+    //                                 TB_addrb_new <= t_cov + 2'b10;
+    //                             end
+    //                             else begin
+    //                                 TB_ena_new <= 1'b0;
+    //                                 TB_wea_new <= 1'b0;
+    //                                 TB_addra_new <= 0;
+
+    //                                 TB_enb_new <= 1'b0;
+    //                                 TB_web_new <= 1'b0;
+    //                                 TB_addrb_new <= 0;
+    //                             end
+    //                         end
+    //                         PRD_3: begin
+    //                         /*
+    //                             cov_mv * F_xi_T = cov_mv
+    //                             X=3 Y=3 N=3
+    //                             Ain: CB-A
+    //                             Bin: TB-B
+    //                             Min: TB-A   //PRD_2 adder
+    //                             Cout: CB-B
+    //                         */
+    //                         end
+    //                         default: begin
+    //                             TB_douta_sel_new <= 1'b0;    
+    //                             TB_dinb_sel_new <= 1'b0;
+    //                             TB_doutb_sel_new <= 1'b0;
+
+    //                             TB_ena_new <= 1'b0;
+    //                             TB_wea_new <= 1'b0;
+    //                             TB_addra_new <= 0;
+
+    //                             TB_enb_new <= 1'b0;
+    //                             TB_web_new <= 1'b0;
+    //                             TB_addrb_new <= 0;
+    //                         end
+    //                     endcase
+    //                 end
+    //                 STAGE_NEW: begin
+                        
+    //                 end
+    //                 STAGE_UPD: begin
+                        
+    //                 end
+                    
+    //             endcase
+    //         end    
+                
+    //     end
+
+//(using, using PRD_1_END) 配置TB A B端口 输入数据及数据选择
     always @(posedge clk) begin
         if(sys_rst) begin
             TB_douta_sel_new <= 1'b0;    
@@ -650,7 +1091,7 @@ u_CB_AGD(
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                            if (prd_cnt < PRD_1_START+PRD_1_N) begin
+                            if (prd_cnt < PRD_1_N) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_xi + prd_cnt;
@@ -708,18 +1149,18 @@ u_CB_AGD(
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                            if (prd_cnt < PRD_2_START+PRD_1_N) begin
+                            if (prd_cnt < PRD_1_N) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
-                                TB_addra_new <= F_cov - PRD_2_START + prd_cnt;
+                                TB_addra_new <= F_cov + prd_cnt;
                                 
                                 TB_douta_sel_new <= 1'b0;    
 
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
-                                TB_addrb_new <= F_xi - PRD_2_START + prd_cnt;
+                                TB_addrb_new <= F_xi + prd_cnt;
                             end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 1) begin
+                            else if(prd_cnt == PRD_2_N + 1) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
@@ -730,7 +1171,7 @@ u_CB_AGD(
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
                             end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 3) begin
+                            else if(prd_cnt == PRD_2_N + 3) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t + 1'b1;
@@ -739,7 +1180,7 @@ u_CB_AGD(
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
                             end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 5) begin
+                            else if(prd_cnt == PRD_2_N + 5) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t + 2'b10;
@@ -748,7 +1189,7 @@ u_CB_AGD(
                                 TB_web_new <= 1'b0;
                                 TB_addrb_new <= 0;
                             end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
+                            else if(prd_cnt == NEW_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
                                 TB_ena_new <= 1'b0;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
@@ -757,7 +1198,7 @@ u_CB_AGD(
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= t_cov;
                             end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+                            else if(prd_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
                                 TB_ena_new <= 1'b0;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
@@ -766,7 +1207,7 @@ u_CB_AGD(
                                 TB_web_new <= 1'b1;
                                 TB_addrb_new <= t_cov + 1'b1;
                             end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+                            else if(prd_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
                                 TB_ena_new <= 1'b0;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= 0;
@@ -854,153 +1295,6 @@ u_CB_AGD(
                 end
                 STAGE_PRD: begin
                     case(prd_cur)
-                        PRD_1: begin
-                        /*
-                            F_xi * t_cov = F_cov
-                            X=3 Y=3 N=3
-                            Ain: TB-A
-                            bin: TB-B
-                            Cout: TB-A
-                        */
-                            CB_douta_sel_new <= 1'b0;    
-                            CB_dinb_sel_new <= 1'b0;
-                            CB_doutb_sel_new <= 1'b0;
-                            
-                            if (prd_cnt < PRD_1_START + PRD_1_N) begin
-                                CB_ena_new <= 1'b1;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= F_xi + prd_cnt;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= t_cov + prd_cnt;
-                            end
-                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= F_cov;
-                            end
-                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2 + 2) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= F_cov + 1'b1;
-                            end
-                            else if(prd_cnt == NEW_2_PEin + PRD_1_N+2 + 4) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= F_cov + 2'b10;
-                            end
-                            else begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b0;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= 0;
-                            end
-                        end
-                        PRD_2: begin
-                        /*
-                            F_cov * t_cov + M= cov
-                            X=3 Y=3 N=3
-                            Ain: TB-A
-                            Bin: TB-B
-                            Min: 0      //actual M input time is in PRD_3
-                            Cout: CB-B
-                        */
-                            CB_dinb_sel_new <= 1'b0;
-                            CB_doutb_sel_new <= 1'b0;
-                            
-                            if (prd_cnt < PRD_2_START+PRD_1_N) begin
-                                CB_ena_new <= 1'b1;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= F_cov - PRD_2_START + prd_cnt;
-                                
-                                CB_douta_sel_new <= 1'b0;    
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= F_xi - PRD_2_START + prd_cnt;
-                            end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 1) begin
-                                CB_ena_new <= 1'b1;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= M_t;
-                                
-                                CB_douta_sel_new <= 1'b1; 
-
-                                CB_enb_new <= 1'b0;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= 0;
-                            end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 3) begin
-                                CB_ena_new <= 1'b1;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= M_t + 1'b1;
-
-                                CB_enb_new <= 1'b0;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= 0;
-                            end
-                            else if(prd_cnt == PRD_2_START + PRD_2_N + 5) begin
-                                CB_ena_new <= 1'b1;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= M_t + 2'b10;
-
-                                CB_enb_new <= 1'b0;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= 0;
-                            end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_2_N+2) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= t_cov;
-                            end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N+2 + 2) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= t_cov + 1'b1;
-                            end
-                            else if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_1_N+2 + 4) begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b1;
-                                CB_web_new <= 1'b1;
-                                CB_addrb_new <= t_cov + 2'b10;
-                            end
-                            else begin
-                                CB_ena_new <= 1'b0;
-                                CB_wea_new <= 1'b0;
-                                CB_addra_new <= 0;
-
-                                CB_enb_new <= 1'b0;
-                                CB_web_new <= 1'b0;
-                                CB_addrb_new <= 0;
-                            end
-                        end
                         PRD_3: begin
                         /*
                             cov_mv * F_xi_T = cov_mv
@@ -1048,6 +1342,7 @@ u_CB_AGD(
         end           
     end
 
+//new_cal_en & new_cal_done
     always @(posedge clk) begin
         if(sys_rst) begin
             new_cal_en <= 0;
@@ -1062,7 +1357,7 @@ u_CB_AGD(
                         new_cal_en <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt >= PRD_2_START + NEW_2_PEin && prd_cnt < PRD_2_START + NEW_2_PEin + PRD_2_N) begin
+                    if(prd_cnt >=  + NEW_2_PEin && prd_cnt <  + NEW_2_PEin + PRD_2_N) begin
                         new_cal_en <= 1'b1;
                     end
                     else
@@ -1087,7 +1382,7 @@ u_CB_AGD(
                         new_cal_done <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt == PRD_2_START + NEW_2_PEin + PRD_2_N) begin
+                    if(prd_cnt ==  + NEW_2_PEin + PRD_2_N) begin
                         new_cal_done <= 1'b1;
                     end
                     else
@@ -1099,29 +1394,22 @@ u_CB_AGD(
             
     end
 
-//(5) output: 配置A B输入数据及移位使能
-// always @(posedge clk) begin
-//     if(sys_rst)
-//          <= 0;
-//     else if(prd_cnt < 3) begin    //
-        
-//     end
-// end
 
-    /*
-        prd_cur_M & prd_cur_C
-        M：4级延迟
-        均为读取
-        从输入数据到得到dout N+1=4
 
-        C：9级延迟(3 + 5 + 1)
+/*
+    prd_cur_M & prd_cur_C
+    M：4级延迟
+    均为读取
+    从输入数据到得到dout N+1=4
 
-        从输入地址到给写入地址
-        * 输入地址到输入数据 3
-        * 输入数据到输出结果 N+2=5
-        * 输出结果到给写入地址 1
+    C：9级延迟(3 + 5 + 1)
 
-    */
+    从输入地址到给写入地址
+    * 输入地址到输入数据 3
+    * 输入数据到输出结果 N+2=5
+    * 输出结果到给写入地址 1
+
+*/
 
 
 
