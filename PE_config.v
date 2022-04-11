@@ -75,33 +75,33 @@ module PE_config #(
 
 );
 //delay
-    parameter RD_DELAY = 3;
-    parameter WR_DELAY = 2;
-    parameter AGD_DELAY = 5;
+    localparam RD_DELAY = 3;
+    localparam WR_DELAY = 2;
+    localparam AGD_DELAY = 5;
 
 //stage
-    parameter            IDLE       = 3'b000 ;
-    parameter            STAGE_PRD  = 3'b001 ;
-    parameter            STAGE_NEW  = 3'b010 ;
-    parameter            STAGE_UPD  = 3'b100 ;
+    localparam            IDLE       = 3'b000 ;
+    localparam            STAGE_PRD  = 3'b001 ;
+    localparam            STAGE_NEW  = 3'b010 ;
+    localparam            STAGE_UPD  = 3'b100 ;
     // parameter            STAGE_INIT = 3'b111 ;
 
 //stage_rdy
-    parameter BUSY    = 3'b000;
-    parameter READY   = 3'b111;
+    localparam BUSY    = 3'b000;
+    localparam READY   = 3'b111;
 
 // TEMP BANK offsets of PRD
-    parameter F_xi = 0;
-    parameter F_xi_T = 3;
-    parameter t_cov = 6;
-    parameter F_cov = 9;
-    parameter M_t = 12;
+    localparam F_xi = 'd0;
+    localparam F_xi_T = 'd3;
+    localparam t_cov = 'd6;
+    localparam F_cov = 'd9;
+    localparam M_t = 'd12;
 // PREDICTION SERIES
-    parameter PRD_IDLE = 'b0000;
-    parameter PRD_NONLINEAR = 'b0001;
-    parameter PRD_1 = 'b0010;           //prd_cur[1]
-    parameter PRD_2 = 'b0100;
-    parameter PRD_3 = 'b1000;
+    localparam PRD_IDLE = 'b0000;
+    localparam PRD_NONLINEAR = 'b0001;
+    localparam PRD_1 = 'b0010;           //prd_cur[1]
+    localparam PRD_2 = 'b0100;
+    localparam PRD_3 = 'b1000;
 
     // localparam PRD_1_START = 0;
     // localparam  = 'd18;
@@ -111,15 +111,15 @@ module PE_config #(
     localparam PRD_2_END = 'd17;
     localparam PRD_3_END = 'd5;
 
-    localparam PRD_1_N = 3;
-    localparam PRD_2_N = 3;
-    localparam PRD_3_N = 3;
+    localparam PRD_1_N = 'd3;
+    localparam PRD_2_N = 'd3;
+    localparam PRD_3_N = 'd3;
     localparam PRD_3_DELAY = 4'd7;
 
-    localparam NEW_2_ADDR = 1;
-    localparam ADDR_2_PEin = 3;
-    localparam NEW_2_PEin = 4;      //给出addr_new到westin
-    localparam ADDER_2_NEW = 1;     //adder输出到给addr_new
+    localparam NEW_2_ADDR = 'd1;
+    localparam ADDR_2_PEin = 'd3;
+    localparam NEW_2_PEin = 'd4;      //给出addr_new到westin
+    localparam ADDER_2_NEW = 'd1;     //adder输出到给addr_new
 
 //shift def
 reg       A_in_sel_new;
@@ -1270,7 +1270,7 @@ CB_addr_shift #(
  CB_addr_shift_portA (
     .clk                     ( clk                          ),
     .sys_rst                 ( sys_rst                      ),
-    .CB_en                   ( CB_ena           [L-1 : 0]       ),
+    .CB_en                   ( CB_ena           [L-2 : 0]       ),
     .group_cnt_0             ( group_cnt[0]                  ),
     .din                     ( CB_addra_new          [CB_AW-1 : 0]   ),
     .dout                    ( CB_addra         [CB_AW*L-1 : 0] )
@@ -1442,7 +1442,7 @@ CB_vm_AGD #(
         CB_addr_shift_portB (
             .clk                     ( clk                          ),
             .sys_rst                 ( sys_rst                      ),
-            .CB_en                   ( CB_enb           [L-1 : 0]       ),
+            .CB_en                   ( CB_enb           [L-2 : 0]       ),
             .group_cnt_0             ( group_cnt_CB_B[0]                  ),
             .din                     ( CB_addrb_new          [CB_AW-1 : 0]   ),
             .dout                    ( CB_addrb         [CB_AW*L-1 : 0] )
@@ -1630,6 +1630,19 @@ CB_vm_AGD #(
             
     end
 
+//CB_dina, TB_dina
+always @(posedge clk) begin
+    if(sys_rst)
+        TB_dina <= 0;
+    else 
+        TB_dina <= 0;
+end
+always @(posedge clk) begin
+    if(sys_rst)
+        CB_dina <= 0;
+    else 
+        CB_dina <= 0;
+end
 
 
 /*

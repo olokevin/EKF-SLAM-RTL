@@ -103,7 +103,7 @@ CB_addr_shift #(
  CB_addra_shift (
     .clk                     ( clk                          ),
     .sys_rst                 ( sys_rst                      ),
-    .CB_en                   ( CB_ena           [L-1 : 0]       ),
+    .CB_en                   ( CB_ena           [L-2 : 0]       ),
     .group_cnt_0             ( group_cnt[0]                  ),
     .din                     ( CB_addra_new          [CB_AW-1 : 0]   ),
 

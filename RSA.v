@@ -11,11 +11,12 @@ module RSA
     parameter ROW_LEN = 10
 ) 
 (
-    input   clk,
+    input   sys_clk_p,
+    input   sys_clk_n,
     input   sys_rst,
 
 //landmark numbers
-    input   [ROW_LEN-1 : 0]  landmark_num,
+    // input   [ROW_LEN-1 : 0]  landmark_num,
 
 //handshake of stage change
     input   [2:0]   stage_val,
@@ -28,6 +29,24 @@ module RSA
     //nonlinear cplt(3 stages are conbined)
     output   [2:0]   nonlinear_m_val,
     input    [2:0]   nonlinear_s_rdy
+);
+
+reg   [ROW_LEN-1 : 0]  landmark_num = 'd5;
+
+/*
+    差分时钟信号转单端
+*/
+wire clk;
+
+IBUFDS #( 
+    .DIFF_TERM("FALSE"), // Differential Termination 
+    .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
+    .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
+) 
+IBUFDS_inst ( 
+    .O(clk), // Buffer output 
+    .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
+    .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
 );
 
 //PE互连信号线
@@ -706,7 +725,7 @@ u_PE_config(
     .TB_enb          (TB_enb          ),
     .TB_wea          (TB_wea          ),
     .TB_web          (TB_web          ),
-    .TB_dina    (TB_dina    ),
+    .TB_dina         (TB_dina    ),
     .TB_addra        (TB_addra        ),
     .TB_addrb        (TB_addrb        ),
     .CB_dinb_sel     (CB_dinb_sel     ),
@@ -716,7 +735,7 @@ u_PE_config(
     .CB_enb          (CB_enb          ),
     .CB_wea          (CB_wea          ),
     .CB_web          (CB_web          ),
-    .CB_dina    (CB_dina    ),
+    .CB_dina         (CB_dina    ),
     .CB_addra        (CB_addra        ),
     .CB_addrb        (CB_addrb        ),
     .new_cal_en          (n_cal_en[0]     ),
