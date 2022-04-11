@@ -10,15 +10,15 @@ module dynamic_shreg #(
   output  [DW-1 : 0] dout
 );
    localparam DEPTH = 2**AW;
-   reg  [DW-1 : 0] shreg_i  [DEPTH-1 : 0];
+   reg  [DW-1 : 0] shreg_i  [DEPTH : 1];
 
    assign dout = shreg_i[addr];
 
     integer i;
    always @(posedge clk) begin
        if(ce) begin
-          shreg_i[0] <= din;
-          for(i=0; i<=DEPTH-2; i=i+1) begin
+          shreg_i[1] <= din;
+          for(i=1; i<=DEPTH-1; i=i+1) begin
             shreg_i[i+1] <= shreg_i[i];
           end
        end     

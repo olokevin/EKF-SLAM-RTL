@@ -109,7 +109,7 @@ module PE_config #(
 
     localparam PRD_1_END = 'd18;
     localparam PRD_2_END = 'd18;
-    localparam PRD_3_END = 'd6;
+    localparam PRD_3_END = 'd5;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
@@ -638,7 +638,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                         prd_cur <= PRD_IDLE;
                     end
                     else if(prd_cnt == PRD_3_END) begin
-                        prd_cnt <= 1;
+                        prd_cnt <= 0;
                         prd_cur <= PRD_3;
                     end
                     else begin
@@ -659,7 +659,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
         else begin
             case(prd_cur)
                 PRD_3: begin
-                    if(prd_cnt == 2*PRD_Y)begin
+                    if(prd_cnt == PRD_3_END)begin
                         group_cnt <= group_cnt + 1'b1;
                     end
                     else begin
@@ -705,18 +705,6 @@ reg [CB_AW-1 : 0] CB_addrb_new;
             B_in_sel_new <= 2'b00;
             M_in_sel_new <= 2'b00;
             C_out_sel_new <= 2'b00;
-
-            TB_douta_sel_new <= 1'b0;    
-            TB_dinb_sel_new <= 1'b0;
-            TB_doutb_sel_new <= 1'b0;
-
-            TB_ena_new <= 1'b0;
-            TB_wea_new <= 1'b0;
-            TB_addra_new <= 0;
-
-            TB_enb_new <= 1'b0;
-            TB_web_new <= 1'b0;
-            TB_addrb_new <= 0;
         end
         else begin
             case(stage_cur)
@@ -730,18 +718,6 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                     B_in_sel_new <= 2'b00;
                     M_in_sel_new <= 2'b00;
                     C_out_sel_new <= 2'b00;
-
-                    TB_douta_sel_new <= 1'b0;    
-                    TB_dinb_sel_new <= 1'b0;
-                    TB_doutb_sel_new <= 1'b0;
-
-                    TB_ena_new <= 1'b0;
-                    TB_wea_new <= 1'b0;
-                    TB_addra_new <= 0;
-
-                    TB_enb_new <= 1'b0;
-                    TB_web_new <= 1'b0;
-                    TB_addrb_new <= 0;
                 end
                 STAGE_PRD: begin
                     case(prd_cur)
@@ -1231,6 +1207,23 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             Min: TB-A   //PRD_2 adder
                             Cout: CB-B
                         */
+                            TB_dinb_sel_new <= 1'b0;
+                            TB_doutb_sel_new <= 1'b0;
+                            
+                            TB_douta_sel_new <= 1'b0;   
+                            TB_ena_new <= 1'b0;
+                            TB_wea_new <= 1'b0;
+                            TB_addra_new <= 0;
+                            if (prd_cnt < PRD_1_N) begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= F_xi + prd_cnt;
+                            end
+                            else begin
+                                TB_enb_new <= 1'b0;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= 0;
+                            end
                         end
                         default: begin
                             TB_douta_sel_new <= 1'b0;    
@@ -1323,11 +1316,7 @@ CB_vm_AGD #(
                                 'd0: begin
                                     CB_ena_new <= 1'b1;
                                     CB_addra_new <= CB_addra_base;
-                                end   
-                                'd6: begin
-                                    CB_ena_new <= 1'b1;
-                                    CB_addra_new <= CB_addra_base;
-                                end     
+                                end       
                                 'd1: begin
                                     CB_ena_new <= 1'b1;
                                     CB_addra_new <= CB_addra_base + 'b1;
@@ -1381,83 +1370,86 @@ CB_vm_AGD #(
     wire [3:0]           prd_cur_CB_B;
     wire [ROW_LEN-1 : 0] prd_cnt_CB_B;
     wire [ROW_LEN-1 : 0] group_cnt_CB_B;
-    dynamic_shreg 
-    #(
-        .DW    (3    ),
-        .AW    (4    )
-    )
-    stage_cur_shreg(
-    	.clk  (clk  ),
-        .ce   (1   ),
-        .addr (7 ),
-        .din  (stage_cur  ),
-        .dout (stage_cur_CB_B )
-    );
-    
-    dynamic_shreg 
-    #(
-        .DW    (4    ),
-        .AW    (4    )
-    )
-    prd_cur_shreg(
-    	.clk  (clk  ),
-        .ce   (1   ),
-        .addr (7 ),
-        .din  (prd_cur  ),
-        .dout (prd_cur_CB_B )
-    );
-    
-    dynamic_shreg 
-    #(
-        .DW    (ROW_LEN    ),
-        .AW    (4    )
-    )
-    prd_cnt_shreg(
-    	.clk  (clk  ),
-        .ce   (1   ),
-        .addr (7 ),
-        .din  (prd_cnt  ),
-        .dout (prd_cnt_CB_B )
-    );
 
-    dynamic_shreg 
-    #(
-        .DW    (ROW_LEN    ),
-        .AW    (4    )
-    )
-    group_cnt_shreg(
-    	.clk  (clk  ),
-        .ce   (1   ),
-        .addr (7 ),
-        .din  (group_cnt  ),
-        .dout (grou_cnt_CB_B )
-    );
+    //stage_cur, prd_cur, prd_cnt, group_cnt的七级延迟（7=N+2+2）
+        dynamic_shreg 
+        #(
+            .DW    (3    ),
+            .AW    (4    )
+        )
+        stage_cur_shreg(
+            .clk  (clk  ),
+            .ce   (1   ),
+            .addr (PRD_3_N+2+WR_DELAY ),
+            .din  (stage_cur  ),
+            .dout (stage_cur_CB_B )
+        );
+        
+        dynamic_shreg 
+        #(
+            .DW    (4    ),
+            .AW    (4    )
+        )
+        prd_cur_shreg(
+            .clk  (clk  ),
+            .ce   (1   ),
+            .addr (PRD_3_N+2+WR_DELAY ),
+            .din  (prd_cur  ),
+            .dout (prd_cur_CB_B )
+        );
+        
+        dynamic_shreg 
+        #(
+            .DW    (ROW_LEN    ),
+            .AW    (4    )
+        )
+        prd_cnt_shreg(
+            .clk  (clk  ),
+            .ce   (1   ),
+            .addr (PRD_3_N+2+WR_DELAY ),
+            .din  (prd_cnt  ),
+            .dout (prd_cnt_CB_B )
+        );
+
+        dynamic_shreg 
+        #(
+            .DW    (ROW_LEN    ),
+            .AW    (4    )
+        )
+        group_cnt_shreg(
+            .clk  (clk  ),
+            .ce   (1   ),
+            .addr (PRD_3_N+2+WR_DELAY ),
+            .din  (group_cnt  ),
+            .dout (group_cnt_CB_B )
+        );
 
     reg [CB_AW-1 : 0] CB_addrb_base;
     reg CB_addrb_base_gen;
-    CB_addr_shift #(
-        .L       ( L       ),
-        .CB_AW   ( CB_AW   ),
-        .ROW_LEN ( ROW_LEN ))
-    CB_addr_shift_portB (
-        .clk                     ( clk                          ),
-        .sys_rst                 ( sys_rst                      ),
-        .CB_en                   ( CB_enb           [L-1 : 0]       ),
-        .group_cnt_0             ( group_cnt_CB_B[0]                  ),
-        .din                     ( CB_addrb_new          [CB_AW-1 : 0]   ),
-        .dout                    ( CB_addrb         [CB_AW*L-1 : 0] )
-    );
+    //地址生成及移位
+        CB_addr_shift #(
+            .L       ( L       ),
+            .CB_AW   ( CB_AW   ),
+            .ROW_LEN ( ROW_LEN ))
+        CB_addr_shift_portB (
+            .clk                     ( clk                          ),
+            .sys_rst                 ( sys_rst                      ),
+            .CB_en                   ( CB_enb           [L-1 : 0]       ),
+            .group_cnt_0             ( group_cnt_CB_B[0]                  ),
+            .din                     ( CB_addrb_new          [CB_AW-1 : 0]   ),
+            .dout                    ( CB_addrb         [CB_AW*L-1 : 0] )
+        );
 
-    CB_vm_AGD #(
-        .CB_AW   ( CB_AW   ),
-        .ROW_LEN ( ROW_LEN ))
-    CB_vm_AGD_portB (
-        .clk                     ( clk                           ),
-        .sys_rst                 ( sys_rst                       ),
-        .en                      ( CB_addrb_base_gen                            ),
-        .group_cnt               ( group_cnt_CB_B     [ROW_LEN-1 : 0] ),
-        .CB_base_addr            ( CB_addrb_base  [CB_AW-1 : 0]   )
-    );
+        CB_vm_AGD #(
+            .CB_AW   ( CB_AW   ),
+            .ROW_LEN ( ROW_LEN ))
+        CB_vm_AGD_portB (
+            .clk                     ( clk                           ),
+            .sys_rst                 ( sys_rst                       ),
+            .en                      ( CB_addrb_base_gen                            ),
+            .group_cnt               ( group_cnt_CB_B     [ROW_LEN-1 : 0] ),
+            .CB_base_addr            ( CB_addrb_base  [CB_AW-1 : 0]   )
+        );
     
 
     always @(posedge clk) begin
@@ -1495,16 +1487,12 @@ CB_vm_AGD #(
                             CB_dinb_sel_new <= 1'b0;
                             CB_doutb_sel_new <= 1'b0;
 
-                            CB_web_new <= 1'b0;
+                            CB_web_new <= 1'b1;
                             case(prd_cnt_CB_B)
                                 'd0: begin
                                     CB_enb_new <= 1'b1;
                                     CB_addrb_new <= CB_addrb_base;
-                                end   
-                                'd6: begin
-                                    CB_enb_new <= 1'b1;
-                                    CB_addrb_new <= CB_addrb_base;
-                                end     
+                                end    
                                 'd1: begin
                                     CB_enb_new <= 1'b0;
                                     CB_addrb_new <= 0;

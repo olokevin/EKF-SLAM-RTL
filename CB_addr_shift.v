@@ -27,11 +27,11 @@ module CB_addr_shift #(
       else 
         group_cnt_0_d <= {group_cnt_0_d[L-1:1], group_cnt_0};  
   end
-  
+
   integer i;
   always @(posedge clk) begin
       if(sys_rst)
-          dout <= 0;
+        dout <= 0;
       else begin
         dout[0 +: CB_AW] <= din;
         for(i=1; i<L; i=i+1) begin
@@ -40,7 +40,7 @@ module CB_addr_shift #(
             dout[i*CB_AW +: CB_AW] <= (CB_en[i-1]) ? (dout[(i-1)*CB_AW +: CB_AW]  + 1'b1) : 0;
           end
           1'b1: begin
-            dout[i*CB_AW +: CB_AW] <= dout[0 +: (L-1)*CB_AW];
+            dout[i*CB_AW +: CB_AW] <= dout[(i-1)*CB_AW +: CB_AW];
           end
           endcase
         end

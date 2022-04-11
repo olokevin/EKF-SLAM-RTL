@@ -38,35 +38,69 @@ begin
     #(PERIOD*2) sys_rst  =  0;
 end
 
-integer i;
-initial
-begin
-    #(PERIOD*RST_START);
-    for(i=0; i<32; i=i+1) begin
-        @(negedge clk) 
-          group_cnt = i;
-          $display("time=%t, CB_base_addr%d: %d", $time, i, CB_base_addr) ;
-          CB_ena_new = 1;
-          CB_addra_new = CB_base_addr;
-        @(negedge clk)
-          CB_addra_new = CB_base_addr + 1;
-        @(negedge clk) 
-          en = 1;
-          CB_addra_new = CB_base_addr + 2;
-        @(negedge clk)
-          CB_ena_new = 0;
-          CB_addra_new = 0;
-        @(negedge clk) en = 0;
-        @(negedge clk) ;
-    end
-    
-end
+//CB PORT-A
+  // integer i;
+  // initial
+  // begin
+  //     #(PERIOD*RST_START);
+  //     for(i=0; i<32; i=i+1) begin
+  //         @(negedge clk) 
+  //           group_cnt = i;
+  //           $display("time=%t, CB_base_addr%d: %d", $time, i, CB_base_addr) ;
+  //           CB_ena_new = 1;
+  //           CB_addra_new = CB_base_addr;
+  //         @(negedge clk)
+  //           CB_addra_new = CB_base_addr + 1;
+  //         @(negedge clk) 
+  //           en = 1;
+  //           CB_addra_new = CB_base_addr + 2;
+  //         @(negedge clk)
+  //           CB_ena_new = 0;
+  //           CB_addra_new = 0;
+  //         @(negedge clk) en = 0;
+  //         @(negedge clk) ;
+  //     end
+      
+  // end
+
+//CB PORT-B
+  integer j;
+  initial
+  begin
+      #(PERIOD*RST_START);
+      for(j=0; j<32; j=j+1) begin
+          @(negedge clk) 
+            group_cnt = j;
+            $display("time=%t, CB_base_addr%d: %d", $time, j, CB_base_addr) ;
+            CB_ena_new = 1;
+            CB_addra_new = CB_base_addr;
+          @(negedge clk)
+            CB_ena_new = 0;
+            CB_addra_new = 0;
+          @(negedge clk) 
+            en = 1;
+            CB_ena_new = 1;
+            CB_addra_new = CB_base_addr + 1;
+          @(negedge clk)
+            CB_ena_new = 0;
+            CB_addra_new = 0;
+          @(negedge clk) 
+            en = 0;
+            CB_ena_new = 1;
+            CB_addra_new = CB_base_addr + 2;
+          @(negedge clk) 
+            CB_ena_new = 0;
+            CB_addra_new = 0;
+            // group_cnt = j+1;
+            // $display("time=%t, CB_base_addr%d: %d", $time, j, CB_base_addr) ;
+      end
+  end
 
 CB_addr_shift #(
     .L       ( L       ),
     .CB_AW   ( CB_AW   ),
     .ROW_LEN ( ROW_LEN ))
- u_CB_addr_shift (
+ CB_addra_shift (
     .clk                     ( clk                          ),
     .sys_rst                 ( sys_rst                      ),
     .CB_en                   ( CB_ena           [L-1 : 0]       ),
