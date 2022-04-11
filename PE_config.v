@@ -107,14 +107,14 @@ module PE_config #(
     // localparam  = 'd18;
     // localparam PRD_3_START = 'd36;
 
-    localparam PRD_1_END = 'd18;
-    localparam PRD_2_END = 'd18;
+    localparam PRD_1_END = 'd17;
+    localparam PRD_2_END = 'd17;
     localparam PRD_3_END = 'd5;
 
     localparam PRD_1_N = 3;
     localparam PRD_2_N = 3;
     localparam PRD_3_N = 3;
-    localparam PRD_Y = 3;
+    localparam PRD_3_DELAY = 4'd7;
 
     localparam NEW_2_ADDR = 1;
     localparam ADDR_2_PEin = 3;
@@ -439,13 +439,23 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     // );
 
 /*
-    FSM of STAGE(IDLE PRD NEW UPD)
+    variables of FSM of STAGE(IDLE PRD NEW UPD)
 */
 
-    //stage variables
-    reg [2:0]            stage_cur ;
+    reg [2:0]            stage_cur ;   
     reg                  stage_change_err;  
 
+/*
+    variables of Prediction(PRD)
+*/
+    reg [3:0]   prd_cur;
+    reg [ROW_LEN-1:0]   prd_cnt;
+    reg [ROW_LEN-1:0]   group_cnt;
+    reg [ROW_LEN-1 : 0] group_num;
+
+/*
+    FSM of STAGE(IDLE PRD NEW UPD)
+*/
     //(1)&(2) state switch
     always @(posedge clk) begin
         if(sys_rst) begin
@@ -465,12 +475,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                         end    
                     endcase
                 end
-                // STAGE_PRD: begin
-                //     case(stage_val & stage_rdy)
-                //     IDLE:       stage_next = IDLE; 
-                //     endcase
-                // end
-                default: stage_cur <= stage_cur;
+                default: begin
+                    if(group_cnt == group_num)
+                        stage_cur <= IDLE;
+                    else
+                        stage_cur <= stage_cur;
+                end
             endcase
         end
     end
@@ -485,13 +495,6 @@ reg [CB_AW-1 : 0] CB_addrb_new;
         else
             stage_rdy <= READY;
     end
-
-/*
-    Prediction(PRD)
-*/
-    reg [3:0]   prd_cur;
-    reg [ROW_LEN-1:0]   prd_cnt;
-    reg [ROW_LEN-1:0]   group_cnt;
     
 /*
     (old) FSM of PRD stage, with non-stopping prd_cnt
@@ -576,7 +579,6 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     (using) FSM of PRD stage, with prd_cnt back to 0 when prd_cur changes
 */
 //(0) after PRD handshake, calculate the group number
-    reg [ROW_LEN-1 : 0] group_num;
     always @(posedge clk) begin
         if(sys_rst)
             group_num <= 0;
@@ -654,19 +656,25 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     end
 
     always @(posedge clk) begin
-        if(sys_rst)
+        if(sys_rst) begin
             group_cnt <= 0;
+        end
         else begin
             case(prd_cur)
                 PRD_3: begin
-                    if(prd_cnt == PRD_3_END)begin
+                    if(group_cnt == group_num) begin
+                        group_cnt <= 0;
+                    end
+                    else if(prd_cnt == PRD_3_END) begin
                         group_cnt <= group_cnt + 1'b1;
                     end
                     else begin
                         group_cnt <= group_cnt;
                     end
                 end
-                default: group_cnt <= 0;
+                default: begin
+                    group_cnt <= 0;
+                end
             endcase
         end   
     end
@@ -693,7 +701,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     end 
 
 
-//(4) output: 配置A B输入模式
+//(4) output: 配置A B M C输入模式
     always @(posedge clk) begin
         if(sys_rst) begin
             A_in_en <= 4'b0000;  
@@ -1121,7 +1129,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                            if (prd_cnt < PRD_1_N) begin
+                            if (prd_cnt < PRD_2_N) begin
                                 TB_ena_new <= 1'b1;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov + prd_cnt;
@@ -1253,7 +1261,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     end
 
 //配置 CB-portA 输入数据及数据选择
-reg [CB_AW-1 : 0] CB_addra_base;
+wire [CB_AW-1 : 0] CB_addra_base;
 reg CB_addra_base_gen;
 CB_addr_shift #(
     .L       ( L       ),
@@ -1379,8 +1387,8 @@ CB_vm_AGD #(
         )
         stage_cur_shreg(
             .clk  (clk  ),
-            .ce   (1   ),
-            .addr (PRD_3_N+2+WR_DELAY ),
+            .ce   (1'b1   ),
+            .addr (PRD_3_DELAY ),
             .din  (stage_cur  ),
             .dout (stage_cur_CB_B )
         );
@@ -1392,8 +1400,8 @@ CB_vm_AGD #(
         )
         prd_cur_shreg(
             .clk  (clk  ),
-            .ce   (1   ),
-            .addr (PRD_3_N+2+WR_DELAY ),
+            .ce   (1'b1  ),
+            .addr (PRD_3_DELAY ),
             .din  (prd_cur  ),
             .dout (prd_cur_CB_B )
         );
@@ -1405,8 +1413,8 @@ CB_vm_AGD #(
         )
         prd_cnt_shreg(
             .clk  (clk  ),
-            .ce   (1   ),
-            .addr (PRD_3_N+2+WR_DELAY ),
+            .ce   (1'b1  ),
+            .addr (PRD_3_DELAY ),
             .din  (prd_cnt  ),
             .dout (prd_cnt_CB_B )
         );
@@ -1418,13 +1426,13 @@ CB_vm_AGD #(
         )
         group_cnt_shreg(
             .clk  (clk  ),
-            .ce   (1   ),
-            .addr (PRD_3_N+2+WR_DELAY ),
+            .ce   (1'b1  ),
+            .addr (PRD_3_DELAY ),
             .din  (group_cnt  ),
             .dout (group_cnt_CB_B )
         );
 
-    reg [CB_AW-1 : 0] CB_addrb_base;
+    wire [CB_AW-1 : 0] CB_addrb_base;
     reg CB_addrb_base_gen;
     //地址生成及移位
         CB_addr_shift #(
@@ -1474,7 +1482,7 @@ CB_vm_AGD #(
                     CB_addrb_new <= 0;
                 end
                 STAGE_PRD: begin
-                    case(prd_cnt_CB_B)
+                    case(prd_cur_CB_B)
                         PRD_3: begin
                         /*
                             cov_mv * F_xi_T = cov_mv
@@ -1488,6 +1496,7 @@ CB_vm_AGD #(
                             CB_doutb_sel_new <= 1'b0;
 
                             CB_web_new <= 1'b1;
+
                             case(prd_cnt_CB_B)
                                 'd0: begin
                                     CB_enb_new <= 1'b1;
@@ -1542,6 +1551,20 @@ CB_vm_AGD #(
         end           
     end
 //new_cal_en & new_cal_done
+    wire [ROW_LEN-1 : 0] prd_cnt_cal_en;
+    dynamic_shreg 
+        #(
+            .DW    (ROW_LEN    ),
+            .AW    (2    )
+        )
+        prd_cnt_cal_en_shreg(
+            .clk  (clk  ),
+            .ce   (1'b1  ),
+            .addr (2'b11 ),
+            .din  (prd_cnt  ),
+            .dout (prd_cnt_cal_en )
+        );
+
     always @(posedge clk) begin
         if(sys_rst) begin
             new_cal_en <= 0;
@@ -1556,7 +1579,14 @@ CB_vm_AGD #(
                         new_cal_en <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt >=  + NEW_2_PEin && prd_cnt <  + NEW_2_PEin + PRD_2_N) begin
+                    if(prd_cnt >= NEW_2_PEin && prd_cnt < NEW_2_PEin + PRD_2_N) begin
+                        new_cal_en <= 1'b1;
+                    end
+                    else
+                        new_cal_en <= 1'b0;
+                end
+                PRD_3: begin
+                    if(prd_cnt_cal_en >= 1 && prd_cnt_cal_en <= PRD_2_N) begin
                         new_cal_en <= 1'b1;
                     end
                     else
@@ -1581,7 +1611,14 @@ CB_vm_AGD #(
                         new_cal_done <= 1'b0;
                 end
                 PRD_2: begin
-                    if(prd_cnt ==  + NEW_2_PEin + PRD_2_N) begin
+                    if(prd_cnt == NEW_2_PEin + PRD_2_N) begin
+                        new_cal_done <= 1'b1;
+                    end
+                    else
+                        new_cal_done <= 1'b0;
+                end
+                PRD_3: begin
+                    if(prd_cnt_cal_en == PRD_2_N + 1'B1) begin
                         new_cal_done <= 1'b1;
                     end
                     else
