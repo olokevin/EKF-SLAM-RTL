@@ -11,7 +11,8 @@ module RSA
     parameter ROW_LEN = 10
 ) 
 (
-    input   clk,
+    input   sys_clk_p,
+    input   sys_clk_n,
     input   sys_rst,
 
 //landmark numbers
@@ -28,6 +29,22 @@ module RSA
     //nonlinear cplt(3 stages are conbined)
     output   [2:0]   nonlinear_m_val,
     input    [2:0]   nonlinear_s_rdy
+);
+
+/*
+    差分时钟信号转单端
+*/
+wire clk;
+
+IBUFDS #( 
+    .DIFF_TERM("FALSE"), // Differential Termination 
+    .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
+    .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
+) 
+IBUFDS_inst ( 
+    .O(clk), // Buffer output 
+    .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
+    .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
 );
 
 //PE互连信号线
