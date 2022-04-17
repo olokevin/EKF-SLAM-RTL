@@ -30,7 +30,7 @@ module PE_config #(
     input    [2:0]       nonlinear_s_rdy,
 
 //sel en we addr are wire connected to the regs of dshift out. actually they are reg output
-    output  [2*-1 : 0]                  A_in_sel,
+    output  [2*X-1 : 0]                 A_in_sel,
     output reg [X-1 : 0]                A_in_en,     
 
     output  [2*Y-1 : 0]                 B_in_sel,   
@@ -1042,7 +1042,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
 //(using, using PRD_1_END) 配置TB A B端口 输入数据及数据选择
     always @(posedge clk) begin
         if(sys_rst) begin
-            TB_douta_sel_new <= 1'b0;    
+            TB_douta_sel_new <= 2'b00;    
             TB_dinb_sel_new <= 1'b0;
             TB_doutb_sel_new <= 1'b0;
 
@@ -1057,7 +1057,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
         else begin
             case(stage_cur)
                 IDLE: begin
-                    TB_douta_sel_new <= 1'b0;    
+                    TB_douta_sel_new <= 2'b00;     
                     TB_dinb_sel_new <= 1'b0;
                     TB_doutb_sel_new <= 1'b0;
 
@@ -1079,7 +1079,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             bin: TB-B
                             Cout: TB-A
                         */
-                            TB_douta_sel_new <= 1'b0;    
+                            TB_douta_sel_new <= 2'b00;     
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
@@ -1146,7 +1146,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov + prd_cnt;
                                 
-                                TB_douta_sel_new <= 1'b0;    
+                                TB_douta_sel_new <= 2'b00;     
 
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
@@ -1157,7 +1157,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
                                 
-                                TB_douta_sel_new <= 1'b1; 
+                                TB_douta_sel_new <= 2'b10; 
 
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
@@ -1230,7 +1230,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                            TB_douta_sel_new <= 1'b0;   
+                            TB_douta_sel_new <= 2'b00;   
                             TB_ena_new <= 1'b0;
                             TB_wea_new <= 1'b0;
                             TB_addra_new <= 0;
@@ -1301,7 +1301,7 @@ CB_vm_AGD #(
 
     always @(posedge clk) begin
         if(sys_rst) begin
-            CB_douta_sel_new <= 1'b0;    
+            CB_douta_sel_new <= 3'b000;       
 
             CB_ena_new <= 1'b0;
             CB_wea_new <= 1'b0;
@@ -1312,7 +1312,7 @@ CB_vm_AGD #(
         else begin
             case(stage_cur)
                 IDLE: begin
-                    CB_douta_sel_new <= 1'b0;    
+                    CB_douta_sel_new <= 3'b000;    
 
                     CB_ena_new <= 1'b0;
                     CB_wea_new <= 1'b0;
@@ -1329,7 +1329,7 @@ CB_vm_AGD #(
                             Min: TB-A   //PRD_2 adder
                             Cout: CB-B
                         */
-                            CB_douta_sel_new <= 1'b0;    
+                            CB_douta_sel_new <= 3'b000;       
 
                             CB_wea_new <= 1'b0;
                             case(prd_cnt)
@@ -1366,7 +1366,7 @@ CB_vm_AGD #(
                             endcase 
                         end
                         default: begin
-                            CB_douta_sel_new <= 1'b0;    
+                            CB_douta_sel_new <= 3'b000;     
 
                             CB_ena_new <= 1'b0;
                             CB_wea_new <= 1'b0;

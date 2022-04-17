@@ -1,3 +1,5 @@
+// `define USE_DIFF_CLK
+
 module RSA 
 #(
     parameter X = 4,
@@ -11,8 +13,13 @@ module RSA
     parameter ROW_LEN = 10
 ) 
 (
+`ifdef USE_DIFF_CLK
     input   sys_clk_p,
     input   sys_clk_n,
+`else 
+    input   clk,
+`endif
+
     input   sys_rst,
 
 //landmark numbers
@@ -34,18 +41,21 @@ module RSA
 /*
     差分时钟信号转单端
 */
-wire clk;
+`ifdef USE_DIFF_CLK
+    wire clk;
 
-IBUFDS #( 
-    .DIFF_TERM("FALSE"), // Differential Termination 
-    .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
-    .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
-) 
-IBUFDS_inst ( 
-    .O(clk), // Buffer output 
-    .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
-    .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
-);
+    IBUFDS #( 
+        .DIFF_TERM("FALSE"), // Differential Termination 
+        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
+        .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
+    ) 
+    IBUFDS_inst ( 
+        .O(clk), // Buffer output 
+        .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
+        .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
+    );
+`endif
+
 
 //PE互连信号线
 wire    [(X-1)*Y:0]           n_cal_en;         //由于输出可能接到模块，故将输出的坐标与PE坐标绑定，输入与来源的PE坐标绑定
@@ -256,7 +266,7 @@ wire [X*RSA_DW-1 : 0]         A_TB_douta_0;
 wire [X*RSA_DW-1 : 0]         A_TB_douta_1;
 wire [X*RSA_DW-1 : 0]         A_CB_douta_0;
 wire [X*RSA_DW-1 : 0]         A_CB_douta_1;
-wire [X-1 : 0]                  A_in_sel;
+wire [2*X-1 : 0]                A_in_sel;
 wire [X-1 : 0]                  A_in_en;     
 
 
@@ -300,7 +310,7 @@ generate
             .clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (A_in_en[i_X]      ),
-            .sel     (A_in_sel[i_X]     ),
+            .sel     (A_in_sel[2*i_X +: 2]     ),
             .din_00  (A_TB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
             .din_01  (A_TB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
             .din_10  (A_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
@@ -347,7 +357,7 @@ generate
         MC_adder(
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
-            .mode    (M_adder_mode[i_X]     ),
+            .mode    (M_adder_mode[2*i_X +: 2]     ),
             .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
             .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
             .sum     (C_adder_out[RSA_DW*i_X +: RSA_DW]     )
@@ -436,7 +446,7 @@ wire [L*RSA_DW-1 : 0] CB_doutb;
 generate
     genvar i_BANK;
     for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
-        regdeMUX_sel1 
+        regdeMUX_sel2 
         #(
             .RSA_DW (RSA_DW )
         )
@@ -444,7 +454,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1      ),
-            .sel     (TB_douta_sel[i_BANK]     ),
+            .sel     (TB_douta_sel[2*i_BANK +: 2]     ),
             .din     (TB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_00  (A_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
             .dout_01  (A_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
@@ -488,7 +498,7 @@ generate
         	.clk     (clk     ),
             .sys_rst (sys_rst ),
             .en      (1       ),
-            .sel     (CB_douta_sel[i_BANK]     ),
+            .sel     (CB_douta_sel[3*i_BANK +: 3]     ),
             .din     (CB_douta[i_BANK*RSA_DW +: RSA_DW]     ),
             .dout_000  (A_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
             .dout_001  (A_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
