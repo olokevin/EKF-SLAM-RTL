@@ -590,11 +590,12 @@ row[2]=1: 地址译码器得到A[3] / C[3]的地址
   * 4
 * 输入数据到dout（M应有效的时间）
   * N+1
-
 * dout到加法器输出结果 PEin_2_PEout
   * 1
 * 加法器输出结果到RAM DIN：PEout_2_WRdin
   * 2
+* Min到Cout RAM-IN：3
+* addr_new到RAM DIN: 1 
 * 写入地址与RAM DIN同时刻
 * 给出行号到得到基址: ROW_2_BASE
   * 5
@@ -706,3 +707,13 @@ Port A Options Output Registers 是在读数据输出后面接一个寄存器打
 
 * 读各级延迟后的group_cnt_d，判断是否需要递增！
 * 先检查代码逻辑！
+
+### 220416
+
+* IBUFDS
+* NEW: cov_vm从B输入，需要调换顺序，以保证输出的顺序正确
+* CB 输出地址移位
+  * group_cnt_0 == 1’b0：为右移（让BANK3先输出），需写相应的偏移量控制
+  * group_cnt_0 == 1’b1: 保持不变
+* CB-portA 需切换左移/右移
+* CB_douta_sel A_in_sel 更改
