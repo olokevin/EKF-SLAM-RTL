@@ -30,20 +30,21 @@ module PE_config #(
     input    [2:0]       nonlinear_s_rdy,
 
 //sel en we addr are wire connected to the regs of dshift out. actually they are reg output
-    output  [X-1 : 0]                A_in_sel,
+    output  [2*X-1 : 0]                 A_in_sel,
     output reg [X-1 : 0]                A_in_en,     
 
-    output  [2*Y-1 : 0]            B_in_sel,   
+    output  [2*Y-1 : 0]                 B_in_sel,   
     output reg [Y-1 : 0]                B_in_en,  
 
-    output  [2*X-1 : 0]            M_in_sel,  
+    output  [2*X-1 : 0]                 M_in_sel,  
     output reg [X-1 : 0]                M_in_en,  
+    output [2*X-1 : 0]                  M_adder_mode,  
 
-    output  [2*X-1 : 0]            C_out_sel, 
-    output reg [X-1 : 0]                C_out_en,
+    output  [2*X-1 : 0]              C_out_sel, 
+    output reg [X-1 : 0]             C_out_en,
 
     output  [L-1 : 0]                TB_dinb_sel,
-    output  [L-1 : 0]                TB_douta_sel,
+    output  [2*L-1 : 0]              TB_douta_sel,
     output  [L-1 : 0]                TB_doutb_sel,
 
     output  [L-1 : 0]                TB_ena,
@@ -52,13 +53,12 @@ module PE_config #(
     output  [L-1 : 0]                TB_wea,
     output  [L-1 : 0]                TB_web,
 
-    output reg [L*RSA_DW-1 : 0]         TB_dina,
+    output reg [L*RSA_DW-1 : 0]      TB_dina,
     output  [L*TB_AW-1 : 0]          TB_addra,
     output  [L*TB_AW-1 : 0]          TB_addrb,
 
     output [L-1 : 0]                CB_dinb_sel,
-    output [L-1 : 0]                CB_douta_sel,
-    output [L-1 : 0]                CB_doutb_sel,
+    output [3*L-1 : 0]              CB_douta_sel,
 
     output [L-1 : 0]                CB_ena,
     output [L-1 : 0]                CB_enb,
@@ -122,20 +122,21 @@ module PE_config #(
     localparam ADDER_2_NEW = 'd1;     //adder输出到给addr_new
 
 //shift def
-reg       A_in_sel_new;
+reg [1:0] A_in_sel_new;
 reg [1:0] B_in_sel_new;
 reg [1:0] M_in_sel_new;
+reg [1:0] M_adder_mode_new;
 reg [1:0] C_out_sel_new;
 
+reg [1:0]         TB_douta_sel_new;
 reg               TB_ena_new;
 reg               TB_wea_new;
-reg               TB_douta_sel_new;
 reg [TB_AW-1 : 0] TB_addra_new;
 
-reg               TB_enb_new;
-reg               TB_web_new;
 reg               TB_dinb_sel_new;
 reg               TB_doutb_sel_new;
+reg               TB_enb_new;
+reg               TB_web_new;
 reg [TB_AW-1 : 0] TB_addrb_new;
 
 localparam LEFT_SHIFT = 1'b0;
@@ -144,7 +145,7 @@ localparam RIGHT_SHIFT = 1'b1;
 //shift of PE_sel
   dshift 
   #(
-      .DW    (1 ),
+      .DW    (2 ),
       .DEPTH (4 )
   )
   A_in_sel_dshift(
@@ -179,6 +180,19 @@ localparam RIGHT_SHIFT = 1'b1;
       .sys_rst ( sys_rst),
       .din  (M_in_sel_new  ),
       .dout (M_in_sel )
+  );
+
+  dshift 
+  #(
+      .DW    (2 ),
+      .DEPTH (4 )
+  )
+  M_adder_mode_dshift(
+      .clk  (clk  ),
+      .dir  (LEFT_SHIFT   ),
+      .sys_rst ( sys_rst),
+      .din  (M_adder_mode_new  ),
+      .dout (M_adder_mode )
   );
 
   dshift 
@@ -223,7 +237,7 @@ localparam RIGHT_SHIFT = 1'b1;
 
   dshift 
   #(
-      .DW    (1 ),
+      .DW    (2 ),
       .DEPTH (4 )
   )
   TB_douta_sel_dshift(
@@ -315,13 +329,12 @@ localparam RIGHT_SHIFT = 1'b1;
 
 reg               CB_ena_new;
 reg               CB_wea_new;
-reg               CB_douta_sel_new;
+reg [2:0]         CB_douta_sel_new;
 reg [CB_AW-1 : 0] CB_addra_new;
 
 reg               CB_enb_new;
 reg               CB_web_new;
 reg               CB_dinb_sel_new;
-reg               CB_doutb_sel_new;
 reg [CB_AW-1 : 0] CB_addrb_new;
 
 //shift of CB_portA
@@ -353,7 +366,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
 
   dshift 
   #(
-      .DW    (1 ),
+      .DW    (3 ),
       .DEPTH (4 )
   )
   CB_douta_sel_dshift(
@@ -403,19 +416,6 @@ reg [CB_AW-1 : 0] CB_addrb_new;
       .dir   (LEFT_SHIFT   ),
       .din  (CB_dinb_sel_new  ),
       .dout (CB_dinb_sel )
-  );
-
-  dshift 
-  #(
-      .DW    (1 ),
-      .DEPTH (4 )
-  )
-  CB_doutb_sel_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir   (LEFT_SHIFT   ),
-      .din  (CB_doutb_sel_new  ),
-      .dout (CB_doutb_sel )
   );
 
 //(not using)CB_AGD
@@ -709,10 +709,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
             M_in_en <= 4'b0000;
             C_out_en <= 4'b0000;
             
-            A_in_sel_new <= 1'b0;   
+            A_in_sel_new <= 2'b00;   
             B_in_sel_new <= 2'b00;
             M_in_sel_new <= 2'b00;
             C_out_sel_new <= 2'b00;
+
+            M_adder_mode_new <= 2'b00;
         end
         else begin
             case(stage_cur)
@@ -722,10 +724,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                     M_in_en <= 4'b0000;
                     C_out_en <= 4'b0000;
                     
-                    A_in_sel_new <= 1'b0;   
+                    A_in_sel_new <= 2'b00;  
                     B_in_sel_new <= 2'b00;
                     M_in_sel_new <= 2'b00;
                     C_out_sel_new <= 2'b00;
+
+                    M_adder_mode_new <= 2'b00;
                 end
                 STAGE_PRD: begin
                     case(prd_cur)
@@ -742,10 +746,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             M_in_en <= 4'b0000;
                             C_out_en <= 4'b0111;
                             
-                            A_in_sel_new <= 1'b0;   
+                            A_in_sel_new <= 2'b00;   
                             B_in_sel_new <= 2'b00;
                             M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b00;
+
+                            M_adder_mode_new <= 2'b00;
                         
                         end
                         PRD_2: begin
@@ -762,10 +768,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             M_in_en <= 4'b0111;
                             C_out_en <= 4'b0111;
                             
-                            A_in_sel_new <= 1'b0;   
+                            A_in_sel_new <= 2'b00;  
                             B_in_sel_new <= 2'b00;
-                            M_in_sel_new <= 2'b01;
+                            M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b00;
+
+                            M_adder_mode_new <= 2'b01;
                         end
                         PRD_3: begin
                         /*
@@ -781,10 +789,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             M_in_en <= 4'b0000;
                             C_out_en <= 4'b1111;
                             
-                            A_in_sel_new <= 1'b1;   
+                            A_in_sel_new <= 2'b10; 
                             B_in_sel_new <= 2'b00;
                             M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b10;
+
+                            M_adder_mode_new <= 2'b00;
                         end
                         default: begin
                             A_in_en <= 4'b0000;  
@@ -792,10 +802,12 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             M_in_en <= 4'b0000;
                             C_out_en <= 4'b0000;
                             
-                            A_in_sel_new <= 1'b0;   
+                            A_in_sel_new <= 2'b00;   
                             B_in_sel_new <= 2'b00;
                             M_in_sel_new <= 2'b00;
                             C_out_sel_new <= 2'b00;
+
+                            M_adder_mode_new <= 2'b00;
                         end
                     endcase
                 end
@@ -1030,7 +1042,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
 //(using, using PRD_1_END) 配置TB A B端口 输入数据及数据选择
     always @(posedge clk) begin
         if(sys_rst) begin
-            TB_douta_sel_new <= 1'b0;    
+            TB_douta_sel_new <= 2'b00;    
             TB_dinb_sel_new <= 1'b0;
             TB_doutb_sel_new <= 1'b0;
 
@@ -1045,7 +1057,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
         else begin
             case(stage_cur)
                 IDLE: begin
-                    TB_douta_sel_new <= 1'b0;    
+                    TB_douta_sel_new <= 2'b00;     
                     TB_dinb_sel_new <= 1'b0;
                     TB_doutb_sel_new <= 1'b0;
 
@@ -1067,7 +1079,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             bin: TB-B
                             Cout: TB-A
                         */
-                            TB_douta_sel_new <= 1'b0;    
+                            TB_douta_sel_new <= 2'b00;     
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
@@ -1134,7 +1146,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= F_cov + prd_cnt;
                                 
-                                TB_douta_sel_new <= 1'b0;    
+                                TB_douta_sel_new <= 2'b00;     
 
                                 TB_enb_new <= 1'b1;
                                 TB_web_new <= 1'b0;
@@ -1145,7 +1157,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                                 TB_wea_new <= 1'b0;
                                 TB_addra_new <= M_t;
                                 
-                                TB_douta_sel_new <= 1'b1; 
+                                TB_douta_sel_new <= 2'b10; 
 
                                 TB_enb_new <= 1'b0;
                                 TB_web_new <= 1'b0;
@@ -1218,7 +1230,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
                             TB_dinb_sel_new <= 1'b0;
                             TB_doutb_sel_new <= 1'b0;
                             
-                            TB_douta_sel_new <= 1'b0;   
+                            TB_douta_sel_new <= 2'b00;   
                             TB_ena_new <= 1'b0;
                             TB_wea_new <= 1'b0;
                             TB_addra_new <= 0;
@@ -1289,7 +1301,7 @@ CB_vm_AGD #(
 
     always @(posedge clk) begin
         if(sys_rst) begin
-            CB_douta_sel_new <= 1'b0;    
+            CB_douta_sel_new <= 3'b000;       
 
             CB_ena_new <= 1'b0;
             CB_wea_new <= 1'b0;
@@ -1300,7 +1312,7 @@ CB_vm_AGD #(
         else begin
             case(stage_cur)
                 IDLE: begin
-                    CB_douta_sel_new <= 1'b0;    
+                    CB_douta_sel_new <= 3'b000;    
 
                     CB_ena_new <= 1'b0;
                     CB_wea_new <= 1'b0;
@@ -1317,7 +1329,7 @@ CB_vm_AGD #(
                             Min: TB-A   //PRD_2 adder
                             Cout: CB-B
                         */
-                            CB_douta_sel_new <= 1'b0;    
+                            CB_douta_sel_new <= 3'b000;       
 
                             CB_wea_new <= 1'b0;
                             case(prd_cnt)
@@ -1354,7 +1366,7 @@ CB_vm_AGD #(
                             endcase 
                         end
                         default: begin
-                            CB_douta_sel_new <= 1'b0;    
+                            CB_douta_sel_new <= 3'b000;     
 
                             CB_ena_new <= 1'b0;
                             CB_wea_new <= 1'b0;
@@ -1463,7 +1475,6 @@ CB_vm_AGD #(
     always @(posedge clk) begin
         if(sys_rst) begin   
             CB_dinb_sel_new <= 1'b0;
-            CB_doutb_sel_new <= 1'b0;
 
             CB_enb_new <= 1'b0;
             CB_web_new <= 1'b0;
@@ -1475,7 +1486,6 @@ CB_vm_AGD #(
             case(stage_cur_CB_B)
                 IDLE: begin   
                     CB_dinb_sel_new <= 1'b0;
-                    CB_doutb_sel_new <= 1'b0;
 
                     CB_enb_new <= 1'b0;
                     CB_web_new <= 1'b0;
@@ -1493,7 +1503,6 @@ CB_vm_AGD #(
                             Cout: CB-B
                         */  
                             CB_dinb_sel_new <= 1'b0;
-                            CB_doutb_sel_new <= 1'b0;
 
                             CB_web_new <= 1'b1;
 
@@ -1532,7 +1541,6 @@ CB_vm_AGD #(
                         end
                         default: begin
                             CB_dinb_sel_new <= 1'b0;
-                            CB_doutb_sel_new <= 1'b0;
 
                             CB_enb_new <= 1'b0;
                             CB_web_new <= 1'b0;
