@@ -8,7 +8,7 @@
 */
 module CB_addr_shift #(
   parameter L = 4,
-  parameter CB_AW = 19,
+  parameter CB_AW = 17,
   parameter ROW_LEN    = 10
 ) (
   input clk,
