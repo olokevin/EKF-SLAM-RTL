@@ -7,8 +7,8 @@ module RSA
     parameter L = 4,
 
     parameter RSA_DW = 16,
-    parameter TB_AW = 12,
-    parameter CB_AW = 19,
+    parameter TB_AW = 11,
+    parameter CB_AW = 17,
     parameter MAX_LANDMARK = 500,
     parameter ROW_LEN = 10
 ) 

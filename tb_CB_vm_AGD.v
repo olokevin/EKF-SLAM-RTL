@@ -6,7 +6,7 @@ parameter RST_START = 20;
 
 // CB_vm_AGD Parameters
 parameter PERIOD   = 10;
-parameter CB_AW    = 19;
+parameter CB_AW    = 17;
 parameter ROW_LEN  = 10;
 
 // CB_vm_AGD Inputs

@@ -1,6 +1,6 @@
 module CB_AGD 
 #(
-    parameter CB_AW = 19,
+    parameter CB_AW = 17,
 
     parameter MAX_LANDMARK = 500,       //500 landmarks, 1003rows of data, 1003/8 = 126 groups
     parameter ROW_LEN      = 10

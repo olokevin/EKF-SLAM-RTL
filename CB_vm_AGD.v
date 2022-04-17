@@ -1,5 +1,5 @@
 module CB_vm_AGD #(
-  parameter CB_AW        = 19,
+  parameter CB_AW        = 17,
   parameter ROW_LEN      = 10
 ) (
     input clk,
