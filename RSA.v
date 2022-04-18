@@ -45,6 +45,7 @@ module RSA
     output  [L*RSA_DW-1 : 0]         TB_douta,
 
     output  [L-1 : 0]                TB_enb,
+    output  [L-1 : 0]                TB_web,
     output  [L*TB_AW-1 : 0]          TB_addrb,
     output  [L*RSA_DW-1 : 0]         TB_dinb,
     output  [L*RSA_DW-1 : 0]         TB_doutb,
@@ -57,6 +58,7 @@ module RSA
     output  [L*RSA_DW-1 : 0]         CB_douta,
 
     output  [L-1 : 0]                CB_enb,
+    output  [L-1 : 0]                CB_web,
     output  [L*CB_AW-1 : 0]          CB_addrb,
     output  [L*RSA_DW-1 : 0]         CB_dinb,
     output  [L*RSA_DW-1 : 0]         CB_doutb
