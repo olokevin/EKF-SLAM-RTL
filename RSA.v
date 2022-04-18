@@ -42,27 +42,72 @@ module RSA
     output  [L-1 : 0]                TB_wea,
     output  [L*TB_AW-1 : 0]          TB_addra,
     output  [L*RSA_DW-1 : 0]         TB_dina,
-    output  [L*RSA_DW-1 : 0]         TB_douta,
+    input  [L*RSA_DW-1 : 0]         TB_douta,
 
     output  [L-1 : 0]                TB_enb,
     output  [L-1 : 0]                TB_web,
     output  [L*TB_AW-1 : 0]          TB_addrb,
     output  [L*RSA_DW-1 : 0]         TB_dinb,
-    output  [L*RSA_DW-1 : 0]         TB_doutb,
+    input  [L*RSA_DW-1 : 0]         TB_doutb,
 
 //COV BANK ports
     output  [L-1 : 0]                CB_ena,
     output  [L-1 : 0]                CB_wea,
     output  [L*CB_AW-1 : 0]          CB_addra,
     output  [L*RSA_DW-1 : 0]         CB_dina,
-    output  [L*RSA_DW-1 : 0]         CB_douta,
+    input  [L*RSA_DW-1 : 0]         CB_douta,
 
     output  [L-1 : 0]                CB_enb,
     output  [L-1 : 0]                CB_web,
     output  [L*CB_AW-1 : 0]          CB_addrb,
     output  [L*RSA_DW-1 : 0]         CB_dinb,
-    output  [L*RSA_DW-1 : 0]         CB_doutb
+    input  [L*RSA_DW-1 : 0]         CB_doutb
 );
+
+// RSA 
+// #(
+//     .X            (X            ),
+//     .Y            (Y            ),
+//     .L            (L            ),
+//     .RSA_DW       (RSA_DW       ),
+//     .TB_AW        (TB_AW        ),
+//     .CB_AW        (CB_AW        ),
+//     .MAX_LANDMARK (MAX_LANDMARK ),
+//     .ROW_LEN      (ROW_LEN      )
+// )
+// u_RSA(
+//     .sys_clk_p       (sys_clk_p       ),
+//     .sys_clk_n       (sys_clk_n       ),
+//     .clk             (clk             ),
+//     .sys_rst         (sys_rst         ),
+//     .landmark_num    (landmark_num    ),
+//     .stage_val       (stage_val       ),
+//     .stage_rdy       (stage_rdy       ),
+//     .nonlinear_m_rdy (nonlinear_m_rdy ),
+//     .nonlinear_s_val (nonlinear_s_val ),
+//     .nonlinear_m_val (nonlinear_m_val ),
+//     .nonlinear_s_rdy (nonlinear_s_rdy ),
+//     .TB_ena          (TB_ena          ),
+//     .TB_wea          (TB_wea          ),
+//     .TB_addra        (TB_addra        ),
+//     .TB_dina         (TB_dina         ),
+//     .TB_douta        (TB_douta        ),
+//     .TB_enb          (TB_enb          ),
+//     .TB_web          (TB_web          ),
+//     .TB_addrb        (TB_addrb        ),
+//     .TB_dinb         (TB_dinb         ),
+//     .TB_doutb        (TB_doutb        ),
+//     .CB_ena          (CB_ena          ),
+//     .CB_wea          (CB_wea          ),
+//     .CB_addra        (CB_addra        ),
+//     .CB_dina         (CB_dina         ),
+//     .CB_douta        (CB_douta        ),
+//     .CB_enb          (CB_enb          ),
+//     .CB_web          (CB_web          ),
+//     .CB_addrb        (CB_addrb        ),
+//     .CB_dinb         (CB_dinb         ),
+//     .CB_doutb        (CB_doutb        )
+// );
 
 /*
     差分时钟信号转单端
@@ -311,7 +356,7 @@ wire [X*RSA_DW-1 : 0]         M_CB_douta_0;
 wire [X*RSA_DW-1 : 0]         M_CB_douta_1;
 wire [2*X-1 : 0]              M_in_sel;  
 wire [X-1 : 0]                  M_in_en;  
-wire [X-1 : 0]                  M_adder_mode; 
+wire [2*X-1 : 0]                  M_adder_mode; 
 
 //C out
 wire [X*RSA_DW-1 : 0]         C_TB_dinb_0;
