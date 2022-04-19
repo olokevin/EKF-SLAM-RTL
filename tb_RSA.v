@@ -75,7 +75,7 @@ RSA #(
  u_RSA (
     .clk                     ( clk                    ),
     .sys_rst                 ( sys_rst                ),
-    .landmark_num            (landmark_num            ),
+    // .landmark_num            (landmark_num            ),
     .stage_val               ( stage_val        [2:0] ),
     .nonlinear_s_val         ( nonlinear_s_val  [2:0] ),
     .nonlinear_s_rdy         ( nonlinear_s_rdy  [2:0] ),

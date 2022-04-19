@@ -13,17 +13,18 @@ module RSA
     parameter ROW_LEN = 10
 ) 
 (
-`ifdef USE_DIFF_CLK
-    input   sys_clk_p,
-    input   sys_clk_n,
-`else 
+// `ifdef USE_DIFF_CLK
+//     input   sys_clk_p,
+//     input   sys_clk_n,
+// `else 
+//     input   clk,
+// `endif
     input   clk,
-`endif
 
     input   sys_rst,
 
-//landmark numbers
-    input   [ROW_LEN-1 : 0]  landmark_num,
+// //landmark numbers
+//     input   [ROW_LEN-1 : 0]  landmark_num,
 
 //handshake of stage change
     input   [2:0]   stage_val,
@@ -64,68 +65,24 @@ module RSA
     input  [L*RSA_DW-1 : 0]         CB_doutb
 );
 
-// RSA 
-// #(
-//     .X            (X            ),
-//     .Y            (Y            ),
-//     .L            (L            ),
-//     .RSA_DW       (RSA_DW       ),
-//     .TB_AW        (TB_AW        ),
-//     .CB_AW        (CB_AW        ),
-//     .MAX_LANDMARK (MAX_LANDMARK ),
-//     .ROW_LEN      (ROW_LEN      )
-// )
-// u_RSA(
-//     .sys_clk_p       (sys_clk_p       ),
-//     .sys_clk_n       (sys_clk_n       ),
-//     .clk             (clk             ),
-//     .sys_rst         (sys_rst         ),
-//     .landmark_num    (landmark_num    ),
-//     .stage_val       (stage_val       ),
-//     .stage_rdy       (stage_rdy       ),
-//     .nonlinear_m_rdy (nonlinear_m_rdy ),
-//     .nonlinear_s_val (nonlinear_s_val ),
-//     .nonlinear_m_val (nonlinear_m_val ),
-//     .nonlinear_s_rdy (nonlinear_s_rdy ),
-//     .TB_ena          (TB_ena          ),
-//     .TB_wea          (TB_wea          ),
-//     .TB_addra        (TB_addra        ),
-//     .TB_dina         (TB_dina         ),
-//     .TB_douta        (TB_douta        ),
-//     .TB_enb          (TB_enb          ),
-//     .TB_web          (TB_web          ),
-//     .TB_addrb        (TB_addrb        ),
-//     .TB_dinb         (TB_dinb         ),
-//     .TB_doutb        (TB_doutb        ),
-//     .CB_ena          (CB_ena          ),
-//     .CB_wea          (CB_wea          ),
-//     .CB_addra        (CB_addra        ),
-//     .CB_dina         (CB_dina         ),
-//     .CB_douta        (CB_douta        ),
-//     .CB_enb          (CB_enb          ),
-//     .CB_web          (CB_web          ),
-//     .CB_addrb        (CB_addrb        ),
-//     .CB_dinb         (CB_dinb         ),
-//     .CB_doutb        (CB_doutb        )
-// );
 
 /*
     差分时钟信号转单端
 */
-`ifdef USE_DIFF_CLK
-    wire clk;
+// `ifdef USE_DIFF_CLK
+//     wire clk;
 
-    IBUFDS #( 
-        .DIFF_TERM("FALSE"), // Differential Termination 
-        .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
-        .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
-    ) 
-    IBUFDS_inst ( 
-        .O(clk), // Buffer output 
-        .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
-        .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
-    );
-`endif
+//     IBUFDS #( 
+//         .DIFF_TERM("FALSE"), // Differential Termination 
+//         .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
+//         .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
+//     ) 
+//     IBUFDS_inst ( 
+//         .O(clk), // Buffer output 
+//         .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
+//         .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
+//     );
+// `endif
 
 
 //PE互连信号线
@@ -733,7 +690,7 @@ PE_config
 u_PE_config(
     .clk             (clk             ),
     .sys_rst         (sys_rst         ),
-    .landmark_num    (landmark_num    ),
+    // .landmark_num    (landmark_num    ),
     .stage_val       (stage_val       ),
     .stage_rdy       (stage_rdy       ),
     .nonlinear_m_rdy (nonlinear_m_rdy ),

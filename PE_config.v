@@ -14,7 +14,7 @@ module PE_config #(
     input sys_rst,
 
 //landmark numbers
-    input   [ROW_LEN-1 : 0]  landmark_num,
+    // input   [ROW_LEN-1 : 0]  landmark_num,
     // input   [ROW_LEN-1 : 0]  cov_row_num,
     // input   [ROW_LEN-1 : 0]  group_num,
 //handshake of stage change
@@ -452,6 +452,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
     reg [ROW_LEN-1:0]   prd_cnt;
     reg [ROW_LEN-1:0]   group_cnt;
     reg [ROW_LEN-1 : 0] group_num;
+    reg [ROW_LEN-1 : 0]  landmark_num;
 
 /*
     FSM of STAGE(IDLE PRD NEW UPD)
@@ -581,13 +582,26 @@ reg [CB_AW-1 : 0] CB_addrb_new;
 //(0) after PRD handshake, calculate the group number
     always @(posedge clk) begin
         if(sys_rst)
+            landmark_num <= 0;
+        else begin
+            case(stage_rdy & stage_val)
+                STAGE_NEW: group_num <= group_num + 1'b1;
+                default: group_num <= group_num;
+            endcase 
+        end
+    end
+    
+    always @(posedge clk) begin
+        if(sys_rst)
             group_num <= 0;
-        case(stage_rdy & stage_val)
-            STAGE_PRD: group_num <= (landmark_num+1) >> 1;
-            STAGE_NEW: group_num <= (landmark_num+1) >> 1;
-            STAGE_UPD: group_num <= (landmark_num+1) >> 1;
-            default: group_num <= group_num;
-        endcase    
+        else begin
+            case(stage_rdy & stage_val)
+                STAGE_PRD: group_num <= (landmark_num+1) >> 1;
+                STAGE_NEW: group_num <= (landmark_num+1) >> 1;
+                STAGE_UPD: group_num <= (landmark_num+1) >> 1;
+                default: group_num <= group_num;
+            endcase    
+        end
     end
 //(1)&(2)sequential: state transfer & state switch
     always @(posedge clk) begin

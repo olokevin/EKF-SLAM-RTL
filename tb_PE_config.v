@@ -39,7 +39,7 @@ parameter AGD_DELAY      = 3     ;
 // PE_config Inputs
 reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
-reg   [ROW_LEN-1 : 0] landmark_num         = 5 ;
+// reg   [ROW_LEN-1 : 0] landmark_num         = 5 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg  [2:0]  nonlinear_s_val                 ;
 reg  [2:0]  nonlinear_s_rdy                 ;
@@ -129,7 +129,7 @@ PE_config #(
  u_PE_config (
     .clk                     ( clk                                  ),
     .sys_rst                 ( sys_rst                              ),
-    .landmark_num    (landmark_num    ),
+    // .landmark_num    (landmark_num    ),
     .stage_val               ( stage_val      [2:0]                 ),
     .nonlinear_s_val           ( nonlinear_s_val  [2:0]                 ),
     .nonlinear_s_rdy           ( nonlinear_s_rdy  [2:0]                 ),
