@@ -69,11 +69,11 @@ module PE_MAC
     assign h_data_E = (PE_mode[0] == W_2_E)  ? h_data_r : {RSA_DW{1'bz}};
 
     //输入模式为W_2_E时，结果mulres从east传向west
-    assign mulres_val   = (PE_mode[0] == W_2_E)  ? mulres_val_W : mulres_val_E;
+    assign mulres_val   = (PE_mode[0] == W_2_E)  ? mulres_val_E : mulres_val_W;
     assign mulres_val_W = (PE_mode[0] == W_2_E)  ? mulres_val_r : 1'bz;
     assign mulres_val_E = (PE_mode[0] == E_2_W)  ? mulres_val_r : 1'bz;
     
-    assign mulres   = (PE_mode[0] == W_2_E)  ? mulres_W : mulres_E;
+    assign mulres   = (PE_mode[0] == W_2_E)  ? mulres_E : mulres_W;
     assign mulres_W = (PE_mode[0] == W_2_E)  ? mulres_r : {RSA_DW{1'bz}};
     assign mulres_E = (PE_mode[0] == E_2_W)  ? mulres_r : {RSA_DW{1'bz}};
 
