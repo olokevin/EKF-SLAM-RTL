@@ -28,6 +28,11 @@ wire  [2:0]  stage_rdy                     ;
 wire  [2:0]  nonlinear_m_rdy               ;
 wire  [2:0]  nonlinear_m_val               ;
 
+//stage
+  localparam      IDLE     = 3'b000 ;
+  localparam      STAGE_PRD  = 3'b001 ;
+  localparam      STAGE_NEW  = 3'b010 ;
+  localparam      STAGE_UPD  = 3'b100 ;
 
 initial
 begin
@@ -42,7 +47,9 @@ end
 
 initial begin
     #(PERIOD*RST_START)
-    stage_val = 1;
+    // stage_val = STAGE_NEW;
+    // #(PERIOD * 2)
+    stage_val = STAGE_PRD;
     #(PERIOD * 2)
     stage_val = 0;
 end

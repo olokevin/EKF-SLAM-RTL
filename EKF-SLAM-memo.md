@@ -717,3 +717,123 @@ Port A Options Output Registers 是在读数据输出后面接一个寄存器打
   * group_cnt_0 == 1’b1: 保持不变
 * CB-portA 需切换左移/右移
 * CB_douta_sel A_in_sel 更改
+
+### 220420
+
+* A B M设正反输入模式
+* C设全映射模式
+* 由于最后一步更新，各行切换时刻不同，因此**不能用统一的大MUX**，只能每一行有单独的deMUX MUX，使能端由移位控制
+* 修改结构
+  * 结构实例化本身
+  * 控制信号位宽
+  * 已有运算步骤的输入、输出控制量
+* UPD_LAST
+  * 不能仅通过改变输出分配实现接续输出
+    * 始终要是数据量大的行先算(3 7 11 15)
+    * 会有数据冲突
+  * CAL_EN有效之外，各PE单元只会传递数据
+  * 利用该性质，设计AB蛇形输入（A B恰好也与BANK对应上了），可以实现
+  * 即:A BANK3，算完上一轮第一个后，开始下一轮的整行计算
+* 要先算的行：
+  * 3 11 19：在BANK3
+  * 7 15 23：在BANK0
+  * 通过映射修改先算的行！
+
+### 220422
+
+* PE切换数据流：B矩阵可从两个方向进入
+
+* west 从上至下为BANK 0~3, north 从左至右为BANK 0~3
+
+* 方块矩阵：A从west BANK0开始，B从north BANK0开始
+
+* 下三角矩阵：
+
+  * 奇数group(group_num[0] = 1): A从west BANK3开始输入，B从south BANK0开始输入
+    * A：右移，反向映射
+    * B：左移，正向映射，south输入
+  * 偶数group(group_num[0] = 0): A从west BANK0开始，B从north BANK0开始
+    * A：左移，正向映射
+    * B：左移，正向映射，north输入
+  * M C：右移，正向映射
+
+* IOBUF
+
+  * 直接编写RTL：
+
+  * 在Xilinx中一个IOBUF资源默认T端为0时IO端才为输出，T端为1时，IO端为输入，
+
+    ```verilog
+    module inout_top
+    (
+    input       I_data_in        ,
+    inout       IO_data          ,
+    output     O_data_out     ,
+    input       Control
+    );
+    
+    wire I_data_in;
+    wire O_data_out;
+        
+    assign IO_data = (Control == 1’b0) ? I_data_in : 1'bz ;
+    assign O_data_out = IO_data ;
+    
+    endmodule    
+    ```
+
+    
+
+  * 调用原语：
+
+  ```verilog
+  module inout_top
+  (
+  input   I_data_in,
+  inout   IO_data  ,
+  output  O_data_out  ,
+  input   Control
+  );
+  
+  IOBUF #(
+    .DRIVE(12), // Specify the output drive strength
+    .IBUF_LOW_PWR("TRUE"),  // Low Power - "TRUE", High Performance = "FALSE"
+    .IOSTANDARD("DEFAULT"), // Specify the I/O standard
+    .SLEW("SLOW") // Specify the output slew rate
+  ) IOBUF_inst (
+    .O(O_data_out),     // Buffer output
+    .IO(IO_data),   // Buffer inout port (connect directly to top-level port)
+    .I(I_data_in),     // Buffer input
+    .T(Control)      // 3-state enable input, high=input, low=output
+  );
+  
+  endmodule
+  ```
+
+  <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220422110643683.png" alt="image-20220422110643683" style="zoom:25%;" />
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220422111124294.png" alt="image-20220422111124294" style="zoom:50%;" />
+
+原语中的O/I都是针对这个BUF来说的，不是针对管脚，务必注意。
+
+*  .IO() 端口对应inout端口
+
+* 模块输入input填入到 .I()，.T()有效时通过OBUF缓冲输出到.IO()管脚；
+
+* 模块输出output填入到.O(), 从.IO()管脚输入进来的信号经过IBUF缓冲到 .O()
+
+* 输入信号想要正确，那么这个时候的OBUF必须是高阻z，也就是 .T()要有效。
+
+* 所以 .T() 填管脚input的使能条件，即让输出无效，这里是read。
+
+原语只支持一个信号的处理，如果处理多位总线，需要用到循环语句。
+
+```verilog
+genvar i;
+generate
+    for(i=0;i<8;i=i+1)
+        begin
+            // iobuf
+         end
+endgenerate
+```
+

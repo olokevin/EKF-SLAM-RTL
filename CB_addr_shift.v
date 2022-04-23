@@ -14,7 +14,7 @@ module CB_addr_shift #(
   input clk,
   input sys_rst,
 
-  input [L-1 : 0] CB_en,
+  input [L-2 : 0] CB_en,
   input group_cnt_0,
   
   input   [CB_AW-1 : 0] din,
