@@ -24,7 +24,7 @@ module RSA
   input   sys_rst,
 
 // //landmark numbers
-//   input   [ROW_LEN-1 : 0]  landmark_num,
+  input   [ROW_LEN-1 : 0]  landmark_num,
 
 //handshake of stage change
   input   [2:0]   stage_val,
@@ -313,8 +313,8 @@ wire   [2*X-1 : 0]   M_adder_mode;
     .B_data       (B_data   ),
     .M_data       (M_data   ),
     .C_data       (C_data   ),
-    .in_cal_en    (in_cal_en  ),
-    .in_cal_done  (in_cal_done  ),
+    .new_cal_en    (new_cal_en  ),
+    .new_cal_done  (new_cal_done  ),
     .M_adder_mode (M_adder_mode )
   );
 
@@ -415,14 +415,14 @@ generate
   	.clk       (clk   ),
     .sys_rst   (sys_rst ),
     .en        (C_out_en[i_X]   ),
-    .sel       (C_out_sel[3*i_BANK +: 3]   ),
+    .sel       (C_out_sel[3*i_X +: 3]   ),
     .din       (C_adder_out[RSA_DW*i_X +: RSA_DW]   ),
-    .dout_000  (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_001  (C_TB_dinb_0[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_010  (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_011  (C_TB_dinb_0[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_100  (M_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_101  (M_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+    .dout_000  (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
+    .dout_001  (C_TB_dinb_0[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
+    .dout_010  (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
+    .dout_011  (C_TB_dinb_0[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
+    .dout_100  (M_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
+    .dout_101  (M_CB_douta_1[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
     .dout_110  (  ),
     .dout_111  (  )
   );
@@ -739,7 +739,7 @@ PE_config
 u_PE_config(
   .clk               (clk     ),
   .sys_rst          (sys_rst   ),
-  // .landmark_num  (landmark_num  ),
+  .landmark_num  (landmark_num  ),
   .stage_val        (stage_val   ),
   .stage_rdy        (stage_rdy   ),
   .nonlinear_m_rdy  (nonlinear_m_rdy ),

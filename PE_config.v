@@ -14,7 +14,7 @@ module PE_config #(
   input sys_rst,
 
 //landmark numbers
-  // input   [ROW_LEN-1 : 0]  landmark_num,
+  input   [ROW_LEN-1 : 0]  landmark_num,
   // input   [ROW_LEN-1 : 0]  cov_row_num,
   // input   [ROW_LEN-1 : 0]  group_num,
 //handshake of stage change
@@ -71,8 +71,8 @@ module PE_config #(
   output [L*CB_AW-1 : 0]      CB_addrb,
 
   output reg [1:0]   PE_mode,
-  output reg [Y-1 : 0] new_cal_en,
-  output reg [Y-1 : 0] new_cal_done
+  output  [Y-1 : 0] new_cal_en,
+  output  [Y-1 : 0] new_cal_done
 
 );
 //delay
@@ -459,7 +459,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   reg [ROW_LEN-1:0]   prd_cnt;
   reg [ROW_LEN-1:0]   group_cnt;
   reg [ROW_LEN-1 : 0] group_num;
-  reg [ROW_LEN-1 : 0]  landmark_num;
+  // reg [ROW_LEN-1 : 0]  landmark_num;
 
 /*
   FSM of STAGE(IDLE PRD NEW UPD)
@@ -473,7 +473,7 @@ reg [CB_AW-1 : 0] CB_addrb_new;
       case(stage_cur)
         IDLE: begin
           case(stage_val & stage_rdy)
-            IDLE:     stage_cur <= IDLE;
+            IDLE:       stage_cur <= IDLE;
             STAGE_PRD:  stage_cur <= STAGE_PRD;
             STAGE_NEW:  stage_cur <= STAGE_NEW;
             STAGE_UPD:  stage_cur <= STAGE_UPD;
@@ -587,16 +587,16 @@ reg [CB_AW-1 : 0] CB_addrb_new;
   (using) FSM of PRD stage, with prd_cnt back to 0 when prd_cur changes
 */
 //(0) after PRD handshake, calculate the group number
-  always @(posedge clk) begin
-    if(sys_rst)
-      landmark_num <= 0;
-    else begin
-      case(stage_rdy & stage_val)
-        STAGE_NEW: group_num <= group_num + 1'b1;
-        default: group_num <= group_num;
-      endcase 
-    end
-  end
+  // always @(posedge clk) begin
+  //   if(sys_rst)
+  //     landmark_num <= 0;
+  //   else begin
+  //     case(stage_rdy & stage_val)
+  //       STAGE_NEW: landmark_num <= landmark_num + 1'b1;
+  //       default: landmark_num <= landmark_num;
+  //     endcase 
+  //   end
+  // end
   
   always @(posedge clk) begin
     if(sys_rst)
