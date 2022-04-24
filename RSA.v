@@ -1,5 +1,5 @@
 // `define USE_DIFF_CLK
-
+//`define  BRAM_OUT
 module RSA 
 #(
   parameter X = 4,
@@ -23,7 +23,7 @@ module RSA
 
   input   sys_rst,
 
-// //landmark numbers
+//landmark numbers
   input   [ROW_LEN-1 : 0]  landmark_num,
 
 //handshake of stage change
@@ -36,33 +36,33 @@ module RSA
   input  [2:0]   nonlinear_s_val,
   //nonlinear cplt(3 stages are conbined)
   output   [2:0]   nonlinear_m_val,
-  input  [2:0]   nonlinear_s_rdy,
+  input  [2:0]   nonlinear_s_rdy
 
-//TEMP BANK ports
-  output  [L-1 : 0]    TB_ena,
-  output  [L-1 : 0]    TB_wea,
-  output  [L*TB_AW-1 : 0]    TB_addra,
-  output  [L*RSA_DW-1 : 0]   TB_dina,
-  input  [L*RSA_DW-1 : 0]   TB_douta,
+// //TEMP BANK ports
+//   output  [L-1 : 0]    TB_ena,
+//   output  [L-1 : 0]    TB_wea,
+//   output  [L*TB_AW-1 : 0]    TB_addra,
+//   output  [L*RSA_DW-1 : 0]   TB_dina,
+//   input  [L*RSA_DW-1 : 0]   TB_douta,
 
-  output  [L-1 : 0]    TB_enb,
-  output  [L-1 : 0]    TB_web,
-  output  [L*TB_AW-1 : 0]    TB_addrb,
-  output  [L*RSA_DW-1 : 0]   TB_dinb,
-  input  [L*RSA_DW-1 : 0]   TB_doutb,
+//   output  [L-1 : 0]    TB_enb,
+//   output  [L-1 : 0]    TB_web,
+//   output  [L*TB_AW-1 : 0]    TB_addrb,
+//   output  [L*RSA_DW-1 : 0]   TB_dinb,
+//   input  [L*RSA_DW-1 : 0]   TB_doutb,
 
-//COV BANK ports
-  output  [L-1 : 0]    CB_ena,
-  output  [L-1 : 0]    CB_wea,
-  output  [L*CB_AW-1 : 0]    CB_addra,
-  output  [L*RSA_DW-1 : 0]   CB_dina,
-  input  [L*RSA_DW-1 : 0]   CB_douta,
+// //COV BANK ports
+//   output  [L-1 : 0]    CB_ena,
+//   output  [L-1 : 0]    CB_wea,
+//   output  [L*CB_AW-1 : 0]    CB_addra,
+//   output  [L*RSA_DW-1 : 0]   CB_dina,
+//   input  [L*RSA_DW-1 : 0]   CB_douta,
 
-  output  [L-1 : 0]    CB_enb,
-  output  [L-1 : 0]    CB_web,
-  output  [L*CB_AW-1 : 0]    CB_addrb,
-  output  [L*RSA_DW-1 : 0]   CB_dinb,
-  input  [L*RSA_DW-1 : 0]   CB_doutb
+//   output  [L-1 : 0]    CB_enb,
+//   output  [L-1 : 0]    CB_web,
+//   output  [L*CB_AW-1 : 0]    CB_addrb,
+//   output  [L*RSA_DW-1 : 0]   CB_dinb,
+//   input  [L*RSA_DW-1 : 0]   CB_doutb
 );
 
 
@@ -345,100 +345,105 @@ wire [2*X-1 : 0]    M_in_sel;
 wire [X-1 : 0]      M_in_en;  
 
 //C out
-wire [X*RSA_DW-1 : 0]   C_TB_dinb_0;
-wire [X*RSA_DW-1 : 0]   C_TB_dinb_1; 
-wire [X*RSA_DW-1 : 0]   C_CB_dinb_0;
-wire [X*RSA_DW-1 : 0]   C_CB_dinb_1;
-wire [3*X-1 : 0]    C_out_sel; 
+// wire [X*RSA_DW-1 : 0]   C_TB_dinb_0;
+// wire [X*RSA_DW-1 : 0]   C_TB_dinb_1;
+// wire [X*RSA_DW-1 : 0]   C_TB_dinb_2;
+// wire [X*RSA_DW-1 : 0]   C_TB_dinb_3;  
+// wire [X*RSA_DW-1 : 0]   C_CB_dinb_0;
+// wire [X*RSA_DW-1 : 0]   C_CB_dinb_1;
+// wire [X*RSA_DW-1 : 0]   C_CB_dinb_2;
+// wire [X*RSA_DW-1 : 0]   C_CB_dinb_3;
+// wire [3*X-1 : 0]    C_out_sel; 
 wire [X-1 : 0]      C_out_en; 
+wire [2:0]   C_map_mode;
 
-//adder
-wire [X*RSA_DW-1 : 0]   M_adder_in;  
-wire [X*RSA_DW-1 : 0]   C_adder_out;
+// //adder
+// wire [X*RSA_DW-1 : 0]   M_adder_in;  
+// wire [X*RSA_DW-1 : 0]   C_adder_out;
 
 generate 
   genvar i_X;
-  for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
-  regMUX_sel2 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  A_regMUX_sel2(
-    .clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (A_in_en[i_X]  ),
-    .sel     (A_in_sel[2*i_X +: 2]   ),
-    .din_00  (A_TB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
-    .din_01  (A_TB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
-    .din_10  (A_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
-    .din_11  (A_CB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
-    .dout    (A_data[RSA_DW*i_X +: RSA_DW]  )
-  );
+    for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
+      regMUX_sel2 
+      #(
+        .RSA_DW (RSA_DW )
+      )
+      A_regMUX_sel2(
+        .clk     (clk   ),
+        .sys_rst (sys_rst ),
+        .en      (A_in_en[i_X]  ),
+        .sel     (A_in_sel[2*i_X +: 2]   ),
+        .din_00  (A_TB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
+        .din_01  (A_TB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
+        .din_10  (A_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
+        .din_11  (A_CB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
+        .dout    (A_data[RSA_DW*i_X +: RSA_DW]  )
+      );
 
-  regMUX_sel2 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  M_regMUX_sel2(
-    .clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (M_in_en[i_X]  ),
-    .sel     (M_in_sel[2*i_X +: 2]   ),
-    .din_00  (M_TB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
-    .din_01  (M_TB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
-    .din_10  (M_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
-    .din_11  (M_CB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
-    .dout    (M_data[RSA_DW*i_X +: RSA_DW]  )
-  );
+      regMUX_sel2 
+      #(
+        .RSA_DW (RSA_DW )
+      )
+      M_regMUX_sel2(
+        .clk     (clk   ),
+        .sys_rst (sys_rst ),
+        .en      (M_in_en[i_X]  ),
+        .sel     (M_in_sel[2*i_X +: 2]   ),
+        .din_00  (M_TB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
+        .din_01  (M_TB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
+        .din_10  (M_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
+        .din_11  (M_CB_douta_1[RSA_DW*i_X +: RSA_DW]  ),
+        .dout    (M_data[RSA_DW*i_X +: RSA_DW]  )
+      );
 
-  regdeMUX_sel2 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  C_regdeMUX_sel2(
-  	.clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (C_out_en[i_X]  ),
-    .sel     (C_out_sel[2*i_X +: 2]   ),
-    .din     (C_data[RSA_DW*i_X +: RSA_DW]   ),
-    .dout_00 (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
-    .dout_01 (C_TB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] ),
-    .dout_10 (C_CB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
-    .dout_11 (C_CB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] )
-  );
+      // regdeMUX_sel2 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // C_regdeMUX_sel2(
+      //   .clk     (clk   ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (C_out_en[i_X]  ),
+      //   .sel     (C_out_sel[2*i_X +: 2]   ),
+      //   .din     (C_data[RSA_DW*i_X +: RSA_DW]   ),
+      //   .dout_00 (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
+      //   .dout_01 (C_TB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] ),
+      //   .dout_10 (C_CB_dinb_0[RSA_DW*i_X +: RSA_DW] ),
+      //   .dout_11 (C_CB_dinb_1[RSA_DW*(X-1-i_X) +: RSA_DW] )
+      // );
 
-  regdeMUX_sel3 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  C_regdeMUX_sel3(
-  	.clk       (clk   ),
-    .sys_rst   (sys_rst ),
-    .en        (C_out_en[i_X]   ),
-    .sel       (C_out_sel[3*i_X +: 3]   ),
-    .din       (C_adder_out[RSA_DW*i_X +: RSA_DW]   ),
-    .dout_000  (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
-    .dout_001  (C_TB_dinb_0[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
-    .dout_010  (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
-    .dout_011  (C_TB_dinb_0[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
-    .dout_100  (M_CB_douta_0[RSA_DW*i_X +: RSA_DW]  ),
-    .dout_101  (M_CB_douta_1[RSA_DW*(X-1-i_X) +: RSA_DW]   ),
-    .dout_110  (  ),
-    .dout_111  (  )
-  );
+      // regdeMUX_sel3 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // C_regdeMUX_sel3(
+      //   .clk       (clk   ),
+      //   .sys_rst   (sys_rst ),
+      //   .en        (C_out_en[i_X]   ),
+      //   .sel       (C_out_sel[3*i_X +: 3]   ),
+      //   .din       (C_data[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_000  (C_TB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_001  (C_TB_dinb_1[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_010  (C_TB_dinb_2[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_011  (C_TB_dinb_3[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_100  (C_CB_dinb_0[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_101  (C_CB_dinb_1[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_110  (C_CB_dinb_2[RSA_DW*i_X +: RSA_DW]  ),
+      //   .dout_111  (C_CB_dinb_3[RSA_DW*i_X +: RSA_DW]  )
+      // );
 
-  // sync_adder 
-  // #(
-  //   .RSA_DW (RSA_DW )
-  // )
-  // MC_adder(
-  // 	.clk   (clk   ),
-  //   .sys_rst (sys_rst ),
-  //   .mode  (M_adder_mode[2*i_X +: 2]   ),
-  //   .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
-  //   .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
-  //   .sum   (C_adder_out[RSA_DW*i_X +: RSA_DW]   )
-  // );
+      // sync_adder 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // MC_adder(
+      // 	.clk   (clk   ),
+      //   .sys_rst (sys_rst ),
+      //   .mode  (M_adder_mode[2*i_X +: 2]   ),
+      //   .adder_M (M_adder_in[RSA_DW*i_X +: RSA_DW] ),
+      //   .adder_C (dout[RSA_DW*i_X*Y+1 +: RSA_DW] ),
+      //   .sum   (C_adder_out[RSA_DW*i_X +: RSA_DW]   )
+      // );
   end
 endgenerate
 
@@ -480,129 +485,166 @@ generate
 endgenerate
 
 //TEMP BRAM
-wire [L-1 : 0]    TB_dinb_sel;
-wire [2*L-1 : 0]  TB_douta_sel;
+wire [2*L-1 : 0]    TB_dinb_sel;
+wire [2*L-1 : 0]    TB_douta_sel;
 //定义提前
 // wire [L-1 : 0]  TB_doutb_sel;
 
-// wire [L-1 : 0]    TB_ena;
-// wire [L-1 : 0]    TB_enb;
+wire [L-1 : 0]    TB_ena;
+wire [L-1 : 0]    TB_enb;
 
-// wire [L-1 : 0]    TB_wea;
-// wire [L-1 : 0]    TB_web;
+wire [L-1 : 0]    TB_wea;
+wire [L-1 : 0]    TB_web;
 
-// wire [L*RSA_DW-1 : 0] TB_dina;
-// wire [L*TB_AW-1 : 0] TB_addra;
-// wire [L*RSA_DW-1 : 0] TB_dinb;
-// wire [L*TB_AW-1 : 0] TB_addrb;
+wire [L*RSA_DW-1 : 0] TB_dina;
+wire [L*TB_AW-1 : 0] TB_addra;
+wire [L*RSA_DW-1 : 0] TB_dinb;
+wire [L*TB_AW-1 : 0] TB_addrb;
 
-// wire [L*RSA_DW-1 : 0] TB_douta;
-// wire [L*RSA_DW-1 : 0] TB_doutb;
+wire [L*RSA_DW-1 : 0] TB_douta;
+wire [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
-wire [L-1 : 0]    CB_dinb_sel;
-wire [3*L-1 : 0]  CB_douta_sel;
+wire [2*L-1 : 0]    CB_dinb_sel;
+wire [3*L-1 : 0]    CB_douta_sel;
 
-// wire [L-1 : 0]    CB_ena;
-// wire [L-1 : 0]    CB_enb;
+wire [L-1 : 0]    CB_ena;
+wire [L-1 : 0]    CB_enb;
 
-// wire [L-1 : 0]    CB_wea;
-// wire [L-1 : 0]    CB_web;
+wire [L-1 : 0]    CB_wea;
+wire [L-1 : 0]    CB_web;
 
-// wire [L*RSA_DW-1 : 0] CB_dina;
-// wire [L*CB_AW-1 : 0] CB_addra;
-// wire [L*RSA_DW-1 : 0] CB_dinb;
-// wire [L*CB_AW-1 : 0] CB_addrb;
+wire [L*RSA_DW-1 : 0] CB_dina;
+wire [L*CB_AW-1 : 0] CB_addra;
+wire [L*RSA_DW-1 : 0] CB_dinb;
+wire [L*CB_AW-1 : 0] CB_addrb;
 
-// wire [L*RSA_DW-1 : 0] CB_douta;
-// wire [L*RSA_DW-1 : 0] CB_doutb;
+wire [L*RSA_DW-1 : 0] CB_douta;
+wire [L*RSA_DW-1 : 0] CB_doutb;
 
 
 //BRAM_BANK data MUX and deMUX
   
 generate
   genvar i_BANK;
-  for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
-  regdeMUX_sel2 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  TB_douta_regdeMUX_sel2(
-  	.clk      (clk   ),
-    .sys_rst  (sys_rst ),
-    .en       (1  ),
-    .sel      (TB_douta_sel[2*i_BANK +: 2]   ),
-    .din      (TB_douta[i_BANK*RSA_DW +: RSA_DW]   ),
-    .dout_00  (A_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_01  (A_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_10  (M_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_11  (M_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   )
-  );
+    for(i_BANK=0; i_BANK<L; i_BANK=i_BANK+1) begin:BANK
+  //TEMP BANK
+      regdeMUX_sel2 
+      #(
+        .RSA_DW (RSA_DW )
+      )
+      TB_douta_regdeMUX_sel2(
+        .clk      (clk   ),
+        .sys_rst  (sys_rst ),
+        .en       (1  ),
+        .sel      (TB_douta_sel[2*i_BANK +: 2]   ),
+        .din      (TB_douta[i_BANK*RSA_DW +: RSA_DW]   ),
+        .dout_00  (A_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+        .dout_01  (A_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+        .dout_10  (M_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+        .dout_11  (M_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   )
+      );
 
-  regMUX_sel1 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  TB_dinb_regMUX_sel1(
-  	.clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (1  ),
-    .sel     (TB_dinb_sel[i_BANK]   ),
-    .din_0   (C_TB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
-    .din_1   (C_TB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout    (TB_dinb[RSA_DW*i_BANK +: RSA_DW]  )
-  );
+      // regMUX_sel1 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // TB_dinb_regMUX_sel1(
+      //   .clk     (clk   ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (1  ),
+      //   .sel     (TB_dinb_sel[i_BANK]   ),
+      //   .dout_00 (A_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+      //   .dout_01 (A_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+      //   .dout_10 (M_TB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+      //   .dout_11 (M_TB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   )
+      //   .dout    (TB_dinb[RSA_DW*i_BANK +: RSA_DW]  )
+      // );
 
-  regdeMUX_sel1 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  TB_doutb_regdeMUX_sel1(
-  	.clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (1   ),
-    .sel     (TB_doutb_sel[i_BANK]   ),
-    .din     (TB_doutb[i_BANK*RSA_DW +: RSA_DW]   ),
-    .dout_0  (B_TB_doutb_0[i_BANK*RSA_DW +: RSA_DW]  ),
-    .dout_1  (B_TB_doutb_1[i_BANK*RSA_DW +: RSA_DW]   )   //USED for B_CONS
-  );
+      regdeMUX_sel1 
+      #(
+        .RSA_DW (RSA_DW )
+      )
+      TB_doutb_regdeMUX_sel1(
+        .clk     (clk   ),
+        .sys_rst (sys_rst ),
+        .en      (1   ),
+        .sel     (TB_doutb_sel[i_BANK]   ),
+        .din     (TB_doutb[i_BANK*RSA_DW +: RSA_DW]   ),
+        .dout_0  (B_TB_doutb_0[i_BANK*RSA_DW +: RSA_DW]  ),
+        .dout_1  (B_TB_doutb_1[i_BANK*RSA_DW +: RSA_DW]   )   //USED for B_CONS
+      );
   //COV BANK
-  regdeMUX_sel3 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  CB_douta_regdeMUX_sel3(
-  	.clk       (clk   ),
-    .sys_rst   (sys_rst ),
-    .en        (1   ),
-    .sel       (CB_douta_sel[3*i_BANK +: 3]   ),
-    .din       (CB_douta[i_BANK*RSA_DW +: RSA_DW]   ),
-    .dout_000  (A_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_001  (A_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_010  (B_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_011  (B_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_100  (M_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
-    .dout_101  (M_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout_110  (  ),
-    .dout_111  (  )
-  );
+      regdeMUX_sel3 
+      #(
+        .RSA_DW (RSA_DW )
+      )
+      CB_douta_regdeMUX_sel3(
+        .clk       (clk   ),
+        .sys_rst   (sys_rst ),
+        .en        (1   ),
+        .sel       (CB_douta_sel[3*i_BANK +: 3]   ),
+        .din       (CB_douta[i_BANK*RSA_DW +: RSA_DW]   ),
+        .dout_000  (A_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+        .dout_001  (A_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+        .dout_010  (B_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+        .dout_011  (B_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+        .dout_100  (M_CB_douta_0[RSA_DW*i_BANK +: RSA_DW]  ),
+        .dout_101  (M_CB_douta_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+        .dout_110  (  ),
+        .dout_111  (  )
+      );
 
-  regMUX_sel1 
-  #(
-    .RSA_DW (RSA_DW )
-  )
-  CB_dinb_regMUX_sel1(
-  	.clk     (clk   ),
-    .sys_rst (sys_rst ),
-    .en      (1  ),
-    .sel     (CB_dinb_sel[i_BANK]   ),
-    .din_0   (C_CB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
-    .din_1   (C_CB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
-    .dout    (CB_dinb[RSA_DW*i_BANK +: RSA_DW]  )
-  );
-  end
+      // regMUX_sel1 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // CB_dinb_regMUX_sel1(
+      //   .clk     (clk   ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (1  ),
+      //   .sel     (CB_dinb_sel[i_BANK]   ),
+      //   .din_0   (C_CB_dinb_0[RSA_DW*i_BANK +: RSA_DW]   ),
+      //   .din_1   (C_CB_dinb_1[RSA_DW*(X-1-i_BANK) +: RSA_DW]   ),
+      //   .dout    (CB_dinb[RSA_DW*i_BANK +: RSA_DW]  )
+      // );
+    end
 endgenerate
 
+//C输出到TB CB的映射
+  Cout_mapping 
+  #(
+    .X      (X      ),
+    .Y      (Y      ),
+    .L      (L      ),
+    .RSA_DW (RSA_DW )
+  )
+  u_Cout_mapping(
+    .clk        (clk        ),
+    .sys_rst    (sys_rst    ),
+    .C_map_mode (C_map_mode ),
+    .C_data     (C_data     ),
+    .C_TB_dinb  (C_TB_dinb  ),
+    .C_CB_dinb  (C_CB_dinb  )
+  );
+
+  //C输出数据加一级缓冲（与现有数据流匹配）
+  reg [L*RSA_DW-1 : 0] C_TB_dinb_d1;
+  reg [L*RSA_DW-1 : 0] C_CB_dinb_d1;
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      C_TB_dinb_d1  <= 0;
+      C_CB_dinb_d1  <= 0;
+    end
+    else begin
+      C_TB_dinb_d1  <= C_TB_dinb;
+      C_CB_dinb_d1  <= C_CB_dinb;
+    end
+  end
+
+  assign TB_dinb = C_TB_dinb_d1;
+  assign CB_dinb = C_CB_dinb_d1;
+  
 //instantiate of TEMP BANK
   TB_0 u_TB_0 (
   .clka(clk),  // input wire clka
@@ -753,7 +795,8 @@ u_PE_config(
   .M_in_sel         (M_in_sel  ),
   .M_in_en          (M_in_en   ),
   .M_adder_mode     (M_adder_mode  ),
-  .C_out_sel        (C_out_sel   ),
+  // .C_out_sel        (C_out_sel   ),
+  .C_map_mode       (C_map_mode),
   .C_out_en         (C_out_en  ),
   .TB_dinb_sel      (TB_dinb_sel   ),
   .TB_douta_sel     (TB_douta_sel  ),
