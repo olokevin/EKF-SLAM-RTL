@@ -837,3 +837,46 @@ generate
 endgenerate
 ```
 
+
+
+## 运算指令集
+
+输入和输出分开
+
+每次运算：
+
+* m
+* n
+* k
+* A来源
+  * TB-A
+  * CB-A
+  * NEW的四种
+* B来源
+  * TB-B
+  * CB-A
+  * NEW的四种
+* M来源
+  * TB-A
+  * CB-A
+* C去向
+  * TB-B
+  * CB-B
+
+控制量
+
+* BRAM
+  * en_new
+  * we_new
+  * addr_new
+  * shift 移位方向（由来源、去向决定）
+* BRAM-out MUX&deMUX
+  * 选择信号
+* PE array MUX&deMUX
+  * A_in_sel_new
+  * B_in_sel_new
+  * M_in_sel_new
+  * C_out_sel_new
+  * M_adder_mode
+* PE array
+  * PE_mode
