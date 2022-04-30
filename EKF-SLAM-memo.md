@@ -858,7 +858,7 @@ endgenerate
 
 * n
 
-* TB_A_mode
+* TBa_mode
 
   * 配置模式[4:2]
     * 3’b001: A
@@ -870,7 +870,7 @@ endgenerate
     * NEG：10
     * NEW：11
 
-* TB_B_mode
+* TBb_mode
 
   * 配置模式[4:2]
     * 3'b001: B
@@ -882,7 +882,7 @@ endgenerate
     * NEG：10
     * NEW：11
 
-* CB_A_mode
+* CBa_mode
 
   * 配置模式[4:2]
     * 3’b001: A
@@ -893,7 +893,7 @@ endgenerate
     * NEG：10
     * NEW：11
 
-* CB_B_mode
+* CBb_mode
 
   * 配置模式[4:2]
     * 3'b001: C
@@ -976,4 +976,5 @@ endgenerate
 
 ### 220430
 
-* 
+* NEW_3的读取按最坏情况计算，否则需改变shift顺序
+* 考虑把shift也放到map中？
