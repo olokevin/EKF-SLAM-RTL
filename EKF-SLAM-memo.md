@@ -843,27 +843,82 @@ endgenerate
 
 输入和输出分开
 
-每次运算：
+**A B M C移位方向由PE_mode决定！**
 
-* m
+**TB CB移位方向由数据映射决定**
+
+### PE输入配置（直接配置）
+
+* A_in_en
+* A_in_sel
+* PE_mode
+* 实际只有UPD最后一步需要换向
+
+### TB CB译码控制量
+
 * n
-* k
-* A来源
-  * TB-A
-  * CB-A
-  * NEW的四种
-* B来源
-  * TB-B
-  * CB-A
-  * NEW的四种
-* M来源
-  * TB-A
-  * CB-A
-* C去向
-  * TB-B
-  * CB-B
 
-控制量
+* TB_A_mode
+
+  * 配置模式[4:2]
+    * 3’b001: A
+    * 3'b010: M
+    * 3'b011: A+M
+    * 3'b100: non_linear写入
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+* TB_B_mode
+
+  * 配置模式[4:2]
+    * 3'b001: B
+    * 3’b010: C
+    * 3'b100: B_CONS
+    * 3'b011: B+C
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+* CB_A_mode
+
+  * 配置模式[4:2]
+    * 3’b001: A
+    * 3'b010: B
+    * 3'b100: M
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+* CB_B_mode
+
+  * 配置模式[4:2]
+    * 3'b001: C
+    * 3’b010: 
+    * 3'b100: non_linear读取
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+* A_mode[3 : 0]
+
+  * 来源：[3 : 2]
+    * TB-A: 00
+    * CB-A: 10
+
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+
+  
+
+### 输出控制量
 
 * BRAM
   * en_new
@@ -880,3 +935,45 @@ endgenerate
   * M_adder_mode
 * PE array
   * PE_mode
+
+### 输入时序
+
+0：配置
+
+1~n：输入A B addr_new 共n个
+
+1+(N+1): 输入M 共n个
+
+### 输出时序
+
+* TB输出：时序由seq_cnt决定
+  * 1+NEW_2_PEin + N+2 + ADDER2_NEW=11
+  * 1：输入第一个addr_new的时刻
+  * NEW_2_PEin=4：addr_new到输入第一个数据
+  * N+2: 计算用时
+  * ADDER_NEW=1：加法结果到给写入addr_new
+* CB输出：独立计时！
+
+
+
+### 220429
+
+* CB_AGD:
+  * 只生成BANK0对应的每行首地址
+  * 实际使用，也是在第一周期，使得CB_addra_new <= CB_addra_base
+  * 因此：CB_addra_base 应得到(0,0) (7,0) (8,0) (15,0)的地址，从而可读state！
+* CB_addr_shift
+  * 
+
+#### TBD：
+
+* non_linear 
+  * CB-B read
+  * TB-A write
+* CB_2_TB
+  * CB-B read
+  * TB-A write
+
+### 220430
+
+* 

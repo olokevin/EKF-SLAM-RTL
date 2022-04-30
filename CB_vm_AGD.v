@@ -1,3 +1,10 @@
+/*
+    只生成BANK0中每行的首地址
+    生成(7,0) (8,0) (15,0) (16,0)...
+
+    START有效后 3T得到新基址
+*/
+
 module CB_vm_AGD #(
   parameter CB_AW        = 17,
   parameter ROW_LEN      = 10
@@ -6,6 +13,7 @@ module CB_vm_AGD #(
     input sys_rst,
 
     input en,
+    input user_reset,
     input [ROW_LEN-1 : 0]  group_cnt,
 
     output reg [CB_AW-1 : 0] CB_base_addr
@@ -28,7 +36,7 @@ module CB_vm_AGD #(
         group_cnt_shift <= 0;
         group_offset <= 0;
         new_interval <= 0;
-        CB_base_addr <= 2'b10;
+        CB_base_addr <= 0;
       end
       else begin
         case({en_d, en})
