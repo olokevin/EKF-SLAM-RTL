@@ -18,7 +18,7 @@
     10          1         0
                 0         1
   */
-  `define  NEW_11  = 3'b111; 
-  `define  NEW_00  = 3'b100;
-  `define  NEW_01  = 3'b101;
-  `define  NEW_10  = 3'b110;
+  `define  DIR_NEW_11  = 3'b111; 
+  `define  DIR_NEW_00  = 3'b100;
+  `define  DIR_NEW_01  = 3'b101;
+  `define  DIR_NEW_10  = 3'b110;

@@ -1210,10 +1210,10 @@ module PE_config #(
   //             // C_out_sel_new <= 2'b00;
 
   //             // case(landmark_num[1:0])
-  //             //   2'b00: C_map_mode   <= NEW_00;
-  //             //   2'b01: C_map_mode   <= NEW_01;
-  //             //   2'b10: C_map_mode   <= NEW_10;
-  //             //   2'b11: C_map_mode   <= NEW_11;
+  //             //   2'b00: C_map_mode   <= DIR_NEW_00;
+  //             //   2'b01: C_map_mode   <= DIR_NEW_01;
+  //             //   2'b10: C_map_mode   <= DIR_NEW_10;
+  //             //   2'b11: C_map_mode   <= DIR_NEW_11;
   //             // endcase
 
   //             PE_mode <= N_W;

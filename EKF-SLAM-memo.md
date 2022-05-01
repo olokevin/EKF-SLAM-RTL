@@ -845,7 +845,7 @@ endgenerate
 
 **A B M C移位方向由PE_mode决定！**
 
-**TB CB移位方向由数据映射决定**
+**TB CB移位方向、地址移位方向由数据映射决定**!
 
 ### PE输入配置（直接配置）
 
@@ -916,7 +916,7 @@ endgenerate
     * NEW：11
 
 
-  
+
 
 ### 输出控制量
 
@@ -952,7 +952,17 @@ endgenerate
   * NEW_2_PEin=4：addr_new到输入第一个数据
   * N+2: 计算用时
   * ADDER_NEW=1：加法结果到给写入addr_new
-* CB输出：独立计时！
+* CB输出：
+  * 由专门的out、_cnt决定
+  * 每两个一输出：根据cnt[0]=0/1决定
+  * 由config中的控制单元确定要读多少个，算出对应的addr_new(由addr_base递增)
+    * cov_vm: 3
+    * cov_l: 2*landmark_num+1
+    * cov_ll: 2
+    * cov: 2*landmark_num+3
+
+  * addr_shift只管映射
+
 
 
 
