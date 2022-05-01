@@ -25,7 +25,7 @@ module PE_config #(
   input sys_rst,
 
 //landmark numbers
-  input   [ROW_LEN-1 : 0]  landmark_num,
+  // input   [ROW_LEN-1 : 0]  landmark_num,
   // input   [ROW_LEN-1 : 0]  cov_row_num,
   // input   [ROW_LEN-1 : 0]  group_num,
 //handshake of stage change
@@ -91,9 +91,18 @@ module PE_config #(
   localparam WR_DELAY = 2;
   localparam AGD_DELAY = 5;
 
-  localparam NEW_2_ADDR = 'd1;
-  localparam ADDR_2_PEin = 'd3;
-  localparam NEW_2_PEin = 'd4;    //给出addr_new到westin
+  localparam SET_2_ADDR = 'd1;
+  localparam SET_2_BRAMOUT_MUX = 'd2;
+  localparam SET_2_AB_MUX = 'd3;
+  localparam SET_2_PEin = 'd4;    //给出addr_new到westin
+  
+  localparam SET_2_M_MUX = 'd7;
+  localparam SET_2_C_MUX = 'd8;
+
+  localparam SET_2_BRAMIN_MUX = 'd9;
+
+  localparam RD_2_WR = 'd10;
+  
   localparam ADDER_2_NEW = 'd1;   //adder输出到给addr_new
 
 //shift 
@@ -128,6 +137,14 @@ module PE_config #(
 //C map mode
   localparam  C_TBb = 2'b00;
   localparam  C_CBb = 2'b10;
+
+//CB portA map mode
+  localparam CB_IDLE = 2'b00;
+  localparam CB_A = 2'b01;
+  localparam CB_B = 2'b10;
+  localparam CB_M = 2'b11;
+
+//CB portB map mode
 
 /*
     TB CB mode config!
@@ -261,56 +278,19 @@ module PE_config #(
   //   localparam NEW_3_DELAY   = 4'd7;
 
 /*
-  ***************************************************
-  data shift
-  ***************************************************
+  ******************DATA FLOW config*******************
 */
-  //shift def
-  reg [A_IN_SEL_DW-1:0] A_in_sel_new;
-  reg [B_IN_SEL_DW-1:0] B_in_sel_new;
-  reg [M_IN_SEL_DW-1:0] M_in_sel_new;
-  reg [1:0]             M_adder_mode_new;
-  reg [C_OUT_SEL_DW-1:0] C_out_sel_new;
-
-  reg A_shift_dir;
-  reg B_shift_dir;
-  reg M_shift_dir;
-  reg C_shift_dir;
-
-//TB def
-  reg TB_A_shift_dir;
-  reg TB_B_shift_dir;
-  reg [TB_DOUTA_SEL_DW-1:0]     TB_douta_sel_new;
-  reg [TB_DINB_SEL_DW-1:0]      TB_dinb_sel_new;
-  reg [TB_DOUTB_SEL_DW-1:0]     TB_doutb_sel_new;
-
-  reg         TB_ena_new;
-  reg         TB_wea_new;
-  reg [TB_AW-1 : 0] TB_addra_new;
-
-  reg         TB_enb_new;
-  reg         TB_web_new;
-  reg [TB_AW-1 : 0] TB_addrb_new;
-
-//CB def
-  reg CB_A_shift_dir;
-  reg CB_B_shift_dir;
-
-  reg [CB_DOUTA_SEL_DW-1:0]     CB_douta_sel_new;
-  reg [CB_DINB_SEL_DW-1:0]      CB_dinb_sel_new;
-
-  reg         CB_ena_new;
-  reg         CB_wea_new;
-  reg [CB_AW-1 : 0] CB_addra_new;
-
-  reg         CB_enb_new;
-  reg         CB_web_new;
-  reg [CB_AW-1 : 0]             CB_addrb_new;
-  
-
-//input config
+  reg [2:0] PE_m;
   reg [2:0] PE_n;
   reg [2:0] PE_k;
+
+  reg [1:0] CAL_mode;
+
+  reg [A_IN_SEL_DW-1:0] A_in_mode;
+  reg [B_IN_SEL_DW-1:0] B_in_mode;
+  reg [M_IN_SEL_DW-1:0] M_in_mode; 
+  reg [1:0]             M_adder_mode_set;
+  reg [C_OUT_SEL_DW-1:0] C_out_mode;
 
   reg [4:0] TBa_mode;
   reg [4:0] TBb_mode;
@@ -323,275 +303,66 @@ module PE_config #(
   reg [TB_AW-1:0] C_TB_base_addr;
 
 /*
-  ************************ABCM shift***************************
+  ****************CAL_mode config****************
 */
-  //shift of PE_sel
-    dshift 
-    #(
-      .DW  (A_IN_SEL_DW ),
-      .DEPTH (X )
-    )
-    A_in_sel_dshift(
-      .clk  (clk  ),
-      .dir  (A_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (A_in_sel_new  ),
-      .dout (A_in_sel )
-    );
+  //A_in_en 
+  //B_in_en 
+  //M_in_en 
+  //C_out_en 
 
-    dshift 
-    #(
-      .DW  (B_IN_SEL_DW ),
-      .DEPTH (X )
-    )
-    B_in_sel_dshift(
-      .clk  (clk  ),
-      .dir   (B_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (B_in_sel_new  ),
-      .dout (B_in_sel )
-    );
+  reg [A_IN_SEL_DW-1:0] A_in_sel_new;
+  reg [B_IN_SEL_DW-1:0] B_in_sel_new;
+  reg [M_IN_SEL_DW-1:0] M_in_sel_new; 
+  reg [1:0]             M_adder_mode_new;
+  reg [C_OUT_SEL_DW-1:0] C_out_sel_new;
 
-    dshift 
-    #(
-      .DW  (M_IN_SEL_DW ),
-      .DEPTH (X )
-    )
-    M_in_sel_dshift(
-      .clk  (clk  ),
-      .dir  (M_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (M_in_sel_new  ),
-      .dout (M_in_sel )
-    );
-
-    dshift 
-    #(
-      .DW  (2 ),
-      .DEPTH (X )
-    )
-    M_adder_mode_dshift(
-      .clk  (clk  ),
-      .dir  (M_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (M_adder_mode_new  ),
-      .dout (M_adder_mode )
-    );
-
-    dshift 
-    #(
-      .DW  (C_OUT_SEL_DW ),
-      .DEPTH (X )
-    )
-   C_out_sel_dshift(
-      .clk  (clk  ),
-      .dir   (C_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (C_out_sel_new  ),
-      .dout (C_out_sel )
-    );
-
-  //shift of TB_portA
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    TB_ena_dshift(
-      .clk  (clk  ),
-      .dir  (TB_A_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_ena_new  ),
-      .dout (TB_ena )
-    );
-
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    TB_wea_dshift(
-      .clk  (clk  ),
-      .dir   (TB_A_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_wea_new  ),
-      .dout (TB_wea )
-    );
-
-    dshift 
-    #(
-      .DW  (TB_DOUTA_SEL_DW ),
-      .DEPTH (L )
-    )
-    TB_douta_sel_dshift(
-      .clk  (clk  ),
-      .dir  (TB_A_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_douta_sel_new  ),
-      .dout (TB_douta_sel )
-    );
-
-    dshift 
-    #(
-      .DW  (TB_AW  ),
-      .DEPTH (L )
-    )
-    TB_addra_dshift(
-      .clk  (clk  ),
-      .dir   (TB_A_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_addra_new  ),
-      .dout (TB_addra )
-    );
-
-  //shift of TB_portB
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    TB_enb_dshift(
-      .clk  (clk  ),
-      .dir  (TB_B_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_enb_new  ),
-      .dout (TB_enb )
-    );
-
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    TB_web_dshift(
-      .clk  (clk  ),
-      .dir   (TB_B_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_web_new  ),
-      .dout (TB_web )
-    );
-
-    dshift 
-    #(
-      .DW  (TB_DINB_SEL_DW ),
-      .DEPTH (L )
-    )
-    TB_dinb_sel_dshift(
-      .clk  (clk  ),
-      .dir   (TB_B_shift_dir   ),
-      .sys_rst ( sys_rst),
-      .din  (TB_dinb_sel_new  ),
-      .dout (TB_dinb_sel )
-    );
-
-    dshift 
-    #(
-      .DW  (TB_DOUTB_SEL_DW ),
-      .DEPTH (L )
-    )
-    TB_doutb_sel_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir   (TB_B_shift_dir   ),
-      .din  (TB_doutb_sel_new  ),
-      .dout (TB_doutb_sel )
-    );
-
-    dshift 
-    #(
-      .DW  (TB_AW  ),
-      .DEPTH (L )
-    )
-    TB_addrb_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir  (TB_B_shift_dir   ),
-      .din  (TB_addrb_new  ),
-      .dout (TB_addrb )
-    );
+  reg A_in_sel_dir;
+  reg B_in_sel_dir;
+  reg M_in_sel_dir;
+  reg C_in_sel_dir;
 
 /*
-  shift of BRAM BANK new
+  **************Address Generate Config*****************
 */
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    CB_ena_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir  (CB_A_shift_dir   ),
-      .din  (CB_ena_new  ),
-      .dout (CB_ena )
-    );
+  //TB def
+    reg                           TBa_shift_dir;
+    reg                           TBb_shift_dir;
+    reg [TB_DOUTA_SEL_DW-1:0]     TB_douta_sel_new;
+    reg [TB_DINB_SEL_DW-1:0]      TB_dinb_sel_new;
+    reg [TB_DOUTB_SEL_DW-1:0]     TB_doutb_sel_new;
 
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    CB_wea_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir   (CB_A_shift_dir   ),
-      .din  (CB_wea_new  ),
-      .dout (CB_wea )
-    );
+    reg                           TB_ena_new;
+    reg                           TB_wea_new;
+    reg [TB_AW-1 : 0]             TB_addra_new;
 
-    dshift 
-    #(
-      .DW  (CB_DOUTA_SEL_DW ),
-      .DEPTH (L )
-    )
-    CB_douta_sel_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir  (CB_A_shift_dir   ),
-      .din  (CB_douta_sel_new  ),
-      .dout (CB_douta_sel )
-    );
+    reg                           TB_enb_new;
+    reg                           TB_web_new;
+    reg [TB_AW-1 : 0]             TB_addrb_new;
 
+  //CB def
+    //port A
+    reg [1:0]                     CBa_shift_dir;
+    
+    reg [CB_DOUTA_SEL_DW-1:0]     CB_douta_sel_new;
+    reg                           CB_ena_new;
+    reg                           CB_wea_new;
+    reg [CB_AW-1 : 0]             CB_addra_new;
+    
+    reg                           CBa_vm_AGD_en;
+    reg                           CBa_vm_AGD_rst;
+    wire [CB_AW-1 : 0]            CB_addra_base;
 
-  //shift of CB_portB
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    CB_enb_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir  (CB_B_shift_dir   ),
-      .din  (CB_enb_new  ),
-      .dout (CB_enb )
-    );
+    //port B
+    reg [1:0]                     CBb_shift_dir;
 
-    dshift 
-    #(
-      .DW  (1 ),
-      .DEPTH (L )
-    )
-    CB_web_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir   (CB_B_shift_dir   ),
-      .din  (CB_web_new  ),
-      .dout (CB_web )
-    );
+    reg [CB_DINB_SEL_DW-1:0]      CB_dinb_sel_new;
+    reg                           CB_enb_new;
+    reg                           CB_web_new;
+    reg [CB_AW-1 : 0]             CB_addrb_new;
 
-    dshift 
-    #(
-      .DW  (CB_DINB_SEL_DW ),
-      .DEPTH (L )
-    )
-    CB_dinb_sel_dshift(
-      .clk  (clk  ),
-      .sys_rst ( sys_rst),
-      .dir   (CB_B_shift_dir   ),
-      .din  (CB_dinb_sel_new  ),
-      .dout (CB_dinb_sel )
-    );
+    reg                           CBb_vm_AGD_en;
+    reg                           CBb_vm_AGD_rst;
+    wire [CB_AW-1 : 0]            CB_addrb_base;
 
 /*
   variables of FSM of STAGE(IDLE PRD NEW UPD)
@@ -609,7 +380,13 @@ module PE_config #(
   reg [ROW_LEN-1:0]   seq_cnt;      //时序计数器
   reg [ROW_LEN-1:0]   group_cnt;    //组计数器（4行，2个地标为1组）
   reg [ROW_LEN-1 : 0] group_num;    //组数目
-  // reg [ROW_LEN-1 : 0]  landmark_num;
+  reg [ROW_LEN-1 : 0]  landmark_num;
+
+  //AGD control
+  wire [1:0] landmark_num_10;
+  assign landmark_num_10 = landmark_num[1:0];
+  wire group_cnt_0;
+  assign group_cnt_0 = group_cnt[0];
 
 /*
   FSM of STAGE(IDLE PRD NEW UPD)
@@ -656,16 +433,16 @@ module PE_config #(
   end
 
   //(3)output: calculate the landmark number
-  // always @(posedge clk) begin
-  //   if(sys_rst)
-  //     landmark_num <= 0;
-  //   else begin
-  //     case(stage_rdy & stage_val)
-  //       STAGE_NEW: landmark_num <= landmark_num + 1'b1;
-  //       default: landmark_num <= landmark_num;
-  //     endcase 
-  //   end
-  // end
+  always @(posedge clk) begin
+    if(sys_rst)
+      landmark_num <= 0;
+    else begin
+      case(stage_rdy & stage_val)
+        STAGE_NEW: landmark_num <= landmark_num + 1'b1;
+        default: landmark_num <= landmark_num;
+      endcase 
+    end
+  end
   
   //(3) output: group_num
   always @(posedge clk) begin
@@ -1268,48 +1045,11 @@ module PE_config #(
   // end
 
 /*
-  shift dir of A B M C, determined by PE_mode
+  ************************* RSA work-mode Config **************************
 */
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      A_shift_dir <= LEFT_SHIFT;
-      B_shift_dir <= LEFT_SHIFT;
-      M_shift_dir <= LEFT_SHIFT;
-      C_shift_dir <= LEFT_SHIFT;
-    end
-    else begin
-      case(PE_mode)
-        N_W: begin
-          A_shift_dir <= LEFT_SHIFT;
-          B_shift_dir <= LEFT_SHIFT;
-          M_shift_dir <= LEFT_SHIFT;
-          C_shift_dir <= LEFT_SHIFT;
-        end
-        S_W: begin
-          A_shift_dir <= RIGHT_SHIFT;
-          B_shift_dir <= LEFT_SHIFT;
-          M_shift_dir <= RIGHT_SHIFT;
-          C_shift_dir <= RIGHT_SHIFT;
-        end 
-        N_E: begin
-          A_shift_dir <= LEFT_SHIFT;
-          B_shift_dir <= RIGHT_SHIFT;
-          M_shift_dir <= LEFT_SHIFT;
-          C_shift_dir <= LEFT_SHIFT;
-        end
-        S_E: begin
-          A_shift_dir <= RIGHT_SHIFT;
-          B_shift_dir <= RIGHT_SHIFT;
-          M_shift_dir <= RIGHT_SHIFT;
-          C_shift_dir <= RIGHT_SHIFT;
-        end
-      endcase
-    end
-  end
-
-/*
-  DATA FLOW MODE OF EACH STAGE
-*/
+  /*
+    DATA FLOW Config
+  */
   always @(posedge clk) begin
     if(sys_rst) begin
       PE_mode <= N_W;
@@ -1347,21 +1087,18 @@ module PE_config #(
               bin: TB-B
               Cout: CB-B
             */
-              PE_mode <= N_W;
-
-              A_in_en <= 4'b0011;  
-              B_in_en <= 4'b0111;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0011;
-              
-              A_in_sel_new <= A_TBa;   
-              B_in_sel_new <= B_TBb;
-              M_in_sel_new <= M_TBa;
-              C_out_sel_new <= C_CBb;
-              M_adder_mode_new <= NONE;
-
+              PE_m <= NEW_1_M;
               PE_n <= NEW_1_N;
               PE_k <= NEW_1_K;
+
+              CAL_mode <= N_W;
+
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_CBa;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
               TBa_mode <= {TBa_A,DIR_POS};
               TBb_mode <= {TBb_B,DIR_POS};
               CBa_mode <= {CBa_IDLE,DIR_IDLE};
@@ -1535,8 +1272,78 @@ module PE_config #(
   end
 
 /*
-    TB portA
+  ******************* ABMC_en config *****************************
 */
+  reg [2:0] PE_m_d [NEW_2_AB_MUX : 1];
+  reg [2:0] PE_n_d ;
+  reg [2:0] PE_k_d ;
+
+/*
+  ******************* CAL_mode config *****************************
+*/
+  reg  [11 : 0] CAL_mode_d  [SET_2_C_MUX : 1];
+
+  integer i_CAL_mode;
+  always @(posedge clk) begin
+    CAL_mode_d[1] <= CAL_mode;
+    for(i_CAL_mode=1; i_CAL_mode<=SET_2_C_MUX-1; i_CAL_mode=i_CAL_mode+1) begin
+      CAL_mode_d[i+1] <= CAL_mode_d[i];
+    end     
+  end
+  
+  always @(posedge clk) begin
+    if(sys_rst) begin
+       <= 0;
+    end
+    else begin
+      case(CAL_mode_d[])
+    end
+      
+  end
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      A_shift_dir <= LEFT_SHIFT;
+      B_shift_dir <= LEFT_SHIFT;
+      M_shift_dir <= LEFT_SHIFT;
+      C_shift_dir <= LEFT_SHIFT;
+    end
+    else begin
+      case(PE_mode)
+        N_W: begin
+          A_shift_dir <= LEFT_SHIFT;
+          B_shift_dir <= LEFT_SHIFT;
+          M_shift_dir <= LEFT_SHIFT;
+          C_shift_dir <= LEFT_SHIFT;
+        end
+        S_W: begin
+          A_shift_dir <= RIGHT_SHIFT;
+          B_shift_dir <= LEFT_SHIFT;
+          M_shift_dir <= RIGHT_SHIFT;
+          C_shift_dir <= RIGHT_SHIFT;
+        end 
+        N_E: begin
+          A_shift_dir <= LEFT_SHIFT;
+          B_shift_dir <= RIGHT_SHIFT;
+          M_shift_dir <= LEFT_SHIFT;
+          C_shift_dir <= LEFT_SHIFT;
+        end
+        S_E: begin
+          A_shift_dir <= RIGHT_SHIFT;
+          B_shift_dir <= RIGHT_SHIFT;
+          M_shift_dir <= RIGHT_SHIFT;
+          C_shift_dir <= RIGHT_SHIFT;
+        end
+      endcase
+    end
+  end
+
+/*
+  ********************** address generate config *********************
+*/
+
+  /*
+    *****************************TB-portA*****************************
+  */
   always @(posedge clk) begin
     if(sys_rst) begin
       TB_douta_sel_new <= 3'b000;  
@@ -1628,27 +1435,27 @@ module PE_config #(
       case(TBa_mode[1:0])
         DIR_IDLE: begin
           TB_douta_sel_new[1:0] = DIR_IDLE;
-          TB_A_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= LEFT_SHIFT;
         end
         DIR_POS: begin
           TB_douta_sel_new[1:0] = DIR_POS;
-          TB_A_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= LEFT_SHIFT;
         end
         DIR_NEG: begin
           TB_douta_sel_new[1:0] = DIR_NEG;
-          TB_A_shift_dir <= RIGHT_SHIFT;
+          TBa_shift_dir <= RIGHT_SHIFT;
         end
         DIR_NEW: begin
           TB_douta_sel_new[1:0] = DIR_NEW;
-          TB_A_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= LEFT_SHIFT;
         end
       endcase
     end 
   end
 
-/*
-    TB portB
-*/
+  /*
+    *****************************TB-portB*****************************
+  */
   always @(posedge clk) begin
     if(sys_rst) begin
       TB_dinb_sel_new  <= 2'b00;
@@ -1675,19 +1482,19 @@ module PE_config #(
         end
         TBb_C: begin
           //C[1]
-          if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
+          if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
             TB_enb_new <= 1'b1;
             TB_web_new <= 1'b1;
             TB_addrb_new <= C_TB_base_addr;
           end
           //C[2]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 1'b1;
           end
           //C[3]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 2'b10;
@@ -1706,19 +1513,19 @@ module PE_config #(
             TB_addrb_new <= B_TB_base_addr + seq_cnt - 1'b1;
           end
           //C[1]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
             TB_enb_new <= 1'b1;
             TB_web_new <= 1'b1;
             TB_addrb_new <= C_TB_base_addr;
           end
           //C[2]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 1'b1;
           end
           //C[3]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 2'b10;
@@ -1737,19 +1544,19 @@ module PE_config #(
             TB_addrb_new <= B_TB_base_addr + seq_cnt - 1'b1;
           end
           //C[1]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW) begin
             TB_enb_new <= 1'b1;
             TB_web_new <= 1'b1;
             TB_addrb_new <= C_TB_base_addr;
           end
           //C[2]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 2'b10) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 1'b1;
           end
           //C[3]
-          else if(seq_cnt == 1'b1 + NEW_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
+          else if(seq_cnt == 1'b1 + SET_2_PEin + PE_n + 2'b10 + ADDER_2_NEW + 3'b100 && PE_k == 3'b11) begin
               TB_enb_new <= 1'b1;
               TB_web_new <= 1'b1;
               TB_addrb_new <= C_TB_base_addr + 2'b10;
@@ -1771,26 +1578,57 @@ module PE_config #(
         DIR_IDLE: begin
           TB_dinb_sel_new[1:0] = DIR_IDLE;
           TB_doutb_sel_new[1:0] = DIR_IDLE;
-          TB_B_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= LEFT_SHIFT;
         end
         DIR_POS: begin
           TB_dinb_sel_new[1:0] = DIR_POS;
           TB_doutb_sel_new[1:0] = DIR_POS;
-          TB_B_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= LEFT_SHIFT;
         end
         DIR_NEG: begin
           TB_dinb_sel_new[1:0] = DIR_NEG;
           TB_doutb_sel_new[1:0] = DIR_NEG;
-          TB_B_shift_dir <= RIGHT_SHIFT;
+          TBb_shift_dir <= RIGHT_SHIFT;
         end
         DIR_NEW: begin
           TB_dinb_sel_new[1:0] = DIR_NEW;
           TB_doutb_sel_new[1:0] = DIR_NEW;
-          TB_B_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= LEFT_SHIFT;
         end
       endcase
     end 
   end
+
+  /*
+    *****************************CB-portA READ*****************************
+  */
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      CBa_shift_dir <= DIR_IDLE;
+
+      CB_douta_sel_new <= {};
+      CB_ena_new
+      CB_wea_new
+      CB_addra_new
+
+      CBa_vm_AGD_en
+      CBa_vm_AGD_rst
+    end
+    else begin
+      //地址译码
+      case(CBa_mode[4:2]) 
+        CBa_A: begin
+          
+        end
+      endcase
+      //移位方向
+      CBa_shift_dir <= CBa_mode[1:0];
+    end
+  end
+
+  /*
+    *****************************CB-portB*****************************
+  */
 
 //(old1, using PRD_1_START) 配置TB A B端口 输入数据及数据选择
   //   always @(posedge clk) begin
@@ -1845,7 +1683,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b0;
   //                 TB_addrb_new <= t_cov + seq_cnt;
   //               end
-  //               else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
+  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -1854,7 +1692,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b1;
   //                 TB_addrb_new <= F_cov;
   //               end
-  //               else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -1863,7 +1701,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b1;
   //                 TB_addrb_new <= F_cov + 1'b1;
   //               end
-  //               else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -1934,7 +1772,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b0;
   //                 TB_addrb_new <= 0;
   //               end
-  //               else if(seq_cnt ==  + NEW_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
+  //               else if(seq_cnt ==  + SET_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -1943,7 +1781,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b1;
   //                 TB_addrb_new <= t_cov;
   //               end
-  //               else if(seq_cnt ==  + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+  //               else if(seq_cnt ==  + SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -1952,7 +1790,7 @@ module PE_config #(
   //                 TB_web_new <= 1'b1;
   //                 TB_addrb_new <= t_cov + 1'b1;
   //               end
-  //               else if(seq_cnt ==  + NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+  //               else if(seq_cnt ==  + SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
   //                 TB_ena_new <= 1'b0;
   //                 TB_wea_new <= 1'b0;
   //                 TB_addra_new <= 0;
@@ -2008,7 +1846,7 @@ module PE_config #(
         
   //   end
 
-//(pld2, using PRD_1_END, manual) 配置TB A B端口 输入数据及数据选择
+//(old2, using PRD_1_END, manual) 配置TB A B端口 输入数据及数据选择
   // always @(posedge clk) begin
   //   if(sys_rst) begin
   //     TB_douta_sel_new <= 2'b00;  
@@ -2061,7 +1899,7 @@ module PE_config #(
   //               TB_web_new <= 1'b0;
   //               TB_addrb_new <= t_cov + seq_cnt;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2070,7 +1908,7 @@ module PE_config #(
   //               TB_web_new <= 1'b1;
   //               TB_addrb_new <= F_cov;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2079,7 +1917,7 @@ module PE_config #(
   //               TB_web_new <= 1'b1;
   //               TB_addrb_new <= F_cov + 1'b1;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2150,7 +1988,7 @@ module PE_config #(
   //               TB_web_new <= 1'b0;
   //               TB_addrb_new <= 0;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2159,7 +1997,7 @@ module PE_config #(
   //               TB_web_new <= 1'b1;
   //               TB_addrb_new <= t_cov;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2168,7 +2006,7 @@ module PE_config #(
   //               TB_web_new <= 1'b1;
   //               TB_addrb_new <= t_cov + 1'b1;
   //             end
-  //             else if(seq_cnt == NEW_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
+  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
   //               TB_ena_new <= 1'b0;
   //               TB_wea_new <= 1'b0;
   //               TB_addra_new <= 0;
@@ -2242,32 +2080,6 @@ module PE_config #(
   // end
 
 //配置 CB-portA 输入数据及数据选择
-wire [CB_AW-1 : 0] CB_addra_base;
-reg CB_addra_base_gen;
-CB_addr_shift #(
-  .L     ( L     ),
-  .CB_AW   ( CB_AW   ),
-  .ROW_LEN ( ROW_LEN ))
- CB_addr_shift_portA (
-  .clk           ( clk              ),
-  .sys_rst         ( sys_rst            ),
-  .CB_en           ( CB_ena       [L-2 : 0]     ),
-  .group_cnt_0       ( group_cnt[0]          ),
-  .din           ( CB_addra_new      [CB_AW-1 : 0]   ),
-  .dout          ( CB_addra     [CB_AW*L-1 : 0] )
-);
-
-CB_vm_AGD #(
-  .CB_AW   ( CB_AW   ),
-  .ROW_LEN ( ROW_LEN ))
- CB_vm_AGD_portA (
-  .clk           ( clk               ),
-  .sys_rst         ( sys_rst             ),
-  .en            ( CB_addra_base_gen              ),
-  .group_cnt         ( group_cnt   [ROW_LEN-1 : 0] ),
-  .CB_base_addr      ( CB_addra_base  [CB_AW-1 : 0]   )
-);
-
   always @(posedge clk) begin
     if(sys_rst) begin
       CB_douta_sel_new <= 3'b000;     
@@ -2413,34 +2225,9 @@ CB_vm_AGD #(
       .dout (group_cnt_CB_B )
     );
 
-  wire [CB_AW-1 : 0] CB_addrb_base;
-  reg CB_addrb_base_gen;
-  //地址生成及移位
-    CB_addr_shift #(
-      .L     ( L     ),
-      .CB_AW   ( CB_AW   ),
-      .ROW_LEN ( ROW_LEN ))
-    CB_addr_shift_portB (
-      .clk           ( clk              ),
-      .sys_rst         ( sys_rst            ),
-      .CB_en           ( CB_enb       [L-2 : 0]     ),
-      .group_cnt_0       ( group_cnt_CB_B[0]          ),
-      .din           ( CB_addrb_new      [CB_AW-1 : 0]   ),
-      .dout          ( CB_addrb     [CB_AW*L-1 : 0] )
-    );
-
-    CB_vm_AGD #(
-      .CB_AW   ( CB_AW   ),
-      .ROW_LEN ( ROW_LEN ))
-    CB_vm_AGD_portB (
-      .clk           ( clk               ),
-      .sys_rst         ( sys_rst             ),
-      .en            ( CB_addrb_base_gen              ),
-      .group_cnt         ( group_cnt_CB_B   [ROW_LEN-1 : 0] ),
-      .CB_base_addr      ( CB_addrb_base  [CB_AW-1 : 0]   )
-    );
-  
-
+/*
+    ************************ CB-portB config *****************
+*/
   always @(posedge clk) begin
     if(sys_rst) begin   
       CB_dinb_sel_new <= 1'b0;
@@ -2555,14 +2342,14 @@ CB_vm_AGD #(
     else begin
       case(prd_cur)
         PRD_1: begin
-          if(seq_cnt >= NEW_2_PEin -1'b1 && seq_cnt < NEW_2_PEin + PRD_1_N -1'b1) begin
+          if(seq_cnt >= SET_2_PEin -1'b1 && seq_cnt < SET_2_PEin + PRD_1_N -1'b1) begin
             new_cal_en_new <= 1'b1;
           end
           else
             new_cal_en_new <= 1'b0;
         end
         PRD_2: begin
-          if(seq_cnt >= NEW_2_PEin -1'b1 && seq_cnt < NEW_2_PEin + PRD_2_N -1'b1) begin
+          if(seq_cnt >= SET_2_PEin -1'b1 && seq_cnt < SET_2_PEin + PRD_2_N -1'b1) begin
             new_cal_en_new <= 1'b1;
           end
           else
@@ -2586,14 +2373,14 @@ CB_vm_AGD #(
     else begin
       case(prd_cur)
         PRD_1: begin
-          if(seq_cnt == NEW_2_PEin + PRD_1_N -1'b1) begin
+          if(seq_cnt == SET_2_PEin + PRD_1_N -1'b1) begin
             new_cal_done_new <= 1'b1;
           end
           else
             new_cal_done_new <= 1'b0;
         end
         PRD_2: begin
-          if(seq_cnt == NEW_2_PEin + PRD_2_N -1'b1) begin
+          if(seq_cnt == SET_2_PEin + PRD_2_N -1'b1) begin
             new_cal_done_new <= 1'b1;
           end
           else
@@ -2668,9 +2455,355 @@ end
   * 输出结果到给写入地址 1
 
 */
+/*
+  ************************shift inst***************************
+*/
 
+/*
+  ************************ABCM shift***************************
+*/
+  //shift of PE_sel
+    dshift 
+    #(
+      .DW  (A_IN_SEL_DW ),
+      .DEPTH (X )
+    )
+    A_in_sel_dshift(
+      .clk  (clk  ),
+      .dir  (A_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (A_in_sel_new  ),
+      .dout (A_in_sel )
+    );
 
+    dshift 
+    #(
+      .DW  (B_IN_SEL_DW ),
+      .DEPTH (X )
+    )
+    B_in_sel_dshift(
+      .clk  (clk  ),
+      .dir   (B_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (B_in_sel_new  ),
+      .dout (B_in_sel )
+    );
 
+    dshift 
+    #(
+      .DW  (M_IN_SEL_DW ),
+      .DEPTH (X )
+    )
+    M_in_sel_dshift(
+      .clk  (clk  ),
+      .dir  (M_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (M_in_sel_new  ),
+      .dout (M_in_sel )
+    );
 
+    dshift 
+    #(
+      .DW  (2 ),
+      .DEPTH (X )
+    )
+    M_adder_mode_dshift(
+      .clk  (clk  ),
+      .dir  (M_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (M_adder_mode_new  ),
+      .dout (M_adder_mode )
+    );
+
+    dshift 
+    #(
+      .DW  (C_OUT_SEL_DW ),
+      .DEPTH (X )
+    )
+   C_out_sel_dshift(
+      .clk  (clk  ),
+      .dir   (C_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (C_out_sel_new  ),
+      .dout (C_out_sel )
+    );
+
+/*
+  **********************shift of TB_portA***********************
+*/
+    dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    TB_ena_dshift(
+      .clk  (clk  ),
+      .dir  (TBa_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_ena_new  ),
+      .dout (TB_ena )
+    );
+
+    dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    TB_wea_dshift(
+      .clk  (clk  ),
+      .dir   (TBa_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_wea_new  ),
+      .dout (TB_wea )
+    );
+
+    dshift 
+    #(
+      .DW  (TB_DOUTA_SEL_DW ),
+      .DEPTH (L )
+    )
+    TB_douta_sel_dshift(
+      .clk  (clk  ),
+      .dir  (TBa_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_douta_sel_new  ),
+      .dout (TB_douta_sel )
+    );
+
+    dshift 
+    #(
+      .DW  (TB_AW  ),
+      .DEPTH (L )
+    )
+    TB_addra_dshift(
+      .clk  (clk  ),
+      .dir   (TBa_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_addra_new  ),
+      .dout (TB_addra )
+    );
+
+/*
+    **********************shift of TB_portB**************************
+*/
+    dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    TB_enb_dshift(
+      .clk  (clk  ),
+      .dir  (TBb_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_enb_new  ),
+      .dout (TB_enb )
+    );
+
+    dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    TB_web_dshift(
+      .clk  (clk  ),
+      .dir   (TBb_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_web_new  ),
+      .dout (TB_web )
+    );
+
+    dshift 
+    #(
+      .DW  (TB_DINB_SEL_DW ),
+      .DEPTH (L )
+    )
+    TB_dinb_sel_dshift(
+      .clk  (clk  ),
+      .dir   (TBb_shift_dir   ),
+      .sys_rst ( sys_rst),
+      .din  (TB_dinb_sel_new  ),
+      .dout (TB_dinb_sel )
+    );
+
+    dshift 
+    #(
+      .DW  (TB_DOUTB_SEL_DW ),
+      .DEPTH (L )
+    )
+    TB_doutb_sel_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .dir   (TBb_shift_dir   ),
+      .din  (TB_doutb_sel_new  ),
+      .dout (TB_doutb_sel )
+    );
+
+    dshift 
+    #(
+      .DW  (TB_AW  ),
+      .DEPTH (L )
+    )
+    TB_addrb_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .dir  (TBb_shift_dir   ),
+      .din  (TB_addrb_new  ),
+      .dout (TB_addrb )
+    );
+
+/*
+  *********************shift of CB-portA****************
+*/
+    CB_vm_AGD 
+    #(
+      .CB_AW   (CB_AW   ),
+      .ROW_LEN (ROW_LEN )
+    )
+    CBa_vm_AGD(
+    	.clk          (clk          ),
+      .sys_rst      (sys_rst      ),
+      .en           (CBa_vm_AGD_en           ),
+      .user_reset   (CBa_vm_AGD_rst   ),
+      .group_cnt    (group_cnt    ),
+      .CB_base_addr (CB_addra_base )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    CB_ena_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBa_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_ena_new  ),
+      .dout (CB_ena )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    CB_wea_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBa_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_wea_new  ),
+      .dout (CB_wea )
+    );
+
+    CB_addr_shift 
+    #(
+      .L           (L           ),
+      .CB_AW       (CB_AW       ),
+      .ROW_LEN     (ROW_LEN     )
+    )
+    CB_addra_shift(
+    	.clk             (clk             ),
+      .sys_rst         (sys_rst         ),
+      .CB_dir          (CBa_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .group_cnt_0     (group_cnt_0     ),
+      .CB_en_new       (CB_ena_new       ),
+      .CB_en           (CB_ena           ),
+      .CB_addr_new     (CB_addra_new     ),
+      .CB_addr         (CB_addra        )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (CB_DOUTA_SEL_DW ),
+      .DEPTH (L )
+    )
+    CB_douta_sel_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBa_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_douta_sel_new  ),
+      .dout (CB_douta_sel )
+    );
+    
+    
+/*
+  *********************shift of CB-portB****************
+*/
+    CB_vm_AGD 
+    #(
+      .CB_AW   (CB_AW   ),
+      .ROW_LEN (ROW_LEN )
+    )
+    CBb_vm_AGD(
+    	.clk          (clk          ),
+      .sys_rst      (sys_rst      ),
+      .en           (CBb_vm_AGD_en           ),
+      .user_reset   (CBb_vm_AGD_rst   ),
+      .group_cnt    (group_cnt    ),
+      .CB_base_addr (CB_addrb_base )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    CB_enb_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBb_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_enb_new  ),
+      .dout (CB_enb )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (1 ),
+      .DEPTH (L )
+    )
+    CB_web_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBb_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_web_new  ),
+      .dout (CB_web )
+    );
+
+    CB_addr_shift 
+    #(
+      .L           (L           ),
+      .CB_AW       (CB_AW       ),
+      .ROW_LEN     (ROW_LEN     )
+    )
+    CB_addrb_shift(
+    	.clk             (clk             ),
+      .sys_rst         (sys_rst         ),
+      .CB_dir          (CBb_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .group_cnt_0     (group_cnt_0     ),
+      .CB_en_new       (CB_enb_new       ),
+      .CB_en           (CB_enb           ),
+      .CB_addr_new     (CB_addrb_new     ),
+      .CB_addr         (CB_addrb       )
+    );
+
+    CB_dshift 
+    #(
+      .DW  (CB_DINB_SEL_DW ),
+      .DEPTH (L )
+    )
+    CB_dinb_sel_dshift(
+      .clk  (clk  ),
+      .sys_rst ( sys_rst),
+      .CB_dir          (CBb_shift_dir          ),
+      .landmark_num_10 (landmark_num_10 ),
+      .din  (CB_dinb_sel_new  ),
+      .dout (CB_dinb_sel )
+    );
 
 endmodule

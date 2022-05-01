@@ -847,16 +847,35 @@ endgenerate
 
 **TB CB移位方向、地址移位方向由数据映射决定**!
 
-### PE输入配置（直接配置）
+### 运算输入配置
 
-* A_in_en
-* A_in_sel
-* PE_mode
-* 实际只有UPD最后一步需要换向
+m, n, k
+
+cal_mode[11:0]
+
+* A来源(A_in_en, A_in_sel_new)
+  * 00: TB
+  * 10: CB
+* B来源(B_in_en, B_in_sel_new)
+  * 00: TB
+  * 01: TB_CONS
+  * 10: CB
+* M来源(M_in_en, M_in_sel_new)
+  * 00: TB
+  * 10: CB
+* C去向(C_in_en, C_in_sel_new)
+  * 00: TB
+  * 01: TB_CONS
+  * 10: CB
+* adder_mode
+  * 00: NONE
+  * 01: ADD
+  * 10: C_MINUS_M
+  * 11: M_MINUS_C
+* PE_mode(dir)
+  * N_W, S_W, ...
 
 ### TB CB译码控制量
-
-* n
 
 * TBa_mode
 
@@ -869,7 +888,6 @@ endgenerate
     * POS：01
     * NEG：10
     * NEW：11
-
 * TBb_mode
 
   * 配置模式[4:2]
@@ -881,7 +899,6 @@ endgenerate
     * POS：01
     * NEG：10
     * NEW：11
-
 * CBa_mode
 
   * 配置模式[4:2]
@@ -892,7 +909,6 @@ endgenerate
     * POS：01
     * NEG：10
     * NEW：11
-
 * CBb_mode
 
   * 配置模式[4:2]
@@ -904,18 +920,90 @@ endgenerate
     * NEG：10
     * NEW：11
 
-* A_mode[3 : 0]
+### 时序
 
-  * 来源：[3 : 2]
-    * TB-A: 00
-    * CB-A: 10
+| 0    | stage     |                                    |
+| ---- | --------- | ---------------------------------- |
+| 1    | set       | CAL_mode, TB_mode, CB_mode         |
+| 2    | addr_new  | addr_shift_dir                     |
+| 3    | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir |
+| 4    | CB_dout   | A_in_sel_new, A_in_sel_dir,        |
+| 5    | A_CB_dout | cal_en_new, cal_done_new, A_in_en  |
+| 6    | A_data    | PE_mode                            |
+| 7    |           |                                    |
+| 8    |           |                                    |
+| 9    |           | M_in_sel_new, M_in_sel_dir         |
+| 10   | M_data    | C_in_sel_new, C_in_sel_dir         |
+| 11   | C_data    | CB_dinb_sel, CB_dinb_sel_dir       |
+| 12   | C_CB_dinb |                                    |
+| 13   | CB_dinb   |                                    |
+|      |           |                                    |
 
-  * 顺序 [1:0]
-    * POS：01
-    * NEG：10
-    * NEW：11
 
 
+
+
+### 方向控制量：
+
+CBa_shift_dir: CBa_mode[1:0]
+
+CB_douta_sel_shift: CBa_mode[1:0]的2级延迟
+
+
+
+A_in_sel_shift_dir, B_in_sel_shift_dir: cal_mode的NEW_2_A_sel(3)级延迟
+
+PE_mode, cal_en, cal_done: cal_mode的NEW_2_PE_in(4)级延迟
+
+M_in_sel_dir, M_adder_mode: cal_mode的NEW_2_PE_in+N+1级延迟，将延迟固定为7
+
+C_out_sel_dir: cal_mode的NEW_2_PE_in+N+2级延迟，将延迟固定为8
+
+
+
+CB_dinb_shift: CBb_mode[1:0]的NEW_2_PE_in+N+3级延迟，固定为9
+
+CBb_shift_dir：CBb_mode[1:0]的NEW_2_PE_in+N+3级延迟，固定为9
+
+NEW_2_PE_in+N+4 T后，数据输入到CB_dinb；同时addrb应有效 
+
+addrb_new: NEW_2_PE_in+N+3
+
+### 读取时序
+
+0：配置
+
+1：给new, CBa_shift_dir，PE_mode
+
+2：addr[0]
+
+3：addr[1]	CB_douta[0]
+
+4：addr[2]	CB_douta[1]	B_CB_douta[0]
+
+5：addr[3]	CB_douta[2]	B_CB_douta[1]	northin[0]
+
+0：配置		 
+
+1：给new
+
+结论：
+
+* CBa_shift_dir可以保证en we addr正确移位、送入   即：一个seq_cnt周期内，CBa_shift_dir一直为该段对应的值。这也保证了后面只需通过延迟，即可保证每一行都为正确的方向。无需每一行的移位都独立检查上一行的移位方向
+* **CB_douta_sel的方向应为CBa_shift_dir的2级延迟** 
+*  **A_in_sel, B_in_sel的方向应由PE_mode的3级延迟决定。**
+* **实际PE_array的mode应为控制量PE_mode的4级延迟**
+
+**TB同理。TB CB延迟一致**
+
+### 写入时序
+
+#### TB
+
+* M_in_sel， M_adder_mode 应为PE_mode的1+NEW_2_PE_in+N+1级延迟，将延迟固定为7
+* C_out_sel由PE_mode的 1+NEW_2_PE_in+N+2级延迟决定  由于PE_mode会持续技术时间，将延迟固定为8
+* 写地址和写数据同步
+* 因此TB_dinb_sel的方向无需延迟
 
 
 ### 输出控制量
@@ -935,6 +1023,42 @@ endgenerate
   * M_adder_mode
 * PE array
   * PE_mode
+
+
+
+
+
+### 220429
+
+* CB_AGD:
+  * 只生成BANK0对应的每行首地址
+  * 实际使用，也是在第一周期，使得CB_addra_new <= CB_addra_base
+  * 因此：CB_addra_base 应得到(0,0) (7,0) (8,0) (15,0)的地址，从而可读state！
+* CB_addr_shift
+  * 
+
+#### TBD：
+
+* non_linear 
+  * CB-B read
+  * TB-A write
+* CB_2_TB
+  * CB-B read
+  * TB-A write
+
+### 220430
+
+* NEW_3的读取按最坏情况计算，否则需改变shift顺序
+* 考虑把shift也放到map中？
+
+
+
+### 220510
+
+* prd_cnt的归零值也可设置为寄存器
+* 移位控制量也应是输入的dir的移位
+
+
 
 ### 输入时序
 
@@ -962,29 +1086,3 @@ endgenerate
     * cov: 2*landmark_num+3
 
   * addr_shift只管映射
-
-
-
-
-### 220429
-
-* CB_AGD:
-  * 只生成BANK0对应的每行首地址
-  * 实际使用，也是在第一周期，使得CB_addra_new <= CB_addra_base
-  * 因此：CB_addra_base 应得到(0,0) (7,0) (8,0) (15,0)的地址，从而可读state！
-* CB_addr_shift
-  * 
-
-#### TBD：
-
-* non_linear 
-  * CB-B read
-  * TB-A write
-* CB_2_TB
-  * CB-B read
-  * TB-A write
-
-### 220430
-
-* NEW_3的读取按最坏情况计算，否则需改变shift顺序
-* 考虑把shift也放到map中？
