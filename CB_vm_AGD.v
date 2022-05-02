@@ -36,7 +36,7 @@ module CB_vm_AGD #(
         group_cnt_shift <= 0;
         group_offset <= 0;
         new_interval <= 0;
-        CB_base_addr <= 0;
+        CB_base_addr <= 'd2;
       end
       else begin
         case({en_d, en})

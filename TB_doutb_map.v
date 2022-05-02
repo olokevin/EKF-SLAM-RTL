@@ -12,8 +12,8 @@ module TB_doutb_map #(
   input   [2:0]   TB_doutb_sel,
 
   input   [L*RSA_DW-1 : 0]         TB_doutb,
-  output  reg  [X*RSA_DW-1 : 0]    B_TB_doutb,
-  output  reg  [X*RSA_DW-1 : 0]    B_CONS_TB_doutb
+  output  reg  [Y*RSA_DW-1 : 0]    B_TB_doutb,
+  output  reg  [Y*RSA_DW-1 : 0]    B_CONS_TB_doutb
 );
 
 //

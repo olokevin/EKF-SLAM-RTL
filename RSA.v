@@ -339,6 +339,7 @@ wire [X-1 : 0]          A_in_en;
 
 //B in
 wire [Y*RSA_DW-1 : 0]   B_TB_doutb; 
+wire [Y*RSA_DW-1 : 0]   B_CONS_TB_doutb;
 wire [Y*RSA_DW-1 : 0]   B_CB_douta;
 wire [B_IN_SEL_DW*Y-1 : 0]        B_in_sel;     //B_in有三个来源
 wire [Y-1 : 0]          B_in_en;   
@@ -456,7 +457,7 @@ generate
 endgenerate
 
 //Bin 临时寄存H
-wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
+wire [TB_DOUTB_SEL_DW-1 : 0]  TB_doutb_sel;
 
 reg [RSA_DW-1:0] B_CONS [Y-1:0];
 reg [2:0] B_CONS_addr;
@@ -493,8 +494,8 @@ generate
 endgenerate
 
 //TEMP BRAM
-wire [TB_DINB_SEL_DW*L-1 : 0]    TB_dinb_sel;
-wire [TB_DOUTA_SEL_DW*L-1 : 0]    TB_douta_sel;
+wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
+wire [TB_DOUTA_SEL_DW-1 : 0]    TB_douta_sel;
 //定义提前
 // wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
 
@@ -513,8 +514,8 @@ wire [L*RSA_DW-1 : 0] TB_douta;
 wire [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
-wire [CB_DINB_SEL_DW*L-1 : 0]    CB_dinb_sel;
-wire [CB_DOUTA_SEL_DW*L-1 : 0]    CB_douta_sel;
+wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
+wire [CB_DOUTA_SEL_DW-1 : 0]    CB_douta_sel;
 
 wire [L-1 : 0]    CB_ena;
 wire [L-1 : 0]    CB_enb;
@@ -530,6 +531,7 @@ wire [L*CB_AW-1 : 0] CB_addrb;
 wire [L*RSA_DW-1 : 0] CB_douta;
 wire [L*RSA_DW-1 : 0] CB_doutb;
 
+wire [1:0] landmark_num_10;
 
 //TEMP_BANK data MUX and deMUX
   TB_dinb_map 
@@ -592,7 +594,7 @@ wire [L*RSA_DW-1 : 0] CB_doutb;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_dinb_sel  (CB_dinb_sel  ),
-    .landmark_num (landmark_num ),
+    .landmark_num_10 (landmark_num_10 ),
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
   );
@@ -609,7 +611,7 @@ wire [L*RSA_DW-1 : 0] CB_doutb;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_douta_sel (CB_douta_sel ),
-    .landmark_num (landmark_num ),
+    .landmark_num_10 (landmark_num_10 ),
     .CB_douta     (CB_douta     ),
     .A_CB_douta   (A_CB_douta   ),
     .B_CB_douta   (B_CB_douta   ),
@@ -750,47 +752,47 @@ PE_config
   .ROW_LEN       (ROW_LEN   )
 )
 u_PE_config(
-  .clk               (clk     ),
-  .sys_rst          (sys_rst   ),
-  .landmark_num  (landmark_num  ),
-  .stage_val        (stage_val   ),
-  .stage_rdy        (stage_rdy   ),
-  .nonlinear_m_rdy  (nonlinear_m_rdy ),
-  .nonlinear_s_val  (nonlinear_s_val ),
-  .nonlinear_m_val  (nonlinear_m_val ),
-  .nonlinear_s_rdy  (nonlinear_s_rdy ),
-  .A_in_sel         (A_in_sel  ),
-  .A_in_en          (A_in_en   ),
-  .B_in_sel         (B_in_sel  ),
-  .B_in_en          (B_in_en   ),
-  .M_in_sel         (M_in_sel  ),
-  .M_in_en          (M_in_en   ),
-  .M_adder_mode     (M_adder_mode  ),
-  // .C_out_sel        (C_out_sel   ),
-  .C_map_mode       (C_map_mode),
-  .C_out_en         (C_out_en  ),
-  .TB_dinb_sel      (TB_dinb_sel   ),
-  .TB_douta_sel     (TB_douta_sel  ),
-  .TB_doutb_sel     (TB_doutb_sel  ),
-  .TB_ena           (TB_ena    ),
-  .TB_enb           (TB_enb    ),
-  .TB_wea           (TB_wea    ),
-  .TB_web           (TB_web    ),
-  .TB_dina          (TB_dina  ),
-  .TB_addra         (TB_addra  ),
-  .TB_addrb         (TB_addrb  ),
-  .CB_dinb_sel      (CB_dinb_sel   ),
-  .CB_douta_sel     (CB_douta_sel  ),
-  .CB_ena           (CB_ena    ),
-  .CB_enb           (CB_enb    ),
-  .CB_wea           (CB_wea    ),
-  .CB_web           (CB_web    ),
-  .CB_dina          (CB_dina  ),
-  .CB_addra         (CB_addra  ),
-  .CB_addrb         (CB_addrb  ),
-  .PE_mode          (PE_mode   ),
-  .new_cal_en       (new_cal_en   ),
-  .new_cal_done     (new_cal_done   )
+  .clk                  (clk               ),
+  .sys_rst              (sys_rst           ),
+  .landmark_num         (landmark_num      ),
+  .landmark_num_10      (landmark_num_10   ),
+  .stage_val            (stage_val         ),
+  .stage_rdy            (stage_rdy         ),
+  .nonlinear_m_rdy      (nonlinear_m_rdy   ),
+  .nonlinear_s_val      (nonlinear_s_val   ),
+  .nonlinear_m_val      (nonlinear_m_val   ),
+  .nonlinear_s_rdy      (nonlinear_s_rdy   ),
+  .A_in_sel             (A_in_sel          ),
+  .A_in_en              (A_in_en           ),
+  .B_in_sel             (B_in_sel          ),
+  .B_in_en              (B_in_en           ),
+  .M_in_sel             (M_in_sel          ),
+  .M_in_en              (M_in_en           ),
+  .C_out_sel            (C_out_sel         ),
+  .C_out_en             (C_out_en          ),
+  .TB_dinb_sel          (TB_dinb_sel       ),
+  .TB_douta_sel         (TB_douta_sel      ),
+  .TB_doutb_sel         (TB_doutb_sel      ),
+  .TB_ena               (TB_ena            ),
+  .TB_enb               (TB_enb            ),
+  .TB_wea               (TB_wea            ),
+  .TB_web               (TB_web            ),
+  .TB_dina              (TB_dina           ),
+  .TB_addra             (TB_addra          ),
+  .TB_addrb             (TB_addrb          ),
+  .CB_dinb_sel          (CB_dinb_sel       ),
+  .CB_douta_sel         (CB_douta_sel      ),
+  .CB_ena               (CB_ena            ),
+  .CB_enb               (CB_enb            ),
+  .CB_wea               (CB_wea            ),
+  .CB_web               (CB_web            ),
+  .CB_dina              (CB_dina           ),
+  .CB_addra             (CB_addra          ),
+  .CB_addrb             (CB_addrb          ),
+  .M_adder_mode         (M_adder_mode      ),
+  .PE_mode              (PE_mode           ),
+  .new_cal_en           (new_cal_en        ),
+  .new_cal_done         (new_cal_done      )
 );
 
 endmodule

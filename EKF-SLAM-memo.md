@@ -922,22 +922,22 @@ cal_mode[11:0]
 
 ### 时序
 
-| 0    | stage     |                                    |
-| ---- | --------- | ---------------------------------- |
-| 1    | set       | CAL_mode, TB_mode, CB_mode         |
-| 2    | addr_new  | addr_shift_dir                     |
-| 3    | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir |
-| 4    | CB_dout   | A_in_sel_new, A_in_sel_dir,        |
-| 5    | A_CB_dout | cal_en_new, cal_done_new, A_in_en  |
-| 6    | A_data    | PE_mode                            |
-| 7    |           |                                    |
-| 8    |           |                                    |
-| 9    |           | M_in_sel_new, M_in_sel_dir         |
-| 10   | M_data    | C_in_sel_new, C_in_sel_dir         |
-| 11   | C_data    | CB_dinb_sel, CB_dinb_sel_dir       |
-| 12   | C_CB_dinb |                                    |
-| 13   | CB_dinb   |                                    |
-|      |           |                                    |
+| 0        | stage     |                                    |
+| -------- | --------- | ---------------------------------- |
+| 1        | set       | CAL_mode, TB_mode, CB_mode         |
+| 2        | addr_new  | addr_shift_dir                     |
+| 3        | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir |
+| 4        | CB_dout   | A_in_sel_new, A_in_sel_dir,        |
+| 5        | A_CB_dout | cal_en_new, cal_done_new, A_in_en  |
+| 6        | A_data    | PE_mode                            |
+| 7        |           |                                    |
+| 8        |           |                                    |
+| 9        |           | M_in_sel_new, M_in_sel_dir         |
+| 10       | M_data    | C_in_sel_new, C_in_sel_dir         |
+| 11(WR 1) | C_data    | CB_dinb_sel, CB_dinb_sel_dir       |
+| 12(WR 2) | C_CB_dinb |                                    |
+| 13(WR 3) | CB_dinb   |                                    |
+|          |           |                                    |
 
 
 
@@ -1086,3 +1086,13 @@ addrb_new: NEW_2_PE_in+N+3
     * cov: 2*landmark_num+3
 
   * addr_shift只管映射
+
+
+
+### problems
+
+* 现在的TB CB sel无需移位，只有一个
+  * 注意：RSA中的sel应为config输出的sel_new的一级缓存
+* landmark_num_10
+* cal_en_new, cal_done_new
+* group_cnt起始0在何处？相应的尚未更改

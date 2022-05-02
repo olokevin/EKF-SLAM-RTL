@@ -31,7 +31,7 @@ module CB_douta_map #(
     10：逆向映射
     11：NEW, 新地标初始化步，根据landmark后两位决定映射关系(进NEW步骤就先+1)
 
-  l_num[1:0]  CB_BANK   PE_BANK
+  l_num[1:0]  CBa_BANK   PE_BANK
   11          0         0
               1         1 
               
@@ -44,10 +44,10 @@ module CB_douta_map #(
   10          1         0
               0         1
 */
-localparam CB_IDLE = 2'b00;
-localparam CB_A = 2'b01;
-localparam CB_B = 2'b10;
-localparam CB_M = 2'b11;
+localparam CBa_IDLE = 2'b00;
+localparam CBa_A = 2'b01;
+localparam CBa_B = 2'b10;
+localparam CBa_M = 2'b11;
 
 localparam DIR_IDLE = 2'b00;
 localparam DIR_POS  = 2'b01;
@@ -63,19 +63,19 @@ localparam  DIR_NEW_10  = 2'b10;
 /*
   A_CB_douta
 */
-integer i_CB_A;
+integer i_CBa_A;
 always @(posedge clk) begin
     if(sys_rst)
       A_CB_douta <= 0;
     else begin
       case(CB_douta_sel[3:2])
-        CB_A: begin
+        CBa_A: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: A_CB_douta <= 0;
             DIR_POS : A_CB_douta <= CB_douta;
             DIR_NEG :begin
-              for(i_CB_A=0; i_CB_A<X; i_CB_A=i_CB_A+1) begin
-                A_CB_douta[i_CB_A*RSA_DW +: RSA_DW] <= CB_douta[(X-1-i_CB_A)*RSA_DW +: RSA_DW];
+              for(i_CBa_A=0; i_CBa_A<X; i_CBa_A=i_CBa_A+1) begin
+                A_CB_douta[i_CBa_A*RSA_DW +: RSA_DW] <= CB_douta[(X-1-i_CBa_A)*RSA_DW +: RSA_DW];
               end
             end
             DIR_NEW :begin
@@ -116,19 +116,19 @@ end
 /*
   B_CB_douta
 */
-integer i_CB_B;
+integer i_CBa_B;
 always @(posedge clk) begin
     if(sys_rst)
       B_CB_douta <= 0;
     else begin
       case(CB_douta_sel[3:2])
-        CB_B: begin
+        CBa_B: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: B_CB_douta <= 0;
             DIR_POS : B_CB_douta <= CB_douta;
             DIR_NEG :begin
-              for(i_CB_B=0; i_CB_B<Y; i_CB_B=i_CB_B+1) begin
-                B_CB_douta[i_CB_B*RSA_DW +: RSA_DW] <= CB_douta[(Y-1-i_CB_B)*RSA_DW +: RSA_DW];
+              for(i_CBa_B=0; i_CBa_B<Y; i_CBa_B=i_CBa_B+1) begin
+                B_CB_douta[i_CBa_B*RSA_DW +: RSA_DW] <= CB_douta[(Y-1-i_CBa_B)*RSA_DW +: RSA_DW];
               end
             end
             DIR_NEW :begin
@@ -169,19 +169,19 @@ end
 /*
   B_CB_douta
 */
-integer i_CB_M;
+integer i_CBa_M;
 always @(posedge clk) begin
     if(sys_rst)
       M_CB_douta <= 0;
     else begin
       case(CB_douta_sel[3:2])
-        CB_M: begin
+        CBa_M: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: M_CB_douta <= 0;
             DIR_POS : M_CB_douta <= CB_douta;
             DIR_NEG :begin
-              for(i_CB_M=0; i_CB_M<X; i_CB_M=i_CB_M+1) begin
-                M_CB_douta[i_CB_M*RSA_DW +: RSA_DW] <= CB_douta[(X-1-i_CB_M)*RSA_DW +: RSA_DW];
+              for(i_CBa_M=0; i_CBa_M<X; i_CBa_M=i_CBa_M+1) begin
+                M_CB_douta[i_CBa_M*RSA_DW +: RSA_DW] <= CB_douta[(X-1-i_CBa_M)*RSA_DW +: RSA_DW];
               end
             end
             DIR_NEW :begin
