@@ -3012,7 +3012,7 @@ end
     TB_douta_sel <= TB_douta_sel_new;
     TB_doutb_sel <= TB_doutb_sel_new;
     CB_dinb_sel <= CB_dinb_sel_new;
-    CB_douta_sel_new <= CB_douta_sel_new;
+    CB_douta_sel <= CB_douta_sel_new;
   end
 
 endmodule

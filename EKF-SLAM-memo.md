@@ -1096,3 +1096,4 @@ addrb_new: NEW_2_PE_in+N+3
 * landmark_num_10
 * cal_en_new, cal_done_new
 * group_cnt起始0在何处？相应的尚未更改
+  * 暂时设定：ROW4~7为group_0 应反向
