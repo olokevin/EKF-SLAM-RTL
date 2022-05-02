@@ -91,15 +91,15 @@ module PE_config #(
   localparam WR_DELAY = 2;
   localparam AGD_DELAY = 5;
 
-  localparam SET_2_ADDR = 'd1;
-  localparam SET_2_BRAMOUT_MUX = 'd2;
-  localparam SET_2_AB_MUX = 'd3;
-  localparam SET_2_PEin = 'd4;    //给出addr_new到westin
-  
-  localparam SET_2_M_MUX = 'd7;
-  localparam SET_2_C_MUX = 'd8;
+  localparam RD_SEL_D = 'd1;
+  localparam AB_IN_SEL_D = 'd3;
+  localparam CAL_EN_D = 'd3;
+  localparam PE_MODE_D = 'd4;
+  localparam M_IN_SEL_D = 'd7;
+  localparam C_OUT_SEL_D = 'd8;
+  localparam WR_SEL_D = 'd9;
 
-  localparam SET_2_BRAMIN_MUX = 'd9;
+  localparam SET_2_PEin = 'd4;    //给出addr_new到westin
 
   localparam RD_2_WR = 'd10;
   
@@ -161,10 +161,16 @@ module PE_config #(
   localparam TBb_BC = 3'b011;
   localparam TBb_CONS_C = 3'b100;
 
-  localparam CBa_IDLE = 3'b000;
-  localparam CBa_A = 3'b001;
-  localparam CBa_B = 3'b010;
-  localparam CBa_M = 3'b100;
+  // localparam CBa_IDLE = 3'b000;
+  // localparam CBa_A = 3'b001;
+  // localparam CBa_B = 3'b010;
+  // localparam CBa_M = 3'b100;
+
+//from CB_DOUTA_MAP.v
+  localparam CBa_IDLE = 2'b00;
+  localparam CBa_A = 2'b01;
+  localparam CBa_B = 2'b10;
+  localparam CBa_M = 2'b11;
 
   localparam CBb_IDLE = 3'b000;
   localparam CBb_C = 3'b001;
@@ -239,6 +245,12 @@ module PE_config #(
     localparam NEW_4_END     = 'd5;
     localparam NEW_5_END     = 'd5;
 
+    localparam NEW_1_M       = 3'b010;
+    localparam NEW_2_M       = 3'b010;
+    localparam NEW_3_M       = 3'b010;
+    localparam NEW_4_M       = 3'b010;
+    localparam NEW_5_M       = 3'b010;
+    
     localparam NEW_1_N       = 3'b011;
     localparam NEW_2_N       = 3'b011;
     localparam NEW_3_N       = 3'b011;
@@ -319,7 +331,9 @@ module PE_config #(
   reg A_in_sel_dir;
   reg B_in_sel_dir;
   reg M_in_sel_dir;
-  reg C_in_sel_dir;
+  reg C_out_sel_dir;
+
+  reg cal_en_done_dir;
 
 /*
   **************Address Generate Config*****************
@@ -341,9 +355,9 @@ module PE_config #(
 
   //CB def
     //port A
-    reg [1:0]                     CBa_shift_dir;
-    
+    reg [1:0]                     CBa_shift_dir; 
     reg [CB_DOUTA_SEL_DW-1:0]     CB_douta_sel_new;
+
     reg                           CB_ena_new;
     reg                           CB_wea_new;
     reg [CB_AW-1 : 0]             CB_addra_new;
@@ -354,8 +368,8 @@ module PE_config #(
 
     //port B
     reg [1:0]                     CBb_shift_dir;
-
     reg [CB_DINB_SEL_DW-1:0]      CB_dinb_sel_new;
+
     reg                           CB_enb_new;
     reg                           CB_web_new;
     reg [CB_AW-1 : 0]             CB_addrb_new;
@@ -1052,23 +1066,22 @@ module PE_config #(
   */
   always @(posedge clk) begin
     if(sys_rst) begin
-      PE_mode <= N_W;
-      M_adder_mode_new <= 2'b00;
-      
-      A_in_en <= 4'b0000;  
-      B_in_en <= 4'b0000;
-      M_in_en <= 4'b0000;
-      C_out_en <= 4'b0000;
-      
-      A_in_sel_new <= 2'b00;   
-      B_in_sel_new <= 2'b00;
-      M_in_sel_new <= 2'b00;
-      C_out_sel_new <= 2'b00;
+      PE_m <= 0;
+      PE_n <= 0;
+      PE_k <= 0;
 
-      TBa_mode <= 0;
-      TBb_mode <= 0;
-      CBa_mode <= 0;
-      CBb_mode <= 0;
+      CAL_mode <= N_W;
+
+      A_in_mode <= A_TBa;   
+      B_in_mode <= B_TBb;
+      M_in_mode <= M_TBa;
+      C_out_mode <= C_CBb;
+      M_adder_mode_set <= NONE;
+
+      TBa_mode <= {TBa_A,DIR_IDLE};
+      TBb_mode <= {TBb_B,DIR_IDLE};
+      // CBa_mode <= {CBa_IDLE,DIR_IDLE};
+      // CBb_mode <= {CBb_C,DIR_POS};
 
       A_TB_base_addr <= 0;
       B_TB_base_addr <= 0;
@@ -1094,15 +1107,15 @@ module PE_config #(
               CAL_mode <= N_W;
 
               A_in_mode <= A_TBa;   
-              B_in_mode <= B_CBa;
+              B_in_mode <= B_TBb;
               M_in_mode <= M_TBa;
               C_out_mode <= C_CBb;
               M_adder_mode_set <= NONE;
 
               TBa_mode <= {TBa_A,DIR_POS};
               TBb_mode <= {TBb_B,DIR_POS};
-              CBa_mode <= {CBa_IDLE,DIR_IDLE};
-              CBb_mode <= {CBb_C,DIR_POS};
+              // CBa_mode <= {CBa_IDLE,DIR_IDLE};
+              // CBb_mode <= {CBb_C,DIR_POS};
 
               A_TB_base_addr <= G_xi;
               B_TB_base_addr <= t_cov;
@@ -1119,25 +1132,22 @@ module PE_config #(
               Min: 0
               Cout: CB-B
             */
-              PE_mode <= N_W;
-
-              A_in_en <= 4'b0011;  
-              B_in_en <= 4'b0111;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0011;
-              
-              A_in_sel_new <= A_TBa;   
-              B_in_sel_new <= B_CBa;
-              M_in_sel_new <= M_TBa;
-              C_out_sel_new <= C_CBb;
-              M_adder_mode_new <= NONE;
-
+              PE_m <= NEW_2_M;
               PE_n <= NEW_2_N;
               PE_k <= NEW_2_K;
+
+              CAL_mode <= N_W;
+
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_CBa;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
               TBa_mode <= {TBa_A,DIR_POS};
               TBb_mode <= {TBb_IDLE,DIR_IDLE};
-              CBa_mode <= group_cnt[0] ? {CBa_B,DIR_NEG} : {CBa_B,DIR_POS}; //0-POS 1-NEG
-              CBb_mode <= {CBb_C,DIR_NEW};
+              // CBa_mode <= group_cnt[0] ? {CBa_B,DIR_NEG} : {CBa_B,DIR_POS}; //0-POS 1-NEG
+              // CBb_mode <= {CBb_C,DIR_NEW};
 
               A_TB_base_addr <= G_xi;
               B_TB_base_addr <= 0;
@@ -1153,25 +1163,22 @@ module PE_config #(
               Min: NONE  
               Cout: TB-B
             */
-              PE_mode <= N_W;
+              PE_m <= NEW_1_M;
+              PE_n <= NEW_1_N;
+              PE_k <= NEW_1_K;
 
-              A_in_en <= 4'b0011;  
-              B_in_en <= 4'b0011;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0011;
-              
-              A_in_sel_new <= A_CBa;   
-              B_in_sel_new <= B_TBb;
-              M_in_sel_new <= M_TBa;
-              C_out_sel_new <= C_TBb;
-              M_adder_mode_new <= NONE;
+              CAL_mode <= N_W;
 
-              PE_n <= NEW_3_N;
-              PE_k <= NEW_3_K;
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_TBb;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
               TBa_mode <= {TBa_IDLE,DIR_IDLE};
               TBb_mode <= {TBb_BC,DIR_POS};
-              CBa_mode <= {CBa_A,DIR_NEW}; //0-POS 1-NEG
-              CBb_mode <= {CBb_IDLE,DIR_IDLE};
+              // CBa_mode <= {CBa_A,DIR_NEW}; //0-POS 1-NEG
+              // CBb_mode <= {CBb_IDLE,DIR_IDLE};
 
               A_TB_base_addr <= 0;
               B_TB_base_addr <= G_xi;
@@ -1187,25 +1194,22 @@ module PE_config #(
               Min: NONE  
               Cout: TB-B
             */
-              PE_mode <= N_W;
+              PE_m <= NEW_1_M;
+              PE_n <= NEW_1_N;
+              PE_k <= NEW_1_K;
 
-              A_in_en <= 4'b0011;  
-              B_in_en <= 4'b0011;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0011;
-              
-              A_in_sel_new <= A_TBa;   
-              B_in_sel_new <= B_TBb;
-              M_in_sel_new <= M_TBa;
-              C_out_sel_new <= C_TBb;
-              M_adder_mode_new <= NONE;
+              CAL_mode <= N_W;
 
-              PE_n <= NEW_4_N;
-              PE_k <= NEW_4_K;
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_TBb;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
               TBa_mode <= {TBa_A,DIR_POS};
               TBb_mode <= {TBb_BC,DIR_POS};
-              CBa_mode <= {CBa_IDLE,DIR_IDLE}; 
-              CBb_mode <= {CBb_IDLE,DIR_IDLE};
+              // CBa_mode <= {CBa_IDLE,DIR_IDLE}; 
+              // CBb_mode <= {CBb_IDLE,DIR_IDLE};
 
               A_TB_base_addr <= G_z;
               B_TB_base_addr <= Q;
@@ -1221,25 +1225,22 @@ module PE_config #(
               Min: TB-A  
               Cout: CB-B
             */
-              PE_mode <= N_W;
+              PE_m <= NEW_1_M;
+              PE_n <= NEW_1_N;
+              PE_k <= NEW_1_K;
 
-              A_in_en <= 4'b0011;  
-              B_in_en <= 4'b0011;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0011;
-              
-              A_in_sel_new <= A_TBa;   
-              B_in_sel_new <= B_TBb;
-              M_in_sel_new <= M_TBa;
-              C_out_sel_new <= C_CBb;
-              M_adder_mode_new <= ADD;
+              CAL_mode <= N_W;
 
-              PE_n <= NEW_5_N;
-              PE_k <= NEW_5_K;
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_TBb;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
               TBa_mode <= {TBa_AM,DIR_POS};
               TBb_mode <= {TBb_B,DIR_POS};
-              CBa_mode <= {CBa_IDLE,DIR_IDLE}; 
-              CBb_mode <= {CBb_C,DIR_NEW};
+              // CBa_mode <= {CBa_IDLE,DIR_IDLE}; 
+              // CBb_mode <= {CBb_C,DIR_NEW};
 
               A_TB_base_addr <= G_z_Q;
               B_TB_base_addr <= G_z;
@@ -1247,19 +1248,27 @@ module PE_config #(
               C_TB_base_addr <= 0;
             end
             default: begin
-              A_in_en <= 4'b0000;  
-              B_in_en <= 4'b0000;
-              M_in_en <= 4'b0000;
-              C_out_en <= 4'b0000;
-              
-              A_in_sel_new <= 2'b00;   
-              B_in_sel_new <= 2'b00;
-              M_in_sel_new <= 2'b00;
-              // C_out_sel_new <= 2'b00;
+              PE_m <= 0;
+              PE_n <= 0;
+              PE_k <= 0;
 
-              // C_map_mode   <= TB_DIR_POS;
-              PE_mode <= N_W;
-              M_adder_mode_new <= 2'b00;
+              CAL_mode <= N_W;
+
+              A_in_mode <= A_TBa;   
+              B_in_mode <= B_TBb;
+              M_in_mode <= M_TBa;
+              C_out_mode <= C_CBb;
+              M_adder_mode_set <= NONE;
+
+              TBa_mode <= {TBa_A,DIR_IDLE};
+              TBb_mode <= {TBb_B,DIR_IDLE};
+              // CBa_mode <= {CBa_IDLE,DIR_IDLE};
+              // CBb_mode <= {CBb_C,DIR_POS};
+
+              A_TB_base_addr <= 0;
+              B_TB_base_addr <= 0;
+              M_TB_base_addr <= 0;
+              C_TB_base_addr <= 0;
             end
           endcase
         end
@@ -1274,69 +1283,241 @@ module PE_config #(
 /*
   ******************* ABMC_en config *****************************
 */
-  reg [2:0] PE_m_d [NEW_2_AB_MUX : 1];
-  reg [2:0] PE_n_d ;
-  reg [2:0] PE_k_d ;
-
-/*
-  ******************* CAL_mode config *****************************
-*/
-  reg  [11 : 0] CAL_mode_d  [SET_2_C_MUX : 1];
-
-  integer i_CAL_mode;
+  reg [2:0] PE_m_d [CAL_EN_D : 1];
+  reg [2:0] PE_n_d [CAL_EN_D : 1];
+  reg [2:0] PE_k_d [CAL_EN_D : 1];
+  
+  integer i_PE_m_d;
   always @(posedge clk) begin
-    CAL_mode_d[1] <= CAL_mode;
-    for(i_CAL_mode=1; i_CAL_mode<=SET_2_C_MUX-1; i_CAL_mode=i_CAL_mode+1) begin
-      CAL_mode_d[i+1] <= CAL_mode_d[i];
+    PE_m_d[1] <= PE_m;
+    for(i_PE_m_d=1; i_PE_m_d<=CAL_EN_D-1; i_PE_m_d=i_PE_m_d+1) begin
+      PE_m_d[i_PE_m_d+1] <= PE_m_d[i_PE_m_d];
     end     
   end
-  
+
   always @(posedge clk) begin
     if(sys_rst) begin
-       <= 0;
+      A_in_en <= 4'b0000;  
+      M_in_en <= 4'b0000;
+      C_out_en <= 4'b0000;
     end
     else begin
-      case(CAL_mode_d[])
-    end
-      
-  end
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      A_shift_dir <= LEFT_SHIFT;
-      B_shift_dir <= LEFT_SHIFT;
-      M_shift_dir <= LEFT_SHIFT;
-      C_shift_dir <= LEFT_SHIFT;
-    end
-    else begin
-      case(PE_mode)
-        N_W: begin
-          A_shift_dir <= LEFT_SHIFT;
-          B_shift_dir <= LEFT_SHIFT;
-          M_shift_dir <= LEFT_SHIFT;
-          C_shift_dir <= LEFT_SHIFT;
+      case(PE_m_d[CAL_EN_D])
+        3'b001: begin
+          A_in_en <= 4'b0001;  
+          M_in_en <= 4'b0001;
+          C_out_en <= 4'b0001;
         end
-        S_W: begin
-          A_shift_dir <= RIGHT_SHIFT;
-          B_shift_dir <= LEFT_SHIFT;
-          M_shift_dir <= RIGHT_SHIFT;
-          C_shift_dir <= RIGHT_SHIFT;
-        end 
-        N_E: begin
-          A_shift_dir <= LEFT_SHIFT;
-          B_shift_dir <= RIGHT_SHIFT;
-          M_shift_dir <= LEFT_SHIFT;
-          C_shift_dir <= LEFT_SHIFT;
+        3'b010: begin
+          A_in_en <= 4'b0011;  
+          M_in_en <= 4'b0011;
+          C_out_en <= 4'b0011;
         end
-        S_E: begin
-          A_shift_dir <= RIGHT_SHIFT;
-          B_shift_dir <= RIGHT_SHIFT;
-          M_shift_dir <= RIGHT_SHIFT;
-          C_shift_dir <= RIGHT_SHIFT;
+        3'b011: begin
+          A_in_en <= 4'b0111;  
+          M_in_en <= 4'b0111;
+          C_out_en <= 4'b0111;
+        end
+        3'b100: begin
+          A_in_en <= 4'b1111;  
+          M_in_en <= 4'b1111;
+          C_out_en <= 4'b1111;
+        end
+        default: begin
+          A_in_en <= 4'b0000;  
+          M_in_en <= 4'b0000;
+          C_out_en <= 4'b0000;
         end
       endcase
     end
   end
 
+  integer i_PE_k_d;
+  always @(posedge clk) begin
+    PE_k_d[1] <= PE_k;
+    for(i_PE_k_d=1; i_PE_k_d<=CAL_EN_D-1; i_PE_k_d=i_PE_k_d+1) begin
+      PE_k_d[i_PE_k_d+1] <= PE_k_d[i_PE_k_d];
+    end     
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      B_in_en <= 4'b0000;
+    end
+    else begin
+      case(PE_m_d[CAL_EN_D])
+        3'b001: begin
+          B_in_en <= 4'b0001;  
+        end
+        3'b010: begin
+          B_in_en <= 4'b0011;  
+        end
+        3'b011: begin
+          B_in_en <= 4'b0111;  
+        end
+        3'b100: begin
+          B_in_en <= 4'b1111;  
+        end
+        default: begin
+          B_in_en <= 4'b0000;  
+        end
+      endcase
+    end
+  end
+
+/*
+  ******************* in_sel_new config *****************************
+*/
+  dynamic_shreg 
+  #(
+    .DW    (A_IN_SEL_DW    ),
+    .AW    (3    ),
+    .DEPTH (AB_IN_SEL_D )
+  )
+  A_in_sel_dynamic_shreg(
+  	.clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (AB_IN_SEL_D ),
+    .din  (A_in_mode  ),
+    .dout (A_in_sel_new )
+  );
+
+  dynamic_shreg 
+  #(
+    .DW    (B_IN_SEL_DW    ),
+    .AW    (3    ),
+    .DEPTH (AB_IN_SEL_D )
+  )
+  B_in_sel_dynamic_shreg(
+  	.clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (AB_IN_SEL_D ),
+    .din  (B_in_mode  ),
+    .dout (B_in_sel_new )
+  );
+
+  dynamic_shreg 
+  #(
+    .DW    (M_IN_SEL_DW    ),
+    .AW    (3    ),
+    .DEPTH (M_IN_SEL_D )
+  )
+  M_in_sel_dynamic_shreg(
+  	.clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (M_IN_SEL_D ),
+    .din  (M_in_mode  ),
+    .dout (M_in_sel_new )
+  );
+
+  dynamic_shreg 
+  #(
+    .DW    (M_IN_SEL_DW    ),
+    .AW    (3    ),
+    .DEPTH (M_IN_SEL_D )
+  )
+  M_adder_mode_dynamic_shreg(
+  	.clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (M_IN_SEL_D ),
+    .din  (M_adder_mode_set  ),
+    .dout (M_adder_mode_new )
+  );
+
+  dynamic_shreg 
+  #(
+    .DW    (C_OUT_SEL_DW    ),
+    .AW    (3    ),
+    .DEPTH (C_OUT_SEL_D )
+  )
+  C_out_sel_dynamic_shreg(
+  	.clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (C_OUT_SEL_D ),
+    .din  (C_out_mode  ),
+    .dout (C_out_sel_new )
+  );
+
+/*
+  ******************* CAL_mode config *****************************
+*/
+  reg  [1 : 0] CAL_mode_d  [PE_MODE_D : 1];
+
+  integer i_CAL_mode;
+  always @(posedge clk) begin
+    CAL_mode_d[1] <= CAL_mode;
+    for(i_CAL_mode=1; i_CAL_mode<=PE_MODE_D-1; i_CAL_mode=i_CAL_mode+1) begin
+      CAL_mode_d[i_CAL_mode+1] <= CAL_mode_d[i_CAL_mode];
+    end     
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      A_in_sel_dir <= LEFT_SHIFT;
+      B_in_sel_dir <= LEFT_SHIFT;
+      M_in_sel_dir <= LEFT_SHIFT;
+      C_out_sel_dir <= LEFT_SHIFT;
+    end
+    else begin
+      case(CAL_mode_d[AB_IN_SEL_D])
+        N_W: begin
+          A_in_sel_dir <= LEFT_SHIFT;
+          B_in_sel_dir <= LEFT_SHIFT;
+          M_in_sel_dir <= LEFT_SHIFT;
+          C_out_sel_dir <= LEFT_SHIFT;
+        end
+        S_W: begin
+          A_in_sel_dir <= RIGHT_SHIFT;
+          B_in_sel_dir <= LEFT_SHIFT;
+          M_in_sel_dir <= RIGHT_SHIFT;
+          C_out_sel_dir <= RIGHT_SHIFT;
+        end 
+        N_E: begin
+          A_in_sel_dir <= LEFT_SHIFT;
+          B_in_sel_dir <= RIGHT_SHIFT;
+          M_in_sel_dir <= LEFT_SHIFT;
+          C_out_sel_dir <= LEFT_SHIFT;
+        end
+        S_E: begin
+          A_in_sel_dir <= RIGHT_SHIFT;
+          B_in_sel_dir <= RIGHT_SHIFT;
+          M_in_sel_dir <= RIGHT_SHIFT;
+          C_out_sel_dir <= RIGHT_SHIFT;
+        end
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      cal_en_done_dir <= 0;
+    end
+    else begin
+      case(CAL_mode_d[CAL_EN_D])
+        N_W: begin
+          cal_en_done_dir <= LEFT_SHIFT;
+        end
+        S_W: begin
+          cal_en_done_dir <= LEFT_SHIFT;
+        end 
+        N_E: begin
+          cal_en_done_dir <= RIGHT_SHIFT;
+        end
+        S_E: begin
+          cal_en_done_dir <= RIGHT_SHIFT;
+        end
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      PE_mode <= N_W;
+    end
+    else begin
+      PE_mode <= CAL_mode_d[PE_MODE_D];
+    end
+  end
 /*
   ********************** address generate config *********************
 */
@@ -1431,8 +1612,25 @@ module PE_config #(
           TB_addra_new <= 0;
         end
       endcase
+    end 
+  end
 
-      case(TBa_mode[1:0])
+  reg [4:0] TBa_mode_d;
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      TBa_mode_d <= 0;
+    end
+    else 
+      TBa_mode_d <= TBa_mode;
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      TB_douta_sel_new[1:0] = DIR_IDLE;
+      TBa_shift_dir <= 0;
+    end
+    else begin
+      case(TBa_mode_d[1:0])
         DIR_IDLE: begin
           TB_douta_sel_new[1:0] = DIR_IDLE;
           TBa_shift_dir <= LEFT_SHIFT;
@@ -1450,7 +1648,7 @@ module PE_config #(
           TBa_shift_dir <= LEFT_SHIFT;
         end
       endcase
-    end 
+    end
   end
 
   /*
@@ -1573,58 +1771,64 @@ module PE_config #(
           TB_addrb_new <= 0;
         end
       endcase
+    end 
+  end
 
-      case(TBb_mode[1:0])
+  reg [4:0] TBb_mode_d;
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      TBb_mode_d <= 0;
+    end
+    else 
+      TBb_mode_d <= TBb_mode;
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      TB_doutb_sel_new[1:0] = DIR_IDLE;
+      TBb_shift_dir <= 0;
+    end
+    else begin
+      case(TBb_mode_d[1:0])
         DIR_IDLE: begin
-          TB_dinb_sel_new[1:0] = DIR_IDLE;
           TB_doutb_sel_new[1:0] = DIR_IDLE;
           TBb_shift_dir <= LEFT_SHIFT;
         end
         DIR_POS: begin
-          TB_dinb_sel_new[1:0] = DIR_POS;
           TB_doutb_sel_new[1:0] = DIR_POS;
           TBb_shift_dir <= LEFT_SHIFT;
         end
         DIR_NEG: begin
-          TB_dinb_sel_new[1:0] = DIR_NEG;
           TB_doutb_sel_new[1:0] = DIR_NEG;
           TBb_shift_dir <= RIGHT_SHIFT;
         end
         DIR_NEW: begin
-          TB_dinb_sel_new[1:0] = DIR_NEW;
           TB_doutb_sel_new[1:0] = DIR_NEW;
           TBb_shift_dir <= LEFT_SHIFT;
         end
       endcase
-    end 
+    end
   end
 
   /*
     *****************************CB-portA READ*****************************
   */
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      CBa_shift_dir <= DIR_IDLE;
 
-      CB_douta_sel_new <= {};
-      CB_ena_new
-      CB_wea_new
-      CB_addra_new
-
-      CBa_vm_AGD_en
-      CBa_vm_AGD_rst
-    end
-    else begin
-      //地址译码
-      case(CBa_mode[4:2]) 
-        CBa_A: begin
-          
-        end
-      endcase
-      //移位方向
-      CBa_shift_dir <= CBa_mode[1:0];
-    end
-  end
+  // reg [4:0] CBa_mode_d;
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //     CBa_mode_d <= 0;
+  //     CBa_shift_dir <= DIR_IDLE;
+  //   end
+  //   else begin
+  //     CBa_mode_d <= CBa_mode;
+  //     case (CBa_mode_d[4:2])
+  //       CBa_A: CB_douta_sel_new <= 
+  //       default: 
+  //     endcase
+  //     CBa_shift_dir <= CBa_mode_d[1:0];
+  //   end 
+  // end
 
   /*
     *****************************CB-portB*****************************
@@ -2080,24 +2284,34 @@ module PE_config #(
   // end
 
 //配置 CB-portA 输入数据及数据选择
+  
+/*
+  *****************************CB-portA READ*****************************
+*/  
   always @(posedge clk) begin
     if(sys_rst) begin
-      CB_douta_sel_new <= 3'b000;     
+      CBa_shift_dir <= DIR_POS;
+      CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
 
       CB_ena_new <= 1'b0;
       CB_wea_new <= 1'b0;
       CB_addra_new <= 0;
 
-      CB_addra_base_gen <= 0;
+      CBa_vm_AGD_en <= 0;
+      CBa_vm_AGD_rst <= 0;
     end
     else begin
       case(stage_cur)
         IDLE: begin
-          CB_douta_sel_new <= 3'b000;  
+          CBa_shift_dir <= DIR_POS;
+          CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
 
           CB_ena_new <= 1'b0;
           CB_wea_new <= 1'b0;
           CB_addra_new <= 0;
+
+          CBa_vm_AGD_en <= 0;
+          CBa_vm_AGD_rst <= 0;
         end
         STAGE_PRD: begin
           case(prd_cur)
@@ -2109,36 +2323,36 @@ module PE_config #(
               Bin: TB-B
               Min: TB-A   //PRD_2 adder
               Cout: CB-B
-            */
-              CB_douta_sel_new <= 3'b000;     
-
+            */  
               CB_wea_new <= 1'b0;
               case(seq_cnt)
                 'd0: begin
+                  CB_ena_new <= 1'b0;
+                  CB_addra_new <= 0;
+                end  
+                'd1: begin
+                  CBa_shift_dir <= DIR_POS;
                   CB_ena_new <= 1'b1;
                   CB_addra_new <= CB_addra_base;
                 end     
-                'd1: begin
+                'd2: begin
+                  CB_douta_sel_new <= {CBa_A, DIR_POS};
                   CB_ena_new <= 1'b1;
                   CB_addra_new <= CB_addra_base + 'b1;
                 end
-                'd2: begin
+                'd3: begin
                   CB_ena_new <= 1'b1;
                   CB_addra_new <= CB_addra_base + 'b10;
-                  CB_addra_base_gen <= 1'b1;
-                end
-                'd3: begin
-                  CB_ena_new <= 1'b0;
-                  CB_addra_new <= 0;
+                  CBa_vm_AGD_en <= 1'b1;
                 end
                 'd4: begin
                   CB_ena_new <= 1'b0;
                   CB_addra_new <= 0;
-                  CB_addra_base_gen <= 1'b0;
                 end
                 'd5: begin
                   CB_ena_new <= 1'b0;
                   CB_addra_new <= 0;
+                  CBa_vm_AGD_en <= 1'b0;
                 end
                 default: begin
                   CB_ena_new <= 1'b0;
@@ -2147,16 +2361,95 @@ module PE_config #(
               endcase 
             end
             default: begin
-              CB_douta_sel_new <= 3'b000;   
+              CBa_shift_dir <= DIR_POS;
+              CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
 
               CB_ena_new <= 1'b0;
               CB_wea_new <= 1'b0;
               CB_addra_new <= 0;
+
+              CBa_vm_AGD_en <= 0;
+              CBa_vm_AGD_rst <= 0;
             end
           endcase
         end
         STAGE_NEW: begin
-          
+          case(prd_cur)
+            NEW_2: begin
+              CB_wea_new <= 1'b0;
+                case(seq_cnt)
+                  'd0: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end  
+                  'd1: begin
+                    CBa_shift_dir <= group_cnt[0] ? DIR_NEG : DIR_POS; //0-POS 1-NEG
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base;
+                  end     
+                  'd2: begin
+                    CB_douta_sel_new <= group_cnt[0] ? {CBa_B,DIR_NEG} : {CBa_B,DIR_POS}; //0-POS 1-NEG
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base + 'b1;
+                  end
+                  'd3: begin
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base + 'b10;
+                    CBa_vm_AGD_en <= 1'b1;
+                  end
+                  'd4: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end
+                  'd5: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                    CBa_vm_AGD_en <= 1'b0;
+                  end
+                  default: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end
+                endcase 
+            end
+            NEW_3: begin
+              CB_wea_new <= 1'b0;
+                case(seq_cnt)
+                  'd0: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end  
+                  'd1: begin
+                    CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base;
+                  end     
+                  'd2: begin
+                    CB_douta_sel_new <= DIR_NEW;
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base + 'b1;
+                  end
+                  'd3: begin
+                    CB_ena_new <= 1'b1;
+                    CB_addra_new <= CB_addra_base + 'b10;
+                    CBa_vm_AGD_en <= 1'b1;
+                  end
+                  'd4: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end
+                  'd5: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                    CBa_vm_AGD_en <= 1'b0;
+                  end
+                  default: begin
+                    CB_ena_new <= 1'b0;
+                    CB_addra_new <= 0;
+                  end
+                endcase 
+            end
+          endcase
         end
         STAGE_UPD: begin
           
@@ -2236,7 +2529,7 @@ module PE_config #(
       CB_web_new <= 1'b0;
       CB_addrb_new <= 0;
 
-      CB_addrb_base_gen <= 0;
+      CBb_vm_AGD_en <= 0;
     end
     else begin
       case(stage_cur_CB_B)
@@ -2274,7 +2567,7 @@ module PE_config #(
                 'd2: begin
                   CB_enb_new <= 1'b1;
                   CB_addrb_new <= CB_addrb_base + 'b1;
-                  CB_addrb_base_gen <= 1'b1;
+                  CBb_vm_AGD_en <= 1'b1;
                 end
                 'd3: begin
                   CB_enb_new <= 1'b0;
@@ -2283,7 +2576,7 @@ module PE_config #(
                 'd4: begin
                   CB_enb_new <= 1'b1;
                   CB_addrb_new <= CB_addrb_base + 'b10;
-                  CB_addrb_base_gen <= 1'b0;
+                  CBb_vm_AGD_en <= 1'b0;
                 end
                 'd5: begin
                   CB_enb_new <= 1'b0;
@@ -2470,7 +2763,7 @@ end
     )
     A_in_sel_dshift(
       .clk  (clk  ),
-      .dir  (A_shift_dir   ),
+      .dir  (A_in_sel_dir   ),
       .sys_rst ( sys_rst),
       .din  (A_in_sel_new  ),
       .dout (A_in_sel )
@@ -2483,7 +2776,7 @@ end
     )
     B_in_sel_dshift(
       .clk  (clk  ),
-      .dir   (B_shift_dir   ),
+      .dir   (B_in_sel_dir   ),
       .sys_rst ( sys_rst),
       .din  (B_in_sel_new  ),
       .dout (B_in_sel )
@@ -2496,7 +2789,7 @@ end
     )
     M_in_sel_dshift(
       .clk  (clk  ),
-      .dir  (M_shift_dir   ),
+      .dir  (M_in_sel_dir   ),
       .sys_rst ( sys_rst),
       .din  (M_in_sel_new  ),
       .dout (M_in_sel )
@@ -2509,7 +2802,7 @@ end
     )
     M_adder_mode_dshift(
       .clk  (clk  ),
-      .dir  (M_shift_dir   ),
+      .dir  (M_in_sel_dir   ),
       .sys_rst ( sys_rst),
       .din  (M_adder_mode_new  ),
       .dout (M_adder_mode )
@@ -2522,7 +2815,7 @@ end
     )
    C_out_sel_dshift(
       .clk  (clk  ),
-      .dir   (C_shift_dir   ),
+      .dir   (C_out_sel_dir   ),
       .sys_rst ( sys_rst),
       .din  (C_out_sel_new  ),
       .dout (C_out_sel )
