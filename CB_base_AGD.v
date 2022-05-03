@@ -55,22 +55,35 @@ module CB_base_AGD #(
       CB_base_addr_r2 <= 0;
     end
     else begin
-      case({en_d, en})
-        2'b00: begin
-          CB_base_addr <= CB_base_addr;
-        end 
-        2'b01: begin
-          CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
-        end 
-        2'b11: begin
-          CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
-        end
-        2'b10: begin
-          CB_base_addr <= CB_base_addr_r2 << 1;
-        end
-      endcase
+      CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
+      CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
+      CB_base_addr <= CB_base_addr_r2 << 1;
     end   
   end
+
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //     CB_base_addr <= 0;
+  //     CB_base_addr_r1 <= 0;
+  //     CB_base_addr_r2 <= 0;
+  //   end
+  //   else begin
+  //     case({en_d, en})
+  //       2'b00: begin
+  //         CB_base_addr <= CB_base_addr;
+  //       end 
+  //       2'b01: begin
+  //         CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
+  //       end 
+  //       2'b11: begin
+  //         CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
+  //       end
+  //       2'b10: begin
+  //         CB_base_addr <= CB_base_addr_r2 << 1;
+  //       end
+  //     endcase
+  //   end   
+  // end
 
   // reg [ROW_LEN+1 : 0] group_cnt_shift;
   // reg [3:0] group_offset;

@@ -150,12 +150,12 @@ module PE_config #(
   //MODE[4:2] PARAMS
   localparam TBa_IDLE = 3'b000;
   localparam TBa_A = 3'b001;
-  localparam TBa_M = 3'b001;
+  localparam TBa_M = 3'b010;
   localparam TBa_AM = 3'b011;
 
   localparam TBb_IDLE = 3'b000;
   localparam TBb_B = 3'b001;
-  localparam TBb_C = 3'b001;
+  localparam TBb_C = 3'b010;
   localparam TBb_BC = 3'b011;
   localparam TBb_CONS_C = 3'b100;
 
@@ -394,6 +394,8 @@ module PE_config #(
     reg                           CBb_vm_AGD_en;
     reg                           CBb_vm_AGD_rst;
     wire [CB_AW-1 : 0]            CB_addrb_base;
+
+    wire [CB_AW-1 : 0]            l_k_base_addr; 
 
 /*
   variables of FSM of STAGE(IDLE PRD NEW UPD)
@@ -771,9 +773,9 @@ module PE_config #(
       case(stage_cur)
         STAGE_PRD: 
           case(prd_cur)
-            PRD_2: begin
-              group_cnt <= 1'b1;  //先+1
-            end
+            // PRD_2: begin
+            //   group_cnt <= 1'b1;  //先+1
+            // end
             PRD_3: begin
               if(seq_cnt == seq_cnt_max) begin
                 if(group_cnt == group_num_max) //这已经是最后一组
@@ -791,12 +793,15 @@ module PE_config #(
           endcase
         STAGE_NEW: 
           case(new_cur)
+            // NEW_1: begin
+            //   group_cnt <= 1'b1;
+            // end
             NEW_2: begin
-              if(group_cnt == group_num_max) begin
-                group_cnt <= 0;
-              end
-              else if(seq_cnt == seq_cnt_max) begin
-                group_cnt <= group_cnt + 1'b1;
+              if(seq_cnt == seq_cnt_max) begin
+                if(group_cnt == group_num_max) //这已经是最后一组
+                  group_cnt <= 0;
+                else
+                  group_cnt <= group_cnt + 1'b1;
               end
               else begin
                 group_cnt <= group_cnt;
@@ -1111,12 +1116,12 @@ module PE_config #(
               B_in_mode <= B_TBb;
               M_in_mode <= M_TBa;
               C_out_mode <= C_CBb;
-              M_adder_mode_set <= NONE;
+              M_adder_mode_set <= ADD;
 
-              TBa_mode <= TB_IDLE;
-              TBb_mode <= TB_IDLE;
+              TBa_mode <= {TBa_AM,DIR_POS};
+              TBb_mode <= {TBb_B,DIR_POS};
               CBa_mode <= CB_IDLE;
-              CBb_mode <= CB_IDLE;
+              CBb_mode <= {CBb_C,CB_cov_ll};
 
               A_TB_base_addr <= 0;
               B_TB_base_addr <= 0;
@@ -1136,10 +1141,10 @@ module PE_config #(
               C_out_mode <= C_CBb;
               M_adder_mode_set <= NONE;
 
-              TBa_mode <= {TBa_A,DIR_IDLE};
-              TBb_mode <= {TBb_B,DIR_IDLE};
-              // CBa_mode <= {CBa_IDLE,DIR_IDLE};
-              // CBb_mode <= {CBb_C,DIR_POS};
+              TBa_mode <= TB_IDLE;
+              TBb_mode <= TB_IDLE;
+              CBa_mode <= CB_IDLE;
+              CBb_mode <= CB_IDLE;
 
               A_TB_base_addr <= 0;
               B_TB_base_addr <= 0;
@@ -1290,7 +1295,7 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (M_IN_SEL_DW    ),
-    .AW    (3    )
+    .AW    (4    )
   )
   M_adder_mode_dynamic_shreg(
   	.clk  (clk  ),
@@ -1303,7 +1308,7 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (C_OUT_SEL_DW    ),
-    .AW    (3    )
+    .AW    (4    )
   )
   C_out_sel_dynamic_shreg(
   	.clk  (clk  ),
@@ -1423,7 +1428,7 @@ module PE_config #(
   )
   PEn_cal_d_shreg(
   	.clk  (clk  ),
-    .ce   (ce   ),
+    .ce   (1'b1   ),
     .addr (CAL_EN_D ),
     .din  (PE_n  ),
     .dout (PEn_cal_d )
@@ -1819,158 +1824,158 @@ module PE_config #(
     else begin
       case (CBa_mode[2:0])
         CB_cov_vv: begin
-          CB_wea_new <= 1'b0;
-          case(seq_cnt)
-            'd0: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end  
-            'd1: begin
-              CBa_shift_dir <= DIR_POS;
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b01;
-            end     
-            'd2: begin
-              CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b10;
-            end
-            'd3: begin
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b11;
-              CBa_vm_AGD_en <= 1'b1;
-            end
-            'd4: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-            'd5: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-              CBa_vm_AGD_en <= 1'b0;
-            end
-            default: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-          endcase 
-        end
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      'd0: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end  
+                      'd1: begin
+                        CBa_shift_dir <= DIR_POS;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= 2'b01;
+                      end     
+                      'd2: begin
+                        CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= 2'b10;
+                      end
+                      'd3: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= 2'b11;
+                        CBa_vm_AGD_en <= 1'b1;
+                      end
+                      'd4: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                      'd5: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                        CBa_vm_AGD_en <= 1'b0;
+                      end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
         CB_cov_mv: begin
-          CB_wea_new <= 1'b0;
-          case(seq_cnt)
-            'd0: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end  
-            'd1: begin
-              CBa_shift_dir <= DIR_POS;
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b01;
-            end     
-            'd2: begin
-              CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b10;
-            end
-            'd3: begin
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b11;
-              CBa_vm_AGD_en <= 1'b1;
-            end
-            'd4: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-            'd5: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-              CBa_vm_AGD_en <= 1'b0;
-            end
-            default: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-          endcase 
-        end
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      'd0: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end  
+                      'd1: begin
+                        CBa_shift_dir <= DIR_POS;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_base + 2'b01;
+                      end     
+                      'd2: begin
+                        CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_base + 2'b10;
+                      end
+                      'd3: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_base + 2'b11;
+                        CBa_vm_AGD_en <= 1'b1;
+                      end
+                      'd4: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                      'd5: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                        CBa_vm_AGD_en <= 1'b0;
+                      end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
         CB_cov    : begin
                       
                     end
         CB_cov_lv: begin
-          CB_wea_new <= 1'b0;
-          case(seq_cnt)
-            'd0: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end  
-            'd1: begin
-              CBa_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 1'b1;
-            end     
-            'd2: begin
-              CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
-              CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b10;
-            end
-            'd3: begin
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b11;
-              CBa_vm_AGD_en <= 1'b1;
-            end
-            'd4: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-            'd5: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-              CBa_vm_AGD_en <= 1'b0;
-            end
-            default: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-          endcase 
-        end
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      'd0: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end  
+                      'd1: begin
+                        CBa_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= l_k_base_addr + 1'b1;
+                      end     
+                      'd2: begin
+                        CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
+                        CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= l_k_base_addr + 2'b10;
+                      end
+                      'd3: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= l_k_base_addr + 2'b11;
+                        CBa_vm_AGD_en <= 1'b1;
+                      end
+                      'd4: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                      'd5: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                        CBa_vm_AGD_en <= 1'b0;
+                      end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
         CB_cov_lm: begin
-          CB_wea_new <= 1'b0;
-          case(seq_cnt)
-            'd0: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end  
-            'd1: begin
-              CBa_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 1'b1;
-            end     
-            'd2: begin
-              CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
-              CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b10;
-            end
-            'd3: begin
-              CB_ena_new <= 1'b1;
-              CB_addra_new <= CB_addra_base + 2'b11;
-              CBa_vm_AGD_en <= 1'b1;
-            end
-            'd4: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-            'd5: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-              CBa_vm_AGD_en <= 1'b0;
-            end
-            default: begin
-              CB_ena_new <= 1'b0;
-              CB_addra_new <= 0;
-            end
-          endcase 
-        end
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      'd0: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end  
+                      'd1: begin
+                        CBa_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 1'b1;
+                      end     
+                      'd2: begin
+                        CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
+                        CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 2'b10;
+                      end
+                      'd3: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 2'b11;
+                        CBa_vm_AGD_en <= 1'b1;
+                      end
+                      'd4: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                      'd5: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                        CBa_vm_AGD_en <= 1'b0;
+                      end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
         default: begin
           CBa_shift_dir <= 0;
           CB_douta_sel_new <= 0;  
@@ -2745,7 +2750,7 @@ module PE_config #(
                           CBb_shift_dir <= DIR_POS;
 
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 1'b1;
+                          CB_addrb_new <= 2'b01;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b0;
@@ -2753,7 +2758,7 @@ module PE_config #(
                         end
                         'd3: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 2'b10;
+                          CB_addrb_new <= 2'b10;
                           CBb_vm_AGD_en <= 1'b1;
                         end
                         'd4: begin
@@ -2762,8 +2767,12 @@ module PE_config #(
                         end
                         'd5: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 3'b11;
+                          CB_addrb_new <= 2'b11;
                           CBb_vm_AGD_en <= 1'b0;
+                        end
+                        default: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
                         end
                       endcase
                     end
@@ -2799,6 +2808,10 @@ module PE_config #(
                           CB_addrb_new <= CB_addrb_base + 3'b11;
                           CBb_vm_AGD_en <= 1'b0;
                         end
+                        default: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
+                        end
                       endcase
                     end
         CB_cov    : begin
@@ -2818,7 +2831,7 @@ module PE_config #(
                           CBb_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
 
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 1'b1;
+                          CB_addrb_new <= l_k_base_addr + 1'b1;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b0;
@@ -2826,7 +2839,7 @@ module PE_config #(
                         end
                         'd3: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                          CB_addrb_new <= l_k_base_addr + 2'b10;
                         end
                         'd4: begin
                           CB_enb_new <= 1'b0;
@@ -2834,7 +2847,11 @@ module PE_config #(
                         end
                         'd5: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 'b10;
+                          CB_addrb_new <= l_k_base_addr + 2'b11;
+                        end
+                        default: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
                         end
                       endcase
                     end
@@ -2877,22 +2894,52 @@ module PE_config #(
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= CB_addrb_new + 1'b1;
                         end
+                        default: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
+                        end
                       endcase
                     end
         CB_cov_ll : begin
-          
-        end
+                      CB_web_new <= 1'b1;
+                      CBb_vm_AGD_en <= 1'b0;
+                      case(seq_cnt_CB_B)
+                        'd0: begin
+                          CB_dinb_sel_new <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
+                        end
+                        'd1: begin
+                          CBb_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
+
+                          CB_enb_new <= 1'b1;
+                          CB_addrb_new <= l_k_base_addr + l_k << 1 + 2'b10;
+                        end  
+                        'd2: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
+                        end
+                        'd3: begin
+                          CB_enb_new <= 1'b1;
+                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                        end
+                        default: begin
+                          CB_enb_new <= 1'b0;
+                          CB_addrb_new <= 0;
+                        end
+                      endcase
+                    end
         default   : begin
-          CBb_shift_dir   <= 0;
-          CB_dinb_sel_new <= 0;
+                      CBb_shift_dir   <= 0;
+                      CB_dinb_sel_new <= 0;
 
-          CB_enb_new <= 1'b0;
-          CB_web_new <= 1'b0;
-          CB_addrb_new <= 0;
+                      CB_enb_new <= 1'b0;
+                      CB_web_new <= 1'b0;
+                      CB_addrb_new <= 0;
 
-          CBb_vm_AGD_en <= 1'b0;
-          CBb_vm_AGD_rst <= 1'b0;
-        end
+                      CBb_vm_AGD_en <= 1'b0;
+                      CBb_vm_AGD_rst <= 1'b0;
+                    end
       endcase
     end
   end
@@ -3296,7 +3343,6 @@ end
       .clk  (clk  ),
       .sys_rst ( sys_rst),
       .CB_dir          (CBa_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
       .din  (CB_ena_new  ),
       .dout (CB_ena )
     );
@@ -3310,7 +3356,6 @@ end
       .clk  (clk  ),
       .sys_rst ( sys_rst),
       .CB_dir          (CBa_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
       .din  (CB_wea_new  ),
       .dout (CB_wea )
     );
@@ -3353,7 +3398,6 @@ end
       .clk  (clk  ),
       .sys_rst ( sys_rst),
       .CB_dir          (CBb_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
       .din  (CB_enb_new  ),
       .dout (CB_enb )
     );
@@ -3367,7 +3411,6 @@ end
       .clk  (clk  ),
       .sys_rst ( sys_rst),
       .CB_dir          (CBb_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
       .din  (CB_web_new  ),
       .dout (CB_web )
     );
@@ -3384,6 +3427,21 @@ end
       .din     (CB_addrb_new     ),
       .dout    (CB_addrb    )
     );
+
+  //l_k_base_addr gen
+    CB_base_AGD 
+    #(
+      .CB_AW   (CB_AW   ),
+      .ROW_LEN (ROW_LEN )
+    )
+    l_k_base_AGD(
+    	.clk          (clk          ),
+      .sys_rst      (sys_rst      ),
+      .en           (1'b1         ),
+      .group_cnt    (l_k          ),
+      .CB_base_addr (l_k_base_addr)
+    );
+    
 
   /*
     ******************* sel_new -> sel ********************

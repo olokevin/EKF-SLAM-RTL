@@ -132,7 +132,7 @@ module PE_MAC
             partial_sum <= 0; 
     end
 
-    //mulres_r 1:输出乘积+求和 2:传递mulres
+//mulres_r 1:输出乘积+求和 2:传递mulres
     always @(posedge clk) begin
         if(sys_rst)  begin
             mulres_r <= 0; 
@@ -145,7 +145,7 @@ module PE_MAC
             mulres_r <= 0; 
     end
 
-    //mulres_val_r 输出有效
+//mulres_val_r 输出有效
     always @(posedge clk) begin
         if(sys_rst)  begin
             mulres_val_r <= 1'b0;

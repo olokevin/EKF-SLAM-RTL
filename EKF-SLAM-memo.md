@@ -1103,8 +1103,9 @@ addrb_new: NEW_2_PE_in+N+3
 * addr_shift: CB的地址也是对齐的，直接移位即可
 * group_cnt: 在进入该group就先+1, 中间给了en信号才会计算出新的base_addr
 * CB_base_AGD：
-  * 模式0：计算group_cnt+1的首地址
+  * **模式0：计算group_cnt+1的首地址**
   * 模式1：计算group_cnt的首地址
+  * cov_vv直接赋地址1 2 3
 * 注意：CBb 使用延迟后的group_cnt
 
 ### problems
@@ -1115,7 +1116,7 @@ addrb_new: NEW_2_PE_in+N+3
 * CB-B
   * '0: in_sel
   * '1 addr_dir
-* PE array使能条件
+* **PE array使能条件**
 
 ### 终止条件
 
