@@ -594,7 +594,6 @@ wire [1:0] landmark_num_10;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_dinb_sel  (CB_dinb_sel  ),
-    .landmark_num_10 (landmark_num_10 ),
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
   );
@@ -611,7 +610,6 @@ wire [1:0] landmark_num_10;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_douta_sel (CB_douta_sel ),
-    .landmark_num_10 (landmark_num_10 ),
     .CB_douta     (CB_douta     ),
     .A_CB_douta   (A_CB_douta   ),
     .B_CB_douta   (B_CB_douta   ),
@@ -755,7 +753,6 @@ u_PE_config(
   .clk                  (clk               ),
   .sys_rst              (sys_rst           ),
   .landmark_num         (landmark_num      ),
-  .landmark_num_10      (landmark_num_10   ),
   .stage_val            (stage_val         ),
   .stage_rdy            (stage_rdy         ),
   .nonlinear_m_rdy      (nonlinear_m_rdy   ),

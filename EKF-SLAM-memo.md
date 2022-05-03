@@ -1097,3 +1097,7 @@ addrb_new: NEW_2_PE_in+N+3
 * cal_en_new, cal_done_new
 * group_cnt起始0在何处？相应的尚未更改
   * 暂时设定：ROW4~7为group_0 应反向
+
+## 220503 改存储方案！
+
+* addr_shift: CB的地址也是对齐的，直接移位即可

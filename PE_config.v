@@ -26,7 +26,6 @@ module PE_config #(
 
 //landmark numbers
   input   [ROW_LEN-1 : 0]  landmark_num,
-  output  [1:0]            landmark_num_10,
 
 //handshake of stage change
   input   [2:0]   stage_val,
@@ -139,15 +138,17 @@ module PE_config #(
   localparam  C_CBb = 2'b10;
 
 //CB portA map mode
-  localparam CB_IDLE = 2'b00;
-  localparam CB_A = 2'b01;
-  localparam CB_B = 2'b10;
-  localparam CB_M = 2'b11;
+  localparam CBa_IDLE = 2'b00;
+  localparam CBa_A = 2'b01;
+  localparam CBa_B = 2'b10;
+  localparam CBa_M = 2'b11;
+
+//CB portB map mode
 
 //CB portB map mode
 
 /*
-    TB CB mode config!
+    TB mode config!
 */
   //MODE[4:2] PARAMS
   localparam TBa_IDLE = 3'b000;
@@ -161,25 +162,22 @@ module PE_config #(
   localparam TBb_BC = 3'b011;
   localparam TBb_CONS_C = 3'b100;
 
-  // localparam CBa_IDLE = 3'b000;
-  // localparam CBa_A = 3'b001;
-  // localparam CBa_B = 3'b010;
-  // localparam CBa_M = 3'b100;
-
-//from CB_DOUTA_MAP.v
-  localparam CBa_IDLE = 2'b00;
-  localparam CBa_A = 2'b01;
-  localparam CBa_B = 2'b10;
-  localparam CBa_M = 2'b11;
-
-  localparam CBb_IDLE = 3'b000;
-  localparam CBb_C = 3'b001;
-
   //MODE[1:0] PARAMS
   localparam DIR_IDLE = 2'b00;
   localparam DIR_POS  = 2'b01;
-  localparam DIR_NEG  = 2'b10;
-  localparam DIR_NEW  = 2'b11;
+  localparam DIR_NEW_0  = 2'b10;
+  localparam DIR_NEW_1  = 2'b11;
+
+/*
+  CB mode config
+*/
+  localparam CBa_A_mv = 3'b001;
+  localparam CBa_B_mv = 3'b010;
+  localparam CBa_M_cov = 3'b100;
+
+  localparam CBb_C_mv = 3'b001;
+  localparam CBb_C_l  = 3'b010;
+  localparam CBb_C_cov = 3'b100;
 
 //stage
   localparam      IDLE     = 3'b000 ;
@@ -275,27 +273,29 @@ module PE_config #(
 /*
   UPD: params of Update stage
 */
-  // // TEMP BANK offsets of PRD
-  //   localparam G_xi          = 'd15;
-  //   localparam G_z           = 'd18;
-  //   localparam Q         = 'd20;
-  //   localparam G_z_Q         = 'd22;
-  //   localparam lv_G_xi           = 'd24;
-  // // PREDICTION SERIES
-  //   localparam NEW_IDLE      = 'b0000;
-  //   localparam NEW_NONLINEAR = 'b0001;
-  //   localparam NEW_1         = 'b0010;       //prd_cur[1]
-  //   localparam NEW_2         = 'b0100;
-  //   localparam NEW_3         = 'b1000;
+  // TEMP BANK offsets of PRD
+    localparam H_xi          = 'd26;
+    localparam H_z           = 'd29;
+    localparam S_t           = 'd31;
+    localparam t_cov_HT      = 'd33;
+    localparam cov_HT        = 'd38;
+    localparam t_cov_l       = 'd40;
+    localparam K_t           = 'd40;
+  // PREDICTION SERIES
+    localparam UPD_IDLE      = 'b0000;
+    localparam UPD_NONLINEAR = 'b0001;
+    localparam UPD_1         = 'b0010;       
+    localparam UPD_2         = 'b0100;
+    localparam UPD_3         = 'b1000;
 
-  //   localparam NEW_1_CNT_MAX     = 'd17;
-  //   localparam NEW_2_CNT_MAX     = 'd17;
-  //   localparam NEW_3_CNT_MAX     = 'd5;
+    localparam UPD_1_CNT_MAX     = 'd17;
+    localparam UPD_2_CNT_MAX     = 'd17;
+    localparam UPD_3_CNT_MAX     = 'd5;
 
-  //   localparam NEW_1_N       = 'd3;
-  //   localparam NEW_2_N       = 'd3;
-  //   localparam NEW_3_N       = 'd3;
-  //   localparam NEW_3_DELAY   = 4'd7;
+    localparam UPD_1_N       = 'd3;
+    localparam UPD_2_N       = 'd3;
+    localparam UPD_3_N       = 'd3;
+    localparam UPD_3_DELAY   = 4'd7;
 
 /*
   ******************DATA FLOW config*******************
@@ -829,6 +829,7 @@ module PE_config #(
 /*
   ************************* RSA work-mode Config **************************
 */
+
   /*
     DATA FLOW Config
   */
@@ -1594,12 +1595,12 @@ module PE_config #(
           TB_douta_sel_new[1:0] = DIR_POS;
           TBa_shift_dir <= LEFT_SHIFT;
         end
-        DIR_NEG: begin
-          TB_douta_sel_new[1:0] = DIR_NEG;
+        DIR_NEW_0: begin
+          TB_douta_sel_new[1:0] = DIR_NEW_0;
           TBa_shift_dir <= RIGHT_SHIFT;
         end
-        DIR_NEW: begin
-          TB_douta_sel_new[1:0] = DIR_NEW;
+        DIR_NEW_1: begin
+          TB_douta_sel_new[1:0] = DIR_NEW_1;
           TBa_shift_dir <= LEFT_SHIFT;
         end
       endcase
@@ -1753,12 +1754,12 @@ module PE_config #(
           TB_doutb_sel_new[1:0] = DIR_POS;
           TBb_shift_dir <= LEFT_SHIFT;
         end
-        DIR_NEG: begin
-          TB_doutb_sel_new[1:0] = DIR_NEG;
+        DIR_NEW_0: begin
+          TB_doutb_sel_new[1:0] = DIR_NEW_0;
           TBb_shift_dir <= RIGHT_SHIFT;
         end
-        DIR_NEW: begin
-          TB_doutb_sel_new[1:0] = DIR_NEW;
+        DIR_NEW_1: begin
+          TB_doutb_sel_new[1:0] = DIR_NEW_1;
           TBb_shift_dir <= LEFT_SHIFT;
         end
       endcase
@@ -2339,13 +2340,13 @@ module PE_config #(
                   end  
                   'd1: begin
                     // CBa_shift_dir <= group_cnt[0] ? DIR_NEG : DIR_POS; //0-POS 1-NEG
-                    CBa_shift_dir <= group_cnt[0] ? DIR_POS : DIR_NEG; //0-POS 1-NEG
+                    CBa_shift_dir <= DIR_POS; //0-POS 1-NEG
                     CB_ena_new <= 1'b1;
                     CB_addra_new <= CB_addra_base;
                   end     
                   'd2: begin
                     // CB_douta_sel_new <= group_cnt[0] ? {CBa_B,DIR_NEG} : {CBa_B,DIR_POS}; //0-POS 1-NEG
-                    CB_douta_sel_new <= group_cnt[0] ? {CBa_B,DIR_POS} : {CBa_B,DIR_NEG}; //0-POS 1-NEG
+                    CB_douta_sel_new <= {CBa_B,DIR_POS}; //0-POS 1-NEG
                     CB_ena_new <= 1'b1;
                     CB_addra_new <= CB_addra_base + 'b1;
                   end
@@ -2377,12 +2378,12 @@ module PE_config #(
                     CB_addra_new <= 0;
                   end  
                   'd1: begin
-                    CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
+                    CBa_shift_dir <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
                     CB_ena_new <= 1'b1;
                     CB_addra_new <= CB_addra_base;
                   end     
                   'd2: begin
-                    CB_douta_sel_new <= DIR_NEW;
+                    CB_douta_sel_new <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0;
                     CB_ena_new <= 1'b1;
                     CB_addra_new <= CB_addra_base + 'b1;
                   end
@@ -2583,16 +2584,16 @@ module PE_config #(
           case(new_cur_CB_B)
             NEW_1: begin
               CB_web_new <= 1'b1;
-
+              CBb_vm_AGD_en <= 1'b0;
               case(seq_cnt_CB_B)
                 'd0: begin
-                  CB_dinb_sel_new <= DIR_NEW;
+                  CB_dinb_sel_new <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0;
 
                   CB_enb_new <= 1'b0;
                   CB_addrb_new <= 0;
                 end
                 'd1: begin
-                  CBb_shift_dir <= DIR_NEW;
+                  CBb_shift_dir <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0;
 
                   CB_enb_new <= 1'b1;
                   CB_addrb_new <= CB_addrb_base;
@@ -2603,8 +2604,7 @@ module PE_config #(
                 end
                 'd3: begin
                   CB_enb_new <= 1'b1;
-                  CB_addrb_new <= CB_addrb_base + 'b1;
-                  CBb_vm_AGD_en <= 1'b1;
+                  CB_addrb_new <= CB_addrb_new + 1'b1;
                 end
                 'd4: begin
                   CB_enb_new <= 1'b0;
@@ -2613,7 +2613,6 @@ module PE_config #(
                 'd5: begin
                   CB_enb_new <= 1'b1;
                   CB_addrb_new <= CB_addrb_base + 'b10;
-                  CBb_vm_AGD_en <= 1'b0;
                 end
               endcase
             end
@@ -2622,13 +2621,13 @@ module PE_config #(
 
               case(seq_cnt_CB_B)
                 'd0: begin
-                  CB_dinb_sel_new <= DIR_NEW;
+                  CB_dinb_sel_new <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0;
 
                   CB_enb_new <= 1'b0;
                   CB_addrb_new <= 0;
                 end
                 'd1: begin
-                  CBb_shift_dir <= DIR_NEW;
+                  CBb_shift_dir <= group_num[0] ? DIR_NEW_1 : DIR_NEW_0;
 
                   CB_enb_new <= 1'b1;
                   CB_addrb_new <= CB_addrb_base;
@@ -2923,22 +2922,17 @@ end
       .dout (CB_wea )
     );
 
-    CB_addr_shift 
+    CB_dshift 
     #(
-      .L           (L           ),
-      .CB_AW       (CB_AW       ),
-      .ROW_LEN     (ROW_LEN     )
+      .DW        (CB_AW        ),
+      .DEPTH     (L     )
     )
-    CB_addra_shift(
-    	.clk             (clk             ),
-      .sys_rst         (sys_rst         ),
-      .CB_dir          (CBa_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
-      .group_cnt_0     (group_cnt_0     ),
-      .CB_en_new       (CB_ena_new       ),
-      .CB_en           (CB_ena           ),
-      .CB_addr_new     (CB_addra_new     ),
-      .CB_addr         (CB_addra        )
+    CB_addra_dshift(
+    	.clk     (clk     ),
+      .sys_rst (sys_rst ),
+      .CB_dir  (CBa_shift_dir  ),
+      .din     (CB_addra_new     ),
+      .dout    (CB_addra    )
     );
     
 /*
@@ -2986,22 +2980,17 @@ end
       .dout (CB_web )
     );
 
-    CB_addr_shift 
+    CB_dshift 
     #(
-      .L           (L           ),
-      .CB_AW       (CB_AW       ),
-      .ROW_LEN     (ROW_LEN     )
+      .DW        (CB_AW        ),
+      .DEPTH     (L     )
     )
-    CB_addrb_shift(
-    	.clk             (clk             ),
-      .sys_rst         (sys_rst         ),
-      .CB_dir          (CBb_shift_dir          ),
-      .landmark_num_10 (landmark_num_10 ),
-      .group_cnt_0     (group_cnt_0     ),
-      .CB_en_new       (CB_enb_new       ),
-      .CB_en           (CB_enb           ),
-      .CB_addr_new     (CB_addrb_new     ),
-      .CB_addr         (CB_addrb       )
+    CB_addrb_dshift(
+    	.clk     (clk     ),
+      .sys_rst (sys_rst ),
+      .CB_dir  (CBb_shift_dir  ),
+      .din     (CB_addrb_new     ),
+      .dout    (CB_addrb    )
     );
 
   /*

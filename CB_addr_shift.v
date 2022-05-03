@@ -21,7 +21,6 @@ module CB_addr_shift #(
   input sys_rst,
 
   input [1:0] CB_dir,
-  input [1:0] landmark_num_10,
   input group_cnt_0,
   
   input CB_en_new,
@@ -56,13 +55,13 @@ module CB_addr_shift #(
 
   localparam DIR_IDLE = 2'b00;
   localparam DIR_POS  = 2'b01;
-  localparam DIR_NEG  = 2'b10;
-  localparam DIR_NEW  = 2'b11;
+  localparam DIR_NEW_0  = 2'b10;
+  localparam DIR_NEW_1  = 2'b11;
 
-  localparam  DIR_NEW_11  = 2'b11; 
-  localparam  DIR_NEW_00  = 2'b00;
-  localparam  DIR_NEW_01  = 2'b01;
-  localparam  DIR_NEW_10  = 2'b10;
+  // localparam  DIR_NEW_11  = 2'b11; 
+  // localparam  DIR_NEW_00  = 2'b00;
+  // localparam  DIR_NEW_01  = 2'b01;
+  // localparam  DIR_NEW_10  = 2'b10;
 
 
   reg [L:1] group_cnt_0_d;
@@ -95,142 +94,20 @@ module CB_addr_shift #(
               endcase
             end
           end
-          DIR_NEG: begin
-            CB_addr[(L-1)*CB_AW +: CB_AW] <= CB_en_new ? (CB_addr_new + 2'b11) : 0;
-            for(i=0; i<L-1; i=i+1) begin
-              case(group_cnt_0_d[i]) 
-              1'b1: begin
-                  CB_addr[i*CB_AW +: CB_AW] <= (CB_en[i+1]) ? (CB_addr[(i+1)*CB_AW +: CB_AW] - 1'b1) : 0;
-                end
-              1'b0: begin
-                  CB_addr[i*CB_AW +: CB_AW] <= CB_addr[(i+1)*CB_AW +: CB_AW];
-                end
-              endcase
-            end
+          DIR_NEW_1: begin
+            CB_addr[0 +: CB_AW]       <= CB_en_new ? CB_addr_new : 0;
+            CB_addr[1*CB_AW +: CB_AW] <= (CB_en[0]) ? (CB_addr[0 +: CB_AW]) : 0;
+            CB_addr[2*CB_AW +: CB_AW] <= 0;
+            CB_addr[3*CB_AW +: CB_AW] <= 0;
           end
-          DIR_NEW: begin
-            case(landmark_num_10)
-              DIR_NEW_11: begin
-                CB_addr[0 +: CB_AW]        <= CB_en_new ? CB_addr_new : 0;
-                CB_addr[1*CB_AW +: CB_AW] <= (CB_en[0]) ? (CB_addr[0 +: CB_AW]) : 0;
-                CB_addr[2*CB_AW +: CB_AW] <= 0;
-                CB_addr[3*CB_AW +: CB_AW] <= 0;
-              end
-              DIR_NEW_00: begin
-                CB_addr[0 +: CB_AW]        <= 0;
-                CB_addr[1*CB_AW +: CB_AW] <= 0;
-                CB_addr[2*CB_AW +: CB_AW] <= CB_en_new ? CB_addr_new : 0;
-                CB_addr[3*CB_AW +: CB_AW] <= (CB_en[2]) ? (CB_addr[2*CB_AW +: CB_AW]) : 0;
-              end
-              DIR_NEW_01: begin
-                CB_addr[0 +: CB_AW]        <= 0;
-                CB_addr[1*CB_AW +: CB_AW] <= 0;
-                CB_addr[2*CB_AW +: CB_AW] <= (CB_en[3]) ? (CB_addr[3*CB_AW +: CB_AW] - 1'b1) : 0;
-                CB_addr[3*CB_AW +: CB_AW] <= CB_en_new ? (CB_addr_new + 3'b11) : 0;
-              end
-              DIR_NEW_10: begin
-                CB_addr[0 +: CB_AW]        <= (CB_en[1]) ? (CB_addr[1*CB_AW +: CB_AW] - 1'b1) : 0;
-                CB_addr[1*CB_AW +: CB_AW] <= CB_en_new ? (CB_addr_new + 1'b1) : 0;
-                CB_addr[2*CB_AW +: CB_AW] <= 0;
-                CB_addr[3*CB_AW +: CB_AW] <= 0;
-              end
-            endcase
+          DIR_NEW_0: begin
+            CB_addr[0 +: CB_AW]       <= 0;
+            CB_addr[1*CB_AW +: CB_AW] <= 0;
+            CB_addr[2*CB_AW +: CB_AW] <= CB_en_new ? CB_addr_new : 0;
+            CB_addr[3*CB_AW +: CB_AW] <= (CB_en[2]) ? (CB_addr[2*CB_AW +: CB_AW]) : 0;
           end
         endcase
       end   
   end
-
-// /*
-//   en shift
-// */
-// always @(posedge clk) begin
-//   if(sys_rst) begin
-//     CB_en <= 0;
-//   end
-//   else begin
-//     case (CB_dir)
-//       DIR_POS: CB_en <= {CB_en[0 +: L-1], CB_en_new};
-//       DIR_NEG: CB_en <= {CB_en_new, CB_en[1 +: L-1]};
-//       DIR_NEW: begin
-//         case(landmark_num_10)
-//           DIR_NEW_11: begin
-//             CB_en[0] <= CB_en_new;
-//             CB_en[1] <= CB_en[0];
-//             CB_en[2] <= 0;
-//             CB_en[3] <= 0;
-//           end
-//           DIR_NEW_00: begin
-//             CB_en[0] <= 0;
-//             CB_en[1] <= 0;
-//             CB_en[2] <= CB_en_new;
-//             CB_en[3] <= CB_en[2];
-//           end
-//           DIR_NEW_01: begin
-//             CB_en[0] <= 0;
-//             CB_en[1] <= 0;
-//             CB_en[2] <= CB_en[3];
-//             CB_en[3] <= CB_en_new;
-//           end
-//           DIR_NEW_10: begin
-//             CB_en[0] <= CB_en[1];
-//             CB_en[1] <= CB_en_new;
-//             CB_en[2] <= 0;
-//             CB_en[3] <= 0;
-//           end
-//         endcase
-//       end
-//       default: begin
-//         CB_en <= 0;
-//       end
-//     endcase
-//   end
-// end
-
-// /*
-//   we shift
-// */
-// always @(posedge clk) begin
-//   if(sys_rst) begin
-//     CB_we <= 0;
-//   end
-//   else begin
-//     case (CB_dir)
-//       DIR_POS: CB_we <= {CB_we[0 +: L-1], CB_we_new};
-//       DIR_NEG: CB_we <= {CB_we_new, CB_we[1 +: L-1]};
-//       DIR_NEW: begin
-//         case(landmark_num_10)
-//           DIR_NEW_11: begin
-//             CB_we[0] <= CB_we_new;
-//             CB_we[1] <= CB_we[0];
-//             CB_we[2] <= 0;
-//             CB_we[3] <= 0;
-//           end
-//           DIR_NEW_00: begin
-//             CB_we[0] <= 0;
-//             CB_we[1] <= 0;
-//             CB_we[2] <= CB_we_new;
-//             CB_we[3] <= CB_we[2];
-//           end
-//           DIR_NEW_01: begin
-//             CB_we[0] <= 0;
-//             CB_we[1] <= 0;
-//             CB_we[2] <= CB_we[3];
-//             CB_we[3] <= CB_we_new;
-//           end
-//           DIR_NEW_10: begin
-//             CB_we[0] <= CB_we[1];
-//             CB_we[1] <= CB_we_new;
-//             CB_we[2] <= 0;
-//             CB_we[3] <= 0;
-//           end
-//         endcase
-//       end
-//       default: begin
-//         CB_we <= 0;
-//       end
-//     endcase
-//   end
-// end
-
 
 endmodule
