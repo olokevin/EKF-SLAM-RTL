@@ -36,6 +36,7 @@ module RSA
 
 //landmark numbers
   input   [ROW_LEN-1 : 0]  landmark_num,
+  input   [ROW_LEN-1 : 0]  l_k,
 
 //handshake of stage change
   input   [2:0]   stage_val,
@@ -753,6 +754,7 @@ u_PE_config(
   .clk                  (clk               ),
   .sys_rst              (sys_rst           ),
   .landmark_num         (landmark_num      ),
+  .l_k                  (l_k               ),
   .stage_val            (stage_val         ),
   .stage_rdy            (stage_rdy         ),
   .nonlinear_m_rdy      (nonlinear_m_rdy   ),

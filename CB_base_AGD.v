@@ -1,6 +1,7 @@
 /*
-    只生成BANK0中每行的首地址
-    生成(7,0) (8,0) (15,0) (16,0)...
+    默认值0即为group 0的base_addr
+    输入一次en信号后，计算一次 *下一group* 的base_addr
+    生成每行的首地址(4,0) (8,0) (12,0) (16,0)...
 
     START有效后 3T得到新基址
 */
@@ -13,7 +14,6 @@ module CB_base_AGD #(
     input sys_rst,
 
     input en,
-    input user_reset,
     input [ROW_LEN-1 : 0]  group_cnt,
 
     output reg [CB_AW-1 : 0] CB_base_addr
@@ -27,21 +27,32 @@ module CB_base_AGD #(
           en_d <= en;
   end
 
-  reg [ROW_LEN-1 : 0]  group_cnt_r1;
-  // reg [CB_AW-1 : 0] CB_base_addr_r1;
-  // reg [CB_AW-1 : 0] CB_base_addr_r2;
+  reg [ROW_LEN-1 : 0]  n_group_cnt;
+  reg [ROW_LEN-1 : 0]  n_group_cnt_r1;
+  reg [CB_AW-1 : 0] CB_base_addr_r1;
+  reg [CB_AW-1 : 0] CB_base_addr_r2;
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      group_cnt_r1 <= 0;
+      n_group_cnt <= 0;
     end
     else 
-      group_cnt_r1 <= group_cnt;
+      n_group_cnt <= group_cnt + 1'b1;
+  end
+  
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      n_group_cnt_r1 <= 0;
+    end
+    else 
+      n_group_cnt_r1 <= n_group_cnt;
   end
 
   always @(posedge clk) begin
     if(sys_rst) begin
       CB_base_addr <= 0;
+      CB_base_addr_r1 <= 0;
+      CB_base_addr_r2 <= 0;
     end
     else begin
       case({en_d, en})
@@ -49,13 +60,13 @@ module CB_base_AGD #(
           CB_base_addr <= CB_base_addr;
         end 
         2'b01: begin
-          CB_base_addr <= group_cnt * group_cnt;
+          CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
         end 
         2'b11: begin
-          CB_base_addr <= CB_base_addr + group_cnt_r1;
+          CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
         end
         2'b10: begin
-          CB_base_addr <= CB_base_addr << 1;
+          CB_base_addr <= CB_base_addr_r2 << 1;
         end
       endcase
     end   

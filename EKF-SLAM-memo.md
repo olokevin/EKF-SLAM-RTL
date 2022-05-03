@@ -1101,3 +1101,42 @@ addrb_new: NEW_2_PE_in+N+3
 ## 220503 改存储方案！
 
 * addr_shift: CB的地址也是对齐的，直接移位即可
+* group_cnt: 在进入该group就先+1, 中间给了en信号才会计算出新的base_addr
+* CB_base_AGD：
+  * 模式0：计算group_cnt+1的首地址
+  * 模式1：计算group_cnt的首地址
+* 注意：CBb 使用延迟后的group_cnt
+
+### problems
+
+* CB-A:
+  * '1 addr_dir
+  * '2: out_sel
+* CB-B
+  * '0: in_sel
+  * '1 addr_dir
+* PE array使能条件
+
+### 终止条件
+
+#### PRD
+
+* 由landmark_num计算group_cnt_max
+  * group_cnt_max = (landmark_num+1) >> 1
+  * 最后一个group 不齐 算完就行了
+
+#### NEW
+
+* **完成后**再landmark_num <= landmark_num + 1
+* 由landmark_num计算group_cnt_max（CB-A读取）
+  * 当前最后一个group齐（landmark_num[0]=0, 新地标l_k[0]=1）
+    * 正常
+  * 当前最后一个group不齐（landmark_num[0]=1, 新地标l_k[0]=0）
+    * 算完最后一个。最后cov_ll可覆盖
+* 由l_k计算该新地标对应的首地址（CB-B写入）
+  * **进NEW UPD模式就算好**
+  * l_k_group <= (l_k+1) >> 1
+  * l_k_group_base
+  * 得到该列首地址
+* cov_lv
+  * l_k_group_base + 2*(l_k+1) = l_k_group_base + l_k<<1 + 2
