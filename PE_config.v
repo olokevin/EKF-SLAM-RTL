@@ -1355,8 +1355,8 @@ module PE_config #(
             UPD_2: begin
             /*
               cov_mv * H_T = cov_HT
-              X=4 Y=2 N=5
-              Ain: CB-A / TB-A
+              X=4 Y=2 N=3
+              Ain: CB-A
               Bin: B-CONS
               Min: 0
               Cout: TB-B
@@ -1386,11 +1386,11 @@ module PE_config #(
             end
             UPD_3: begin
             /*
-              cov_lv * G_xi_T = lv_G_xi
-              X=2 Y=2 N=3
-              Ain: CB-A
-              Bin: TB-B
-              Min: NONE  
+              cov_l * H_T = cov_HT
+              X=4 Y=2 N=2
+              Ain: TB-A
+              Bin: B-CONS
+              Min: 0
               Cout: TB-B
             */
               PE_m <= UPD_3_M;

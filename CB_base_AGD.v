@@ -67,8 +67,7 @@ module CB_base_AGD #(
           CB_base_addr <= CB_base_addr_T3 << 1;
         end
         else begin
-          CB_base_addr_T3 <= CB_base_addr_T2 >> 1;
-          
+          CB_base_addr_T3 <= CB_base_addr_T2 >> 1; 
           CB_base_addr    <= CB_base_addr_T3 + group_cnt_T3;
         end
       end
