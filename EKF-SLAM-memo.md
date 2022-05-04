@@ -1147,3 +1147,12 @@ addrb_new: NEW_2_PE_in+N+3
 
 * **PE array使能条件**
 * B_CONS
+* 需在group_cnt更新时采样基址
+* group_cnt更新后4T输出新基址
+
+### 改组合逻辑 查找表设置模式（提前一个T）
+
+* TB CB读写逻辑修改
+* TB_base_addr如何递增？
+  * 应使用时序赋值。但好像来不及
+  * 采样？
