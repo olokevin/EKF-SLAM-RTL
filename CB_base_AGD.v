@@ -8,7 +8,8 @@
 
 module CB_base_AGD #(
   parameter CB_AW        = 17,
-  parameter ROW_LEN      = 10
+  parameter ROW_LEN      = 10,
+  parameter AGD_MODE     = 0
 ) (
     input clk,
     input sys_rst,
@@ -18,7 +19,9 @@ module CB_base_AGD #(
 
     output reg [CB_AW-1 : 0] CB_base_addr
 );
-  
+  localparam VM_BASE = 0;
+  localparam LK_BASE = 1;
+
   reg en_d;
   always @(posedge clk) begin
       if(sys_rst)
@@ -27,45 +30,64 @@ module CB_base_AGD #(
           en_d <= en;
   end
 
-  reg [ROW_LEN-1 : 0]  n_group_cnt;
-  reg [ROW_LEN-1 : 0]  n_group_cnt_r1;
-  reg [CB_AW-1 : 0] CB_base_addr_r1;
-  reg [CB_AW-1 : 0] CB_base_addr_r2;
+  reg [ROW_LEN-1 : 0]  group_cnt_T1;
+  reg [ROW_LEN-1 : 0]  group_cnt_T2;
+  reg [ROW_LEN-1 : 0]  group_cnt_T3;
+  reg [CB_AW-1 : 0] CB_base_addr_T2;
+  reg [CB_AW-1 : 0] CB_base_addr_T3;
+
+/*
+  group_cnt更新后
+  T1: group_cnt_T1 <= group_cnt + 1'b1;
+  T2: CB_base_addr_T2 <= group_cnt_T1 * group_cnt_T1;
+  T3: CB_base_addr_T3 <= CB_base_addr_T2 + group_cnt_T2;
+  T4: CB_base_addr <= CB_base_addr_T3 << 1;
+*/
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      n_group_cnt <= 0;
-    end
-    else 
-      n_group_cnt <= group_cnt + 1'b1;
-  end
-  
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      n_group_cnt_r1 <= 0;
-    end
-    else 
-      n_group_cnt_r1 <= n_group_cnt;
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
+      group_cnt_T1 <= 0;
+      group_cnt_T2 <= 0;
+      group_cnt_T3 <= 0;
       CB_base_addr <= 0;
-      CB_base_addr_r1 <= 0;
-      CB_base_addr_r2 <= 0;
+      CB_base_addr_T2 <= 0;
+      CB_base_addr_T3 <= 0;
     end
     else begin
-      CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
-      CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
-      CB_base_addr <= CB_base_addr_r2 << 1;
+      if(en==1'b1) begin
+        group_cnt_T1 <= group_cnt + 1'b1;
+
+        CB_base_addr_T2 <= group_cnt_T1 * group_cnt_T1;
+        group_cnt_T2 <= group_cnt_T1;
+
+        group_cnt_T3    <= group_cnt_T2;
+
+        if(AGD_MODE == VM_BASE) begin
+          CB_base_addr_T3 <= CB_base_addr_T2 + group_cnt_T2;
+          CB_base_addr <= CB_base_addr_T3 << 1;
+        end
+        else begin
+          CB_base_addr_T3 <= CB_base_addr_T2 >> 1;
+          
+          CB_base_addr    <= CB_base_addr_T3 + group_cnt_T3;
+        end
+      end
+      else begin
+        group_cnt_T1 <= 0;
+        group_cnt_T2 <= 0;
+        group_cnt_T3 <= 0;
+        CB_base_addr <= 0;
+        CB_base_addr_T2 <= 0;
+        CB_base_addr_T3 <= 0;
+      end
     end   
   end
 
   // always @(posedge clk) begin
   //   if(sys_rst) begin
   //     CB_base_addr <= 0;
-  //     CB_base_addr_r1 <= 0;
-  //     CB_base_addr_r2 <= 0;
+  //     CB_base_addr_T2 <= 0;
+  //     CB_base_addr_T3 <= 0;
   //   end
   //   else begin
   //     case({en_d, en})
@@ -73,13 +95,13 @@ module CB_base_AGD #(
   //         CB_base_addr <= CB_base_addr;
   //       end 
   //       2'b01: begin
-  //         CB_base_addr_r1 <= n_group_cnt * n_group_cnt;
+  //         CB_base_addr_T2 <= group_cnt_T1 * group_cnt_T1;
   //       end 
   //       2'b11: begin
-  //         CB_base_addr_r2 <= CB_base_addr_r1 + n_group_cnt_r1;
+  //         CB_base_addr_T3 <= CB_base_addr_T2 + group_cnt_T2;
   //       end
   //       2'b10: begin
-  //         CB_base_addr <= CB_base_addr_r2 << 1;
+  //         CB_base_addr <= CB_base_addr_T3 << 1;
   //       end
   //     endcase
   //   end   

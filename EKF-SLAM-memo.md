@@ -934,7 +934,7 @@ cal_mode[11:0]
 | 8        |           |                                    |
 | 9        |           | M_in_sel_new, M_in_sel_dir         |
 | 10       | M_data    | C_in_sel_new, C_in_sel_dir         |
-| 11(WR 1) | C_data    | CB_dinb_sel, CB_dinb_sel_dir       |
+| 11(WR 1) | C_data    | CB_dinb_sel_new, CB_dinb_sel_dir   |
 | 12(WR 2) | C_CB_dinb |                                    |
 | 13(WR 3) | CB_dinb   |                                    |
 |          |           |                                    |
@@ -1105,7 +1105,7 @@ addrb_new: NEW_2_PE_in+N+3
 * CB_base_AGD：
   * **模式0：计算group_cnt+1的首地址**
   * 模式1：计算group_cnt的首地址
-  * cov_vv直接赋地址1 2 3
+  * **cov_vv直接赋地址1 2 3**
 * 注意：CBb 使用延迟后的group_cnt
 
 ### problems
@@ -1116,7 +1116,6 @@ addrb_new: NEW_2_PE_in+N+3
 * CB-B
   * '0: in_sel
   * '1 addr_dir
-* **PE array使能条件**
 
 ### 终止条件
 
@@ -1141,3 +1140,10 @@ addrb_new: NEW_2_PE_in+N+3
   * 得到该列首地址
 * cov_lv
   * l_k_group_base + 2*(l_k+1) = l_k_group_base + l_k<<1 + 2
+
+
+
+### problems
+
+* **PE array使能条件**
+* B_CONS

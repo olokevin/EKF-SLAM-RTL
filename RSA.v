@@ -458,24 +458,30 @@ generate
 endgenerate
 
 //Bin 临时寄存H
-wire [TB_DOUTB_SEL_DW-1 : 0]  TB_doutb_sel;
 
-reg [RSA_DW-1:0] B_CONS [Y-1:0];
-reg [2:0] B_CONS_addr;
-
-always @(posedge clk) begin
-  if(TB_doutb_sel[2] == 1'b1) begin
-    B_CONS[B_CONS_addr] <= B_CONS_TB_doutb;
-    B_CONS_addr <= B_CONS_addr + 1'b1;
-  end
-  else begin
-    B_CONS_addr <= 0;
-  end 
-end
+wire [Y-1:0] B_CONS_en;
+wire [Y-1:0] B_CONS_we;
+wire [Y*3-1:0] B_CONS_addr;
+wire [Y*RSA_DW-1:0] B_CONS_dout; 
 
 generate
   genvar i_Y;
   for(i_Y=0; i_Y<=Y-1; i_Y=i_Y+1) begin: DATA_Y
+    t_ram 
+    #(
+      .DW (RSA_DW ),
+      .AW (3 )
+    )
+    B_CONS_ram(
+    	.clk     (clk     ),
+      .sys_rst (sys_rst ),
+      .en      (B_CONS_en[i_Y]      ),
+      .we      (B_CONS_we[i_Y]      ),
+      .addr    (B_CONS_addr[3*i_Y +: 3]    ),
+      .din     (B_CONS_TB_doutb[RSA_DW*i_Y +: RSA_DW]     ),
+      .dout    (B_CONS_dout[RSA_DW*i_Y +: RSA_DW]    )
+    );
+    
     regMUX_sel2 
     #(
       .RSA_DW (RSA_DW )
@@ -486,7 +492,7 @@ generate
       .en      (B_in_en[i_Y]  ),
       .sel     (B_in_sel[2*i_Y +: 2]   ),
       .din_00  (B_TB_doutb[RSA_DW*i_Y +: RSA_DW]  ),
-      .din_01  (B_CONS[i_Y]  ),
+      .din_01  (B_CONS_dout[RSA_DW*i_Y +: RSA_DW]  ),
       .din_10  (B_CB_douta[RSA_DW*i_Y +: RSA_DW]  ),
       .din_11  (0   ),
       .dout    (B_data[RSA_DW*i_Y +: RSA_DW]  )
@@ -498,7 +504,7 @@ endgenerate
 wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
 wire [TB_DOUTA_SEL_DW-1 : 0]    TB_douta_sel;
 //定义提前
-// wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
+wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
 
 wire [L-1 : 0]    TB_ena;
 wire [L-1 : 0]    TB_enb;
@@ -788,6 +794,10 @@ u_PE_config(
   .CB_dina              (CB_dina           ),
   .CB_addra             (CB_addra          ),
   .CB_addrb             (CB_addrb          ),
+  .B_CONS_en            (B_CONS_en),
+  .B_CONS_we            (B_CONS_we),
+  .B_CONS_addr          (B_CONS_addr),
+  .B_CONS_dout          (B_CONS_dout),
   .M_adder_mode         (M_adder_mode      ),
   .PE_mode              (PE_mode           ),
   .new_cal_en           (new_cal_en        ),

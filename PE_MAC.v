@@ -157,7 +157,7 @@ module PE_MAC
             mulres_val_r <= 1'b0;
     end
 
-    //h_data_r行数据复用
+//h_data_r行数据复用
     always @(posedge clk) begin
         if(sys_rst)  begin
             h_data_r <= 0;
@@ -169,7 +169,7 @@ module PE_MAC
             h_data_r <= 0;
     end
 
-    //v_data_r数据复用
+//v_data_r数据复用
     always @(posedge clk) begin
         if(sys_rst)  begin
             v_data_r <= 0;

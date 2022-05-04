@@ -62,7 +62,7 @@ always @(posedge clk) begin
 end
 
 /*
-  A_TB_douta
+  M_TB_douta
 */
 integer i_TB_M;
 always @(posedge clk) begin

@@ -10,8 +10,7 @@ module CB_douta_map #(
   input   clk,
   input   sys_rst,
 
-  input   [1:0]   CB_douta_sel,
-  input   [1:0]   CB_douta_dir,
+  input   [3:0]   CB_douta_sel,
 
   input   [L*RSA_DW-1 : 0]         CB_douta,
   output  reg  [X*RSA_DW-1 : 0]    A_CB_douta,
