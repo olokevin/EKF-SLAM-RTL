@@ -922,24 +922,36 @@ cal_mode[11:0]
 
 ### 时序
 
-| 0        | stage     |                                    |
-| -------- | --------- | ---------------------------------- |
-| 1        | set       | CAL_mode, TB_mode, CB_mode         |
-| 2        | addr_new  | addr_shift_dir                     |
-| 3        | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir |
-| 4        | CB_dout   | A_in_sel_new, A_in_sel_dir,        |
-| 5        | A_CB_dout | cal_en_new, cal_done_new, A_in_en  |
-| 6        | A_data    | PE_mode                            |
-| 7        |           |                                    |
-| 8        |           |                                    |
-| 9        |           | M_in_sel_new, M_in_sel_dir         |
-| 10       | M_data    | C_in_sel_new, C_in_sel_dir         |
-| 11(WR 1) | C_data    | CB_dinb_sel_new, CB_dinb_sel_dir   |
-| 12(WR 2) | C_CB_dinb |                                    |
-| 13(WR 3) | CB_dinb   |                                    |
-|          |           |                                    |
+| T        |           | set                                         |
+| -------- | --------- | ------------------------------------------- |
+| 0        | stage     | CAL_mode, TB_mode, CB_mode，addr_base       |
+| 1        | addr_new  | addr_shift_dir                              |
+| 2        | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir          |
+| 3        | CB_dout   | A_in_sel_new, A_in_sel_dir,                 |
+| 4        | A_CB_dout | cal_en_new, cal_done_new, A_in_en           |
+| 5        | A_data    | PE_mode                                     |
+| 6        |           |                                             |
+| 7        |           |                                             |
+| 8        |           | M_in_sel_new, M_in_sel_dir                  |
+| 9        | M_data    | C_in_sel_new, C_in_sel_dir                  |
+| 10(WR 0) | C_data    | CB_dinb_sel_new, CB_dinb_sel_dir, addr_base |
+| 11(WR 1) | C_CB_dinb | addr_new, addr_shift_dir                    |
+| 12(WR 2) | CB_dinb   | addr[0]                                     |
+|          |           |                                             |
 
+RD_2_WR_D: 7(1 + 4 + 2)
 
+* 1: addr_new -> addr[0]
+* 4: addr[0] -> A_data
+* N + 2 : A_data -> C_data
+
+N=1时，写入为读取的8级延迟
+
+N=2时，写入为读取的9级延迟
+
+N=3时，写入为读取的10级延迟
+
+N=5时，写入为读取的12级延迟
 
 
 
@@ -1155,4 +1167,13 @@ addrb_new: NEW_2_PE_in+N+3
 * TB CB读写逻辑修改
 * TB_base_addr如何递增？
   * 应使用时序赋值。但好像来不及
-  * 采样？
+  * **采样？**
+* 分离TB-B输入，输出
+  * 输出用延迟后的cnt等
+
+### not complished
+
+* **TB采样**
+* **CONS**
+* **cov_HT转换**
+* **求逆**
