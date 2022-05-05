@@ -75,9 +75,35 @@ end
 /*
     ************* NEW *****************
 */
+// initial begin
+//     #(PERIOD*RST_START)
+//     stage_val = STAGE_NEW;
+//     #(PERIOD * 2)
+//     stage_val = 0;
+// end
+
+// initial begin
+//     #(PERIOD*RST_START)
+//     #(PERIOD * 5)
+//     nonlinear_s_val = STAGE_NEW;
+//     #(PERIOD * 2)
+//     nonlinear_s_val = 0;
+// end
+
+// initial begin
+//     #(PERIOD*RST_START)
+//     #(PERIOD * 10)
+//     nonlinear_s_rdy = STAGE_NEW;
+//     #(PERIOD * 2)
+//     nonlinear_s_rdy = 0;
+// end
+
+/*
+    ************* UPD *****************
+*/
 initial begin
     #(PERIOD*RST_START)
-    stage_val = STAGE_NEW;
+    stage_val = STAGE_UPD;
     #(PERIOD * 2)
     stage_val = 0;
 end
@@ -85,7 +111,7 @@ end
 initial begin
     #(PERIOD*RST_START)
     #(PERIOD * 5)
-    nonlinear_s_val = STAGE_NEW;
+    nonlinear_s_val = STAGE_UPD;
     #(PERIOD * 2)
     nonlinear_s_val = 0;
 end
@@ -93,7 +119,7 @@ end
 initial begin
     #(PERIOD*RST_START)
     #(PERIOD * 10)
-    nonlinear_s_rdy = STAGE_NEW;
+    nonlinear_s_rdy = STAGE_UPD;
     #(PERIOD * 2)
     nonlinear_s_rdy = 0;
 end

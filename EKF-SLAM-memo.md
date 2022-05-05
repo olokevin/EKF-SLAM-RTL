@@ -1173,7 +1173,23 @@ addrb_new: NEW_2_PE_in+N+3
 
 ### not complished
 
-* **TB采样**
+* TB_addr_base需递增：
+  * 组合逻辑赋最初的值TB_addr_base_raw
+  * 在seq_cnt == seq_cnt_max时，递增+4
+* 需递增的内容：
+  * UPD_2: 
+    * C: cov_HT
+  * UPD_3:
+    * A: t_cov_l
+  * UPD_6
+    * A: cov_HT
+    * C: K
+  * UPD_7
+    * A: K
+    * B: cov_HT
+* 采用的递增方案：
+  * group_cnt==0: 正常
+  * group_cnt!=0: 先+3 再+1
 * **CONS**
 * **cov_HT转换**
 * **求逆**
