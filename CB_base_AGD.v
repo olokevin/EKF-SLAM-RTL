@@ -15,7 +15,7 @@ module CB_base_AGD #(
     input sys_rst,
 
     input en,
-    input [ROW_LEN-1 : 0]  group_cnt,
+    input [ROW_LEN-1 : 0]  v_group_cnt,
 
     output reg [CB_AW-1 : 0] CB_base_addr
 );
@@ -55,7 +55,7 @@ module CB_base_AGD #(
     end
     else begin
       if(en==1'b1) begin
-        group_cnt_T1 <= group_cnt + 1'b1;
+        group_cnt_T1 <= v_group_cnt + 1'b1;
 
         CB_base_addr_T2 <= group_cnt_T1 * group_cnt_T1;
         group_cnt_T2 <= group_cnt_T1;

@@ -18,7 +18,7 @@ parameter ROW_LEN       = 10 ;
 // RSA Inputs
 reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
-reg   [ROW_LEN-1 : 0] landmark_num         = 5 ;
+reg   [ROW_LEN-1 : 0] landmark_num         = 8 ;
 reg   [ROW_LEN-1 : 0] l_k                  = 6 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg   [2:0]  nonlinear_s_val               = 0 ;

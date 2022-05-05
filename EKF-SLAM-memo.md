@@ -1187,9 +1187,16 @@ addrb_new: NEW_2_PE_in+N+3
   * UPD_7
     * A: K
     * B: cov_HT
-* 采用的递增方案：
+* **采用的递增方案：**
   * group_cnt==0: 正常
   * group_cnt!=0: 先+3 再+1
 * **CONS**
+  * 写：
+    * 按照时序给addr en we
+  * 读：
+    * 模式：组合逻辑切换
+    * 按照时序输出addr en we
 * **cov_HT转换**
+  * 并转串
 * **求逆**
+  * 再UPD_5时序内完成求逆

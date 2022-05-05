@@ -300,11 +300,11 @@ module PE_config #(
     localparam UPD_NONLINEAR = 8'b1111_0000;
     localparam UPD_1         = 8'b1;       
     localparam UPD_2         = 8'b10;
-    localparam UPD_3         = 8'b1000;
-    localparam UPD_4         = 8'b10000;
-    localparam UPD_5         = 8'b100000;
-    localparam UPD_6         = 8'b1000000;
-    localparam UPD_7         = 8'b10000000;
+    localparam UPD_3         = 8'b100;
+    localparam UPD_4         = 8'b1000;
+    localparam UPD_5         = 8'b10000;
+    localparam UPD_6         = 8'b100000;
+    localparam UPD_7         = 8'b1000000;
 
     localparam UPD_1_CNT_MAX     = 'd10;
     localparam UPD_2_CNT_MAX     = 'd2;
@@ -635,6 +635,229 @@ module PE_config #(
 /*
   (using) FSM of PRD stage, with seq_cnt back to 0 when prd_cur changes
 */
+/*
+  ***************** (0) calculate seq_cnt ***********************
+*/
+  //seq_cnt_max LUT
+  always @(*) begin
+    case(stage_cur)
+      STAGE_PRD: begin
+        case(prd_cur)
+          PRD_1: seq_cnt_max = PRD_1_CNT_MAX;
+          PRD_2: seq_cnt_max = PRD_2_CNT_MAX;
+          PRD_3: seq_cnt_max = PRD_3_CNT_MAX;
+          default: seq_cnt_max = 0;
+        endcase
+      end
+      STAGE_NEW: begin
+        case(new_cur)
+          NEW_1: seq_cnt_max = NEW_1_CNT_MAX;
+          NEW_2: seq_cnt_max = NEW_2_CNT_MAX;
+          NEW_3: seq_cnt_max = NEW_3_CNT_MAX;
+          NEW_4: seq_cnt_max = NEW_4_CNT_MAX;
+          NEW_5: seq_cnt_max = NEW_5_CNT_MAX;
+          default: seq_cnt_max = 0;
+        endcase
+      end
+      STAGE_UPD: begin
+        case(upd_cur)
+          UPD_1: seq_cnt_max = UPD_1_CNT_MAX;
+          UPD_2: seq_cnt_max = UPD_2_CNT_MAX;
+          UPD_3: seq_cnt_max = UPD_3_CNT_MAX;
+          UPD_4: seq_cnt_max = UPD_4_CNT_MAX;
+          UPD_5: seq_cnt_max = UPD_5_CNT_MAX;
+          UPD_6: seq_cnt_max = UPD_6_CNT_MAX;
+          UPD_7: seq_cnt_max = UPD_7_CNT_MAX;
+          default: seq_cnt_max = 0;
+        endcase
+      end
+      default: seq_cnt_max = 0;
+    endcase
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      seq_cnt <= 0;
+    end
+    else begin
+      if(seq_cnt >= seq_cnt_max)
+        seq_cnt <= 0;
+      else
+        seq_cnt <= seq_cnt + 1'b1;
+    end
+      
+  end
+/*
+  ******************** calculate v_group_cnt ********************
+*/
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      v_group_cnt <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_PRD: 
+          case(prd_cur)
+            PRD_2: begin
+              if(seq_cnt == seq_cnt_max)
+                v_group_cnt <= 1'b1;
+            end
+            PRD_3: begin
+              if(seq_cnt == seq_cnt_max) begin
+                if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
+                  v_group_cnt <= 0;
+                else
+                  v_group_cnt <= v_group_cnt + 1'b1;
+              end
+              else begin
+                v_group_cnt <= v_group_cnt;
+              end
+            end
+            default: begin
+              v_group_cnt <= 0;
+            end
+          endcase
+        STAGE_NEW: 
+          case(new_cur)
+            NEW_1: begin
+              if(seq_cnt == seq_cnt_max)
+                v_group_cnt <= 1'b1;
+            end
+            NEW_2: begin
+                    if(seq_cnt == seq_cnt_max) begin
+                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
+                        v_group_cnt <= 0;
+                      else
+                        v_group_cnt <= v_group_cnt + 1'b1;
+                    end
+                    else begin
+                      v_group_cnt <= v_group_cnt;
+                    end
+                  end
+            default: begin
+              v_group_cnt <= 0;
+            end
+          endcase
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_2: begin
+                    v_group_cnt <= v_group_cnt;   
+                  end
+            UPD_3: begin
+                    if(seq_cnt == seq_cnt_max) begin
+                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
+                        v_group_cnt <= 0;
+                      else
+                        v_group_cnt <= v_group_cnt + 1'b1;
+                    end
+                    else begin
+                      v_group_cnt <= v_group_cnt;
+                    end
+                  end
+            UPD_4: begin
+                    if(seq_cnt == seq_cnt_max) begin
+                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
+                        v_group_cnt <= 0;
+                      else
+                        v_group_cnt <= v_group_cnt + 1'b1;
+                    end
+                    else begin
+                      v_group_cnt <= v_group_cnt;
+                    end
+                  end
+            UPD_6: begin
+                    if(seq_cnt == seq_cnt_max) begin
+                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
+                        v_group_cnt <= 0;
+                      else
+                        v_group_cnt <= v_group_cnt + 1'b1;
+                    end
+                    else begin
+                      v_group_cnt <= v_group_cnt;
+                    end
+                  end
+            UPD_7: begin
+                    if(seq_cnt == seq_cnt_max) begin
+                      if(h_group_cnt == h_group_cnt_max) begin
+                        if(v_group_cnt == v_group_cnt_max)
+                          v_group_cnt <= 0;
+                        else
+                          v_group_cnt <= v_group_cnt + 1'b1;
+                      end
+                      else
+                        v_group_cnt <= v_group_cnt;
+                    end
+                    else begin
+                      v_group_cnt <= v_group_cnt;
+                    end
+                  end
+            default: begin
+              v_group_cnt <= 0;
+            end
+          endcase
+        end
+        default: v_group_cnt <= 0;
+      endcase
+    end   
+  end
+
+/*
+  ******************** calculate h_group_cnt ********************
+*/
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      h_group_cnt_max <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_7: begin
+              if(seq_cnt == seq_cnt_max) begin
+                if(h_group_cnt == h_group_cnt_max) 
+                  h_group_cnt_max <= h_group_cnt_max + 1'b1;
+                else
+                  h_group_cnt_max <= h_group_cnt_max;
+              end
+              else begin
+                h_group_cnt_max <= h_group_cnt_max;
+              end
+            end
+            default: h_group_cnt_max <= 0;
+          endcase
+        end
+        default: h_group_cnt_max <= 0;
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      h_group_cnt <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_7: begin
+              if(seq_cnt == seq_cnt_max) begin
+                if(h_group_cnt == h_group_cnt_max) 
+                  h_group_cnt <= 0;
+                else
+                  h_group_cnt <= h_group_cnt + 1'b1;
+              end
+              else begin
+                h_group_cnt <= h_group_cnt;
+              end
+            end
+            default: h_group_cnt <= 0;
+          endcase
+        end
+        default: h_group_cnt <= 0;
+      endcase
+    end
+  end
+
 //(1)&(2)sequential: state transfer & state switch
   /*
     PRD state transfer
@@ -854,325 +1077,6 @@ module PE_config #(
         endcase
       end
     end
-/*
-  ***************** calculate seq_cnt ***********************
-*/
-
-  //seq_cnt_max LUT
-  always @(*) begin
-    case(stage_cur)
-      STAGE_PRD: begin
-        case(prd_cur)
-          PRD_1: seq_cnt_max = PRD_1_CNT_MAX;
-          PRD_2: seq_cnt_max = PRD_2_CNT_MAX;
-          PRD_3: seq_cnt_max = PRD_3_CNT_MAX;
-          default: seq_cnt_max = 0;
-        endcase
-      end
-      STAGE_NEW: begin
-        case(new_cur)
-          NEW_1: seq_cnt_max = NEW_1_CNT_MAX;
-          NEW_2: seq_cnt_max = NEW_2_CNT_MAX;
-          NEW_3: seq_cnt_max = NEW_3_CNT_MAX;
-          NEW_4: seq_cnt_max = NEW_4_CNT_MAX;
-          NEW_5: seq_cnt_max = NEW_5_CNT_MAX;
-          default: seq_cnt_max = 0;
-        endcase
-      end
-      STAGE_UPD: begin
-        case(upd_cur)
-          UPD_1: seq_cnt_max = UPD_1_CNT_MAX;
-          UPD_2: seq_cnt_max = UPD_2_CNT_MAX;
-          UPD_3: seq_cnt_max = UPD_3_CNT_MAX;
-          UPD_4: seq_cnt_max = UPD_4_CNT_MAX;
-          UPD_5: seq_cnt_max = UPD_5_CNT_MAX;
-          UPD_6: seq_cnt_max = UPD_6_CNT_MAX;
-          UPD_7: seq_cnt_max = UPD_7_CNT_MAX;
-          default: seq_cnt_max = 0;
-        endcase
-      end
-      default: seq_cnt_max = 0;
-    endcase
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      seq_cnt <= 0;
-    end
-    else begin
-      if(seq_cnt >= seq_cnt_max)
-        seq_cnt <= 0;
-      else
-        seq_cnt <= seq_cnt + 1'b1;
-    end
-      
-  end
-
-/*old seq_cnt*/
-  // always @(posedge clk) begin
-  //   if(stage_val & stage_rdy == STAGE_PRD) begin
-  //     seq_cnt <= 0;
-  //   end
-  //   else  begin
-  //     case(stage_cur)
-  //       STAGE_PRD: begin
-  //         case(prd_cur)
-  //           PRD_IDLE: begin
-  //             seq_cnt <= 0;
-  //           end
-  //           PRD_NONLINEAR: begin
-  //             seq_cnt <= 0;
-  //           end
-  //           PRD_1: begin
-  //             if(seq_cnt == PRD_1_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end    
-  //           end
-  //           PRD_2: begin
-  //             if(seq_cnt == PRD_2_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end
-  //           end
-  //           PRD_3: begin
-  //             if(v_group_cnt == v_group_cnt_max) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else if(seq_cnt == PRD_3_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end
-  //           end
-  //           default: begin
-  //             seq_cnt <= 0;
-  //           end
-  //         endcase
-  //         end
-        
-  //       STAGE_NEW: begin
-  //         case(new_cur)
-  //           NEW_IDLE: begin
-  //             seq_cnt <= 0;
-  //           end
-  //           NEW_NONLINEAR: begin
-  //             seq_cnt <= 0;
-  //           end
-  //           NEW_1: begin
-  //             if(seq_cnt == NEW_1_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end    
-  //           end
-  //           NEW_2: begin
-  //             if(seq_cnt == NEW_2_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end
-  //           end
-  //           NEW_3: begin
-  //             if(v_group_cnt == v_group_cnt_max) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else if(seq_cnt == NEW_3_CNT_MAX) begin
-  //               seq_cnt <= 0;
-  //             end
-  //             else begin
-  //               seq_cnt <= seq_cnt + 1'b1;
-  //             end
-  //           end
-  //           default: begin
-  //             seq_cnt <= 0;
-  //           end
-  //         endcase
-  //       end
-
-  //       STAGE_UPD: begin
-          
-  //       end
-
-  //       default: seq_cnt <= 0;
-  //     endcase
-  //   end
-  // end
-
-/*
-  ******************** calculate v_group_cnt ********************
-*/
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      v_group_cnt <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_PRD: 
-          case(prd_cur)
-            PRD_2: begin
-              if(seq_cnt == seq_cnt_max)
-                v_group_cnt <= 1'b1;
-            end
-            PRD_3: begin
-              if(seq_cnt == seq_cnt_max) begin
-                if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
-                  v_group_cnt <= 0;
-                else
-                  v_group_cnt <= v_group_cnt + 1'b1;
-              end
-              else begin
-                v_group_cnt <= v_group_cnt;
-              end
-            end
-            default: begin
-              v_group_cnt <= 0;
-            end
-          endcase
-        STAGE_NEW: 
-          case(new_cur)
-            NEW_1: begin
-              if(seq_cnt == seq_cnt_max)
-                v_group_cnt <= 1'b1;
-            end
-            NEW_2: begin
-                    if(seq_cnt == seq_cnt_max) begin
-                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
-                        v_group_cnt <= 0;
-                      else
-                        v_group_cnt <= v_group_cnt + 1'b1;
-                    end
-                    else begin
-                      v_group_cnt <= v_group_cnt;
-                    end
-                  end
-            default: begin
-              v_group_cnt <= 0;
-            end
-          endcase
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_3: begin
-                    if(seq_cnt == seq_cnt_max) begin
-                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
-                        v_group_cnt <= 0;
-                      else
-                        v_group_cnt <= v_group_cnt + 1'b1;
-                    end
-                    else begin
-                      v_group_cnt <= v_group_cnt;
-                    end
-                  end
-            UPD_4: begin
-                    if(seq_cnt == seq_cnt_max) begin
-                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
-                        v_group_cnt <= 0;
-                      else
-                        v_group_cnt <= v_group_cnt + 1'b1;
-                    end
-                    else begin
-                      v_group_cnt <= v_group_cnt;
-                    end
-                  end
-            UPD_6: begin
-                    if(seq_cnt == seq_cnt_max) begin
-                      if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
-                        v_group_cnt <= 0;
-                      else
-                        v_group_cnt <= v_group_cnt + 1'b1;
-                    end
-                    else begin
-                      v_group_cnt <= v_group_cnt;
-                    end
-                  end
-            UPD_7: begin
-                    if(seq_cnt == seq_cnt_max) begin
-                      if(h_group_cnt == h_group_cnt_max) begin
-                        if(v_group_cnt == v_group_cnt_max)
-                          v_group_cnt <= 0;
-                        else
-                          v_group_cnt <= v_group_cnt + 1'b1;
-                      end
-                      else
-                        v_group_cnt <= v_group_cnt;
-                    end
-                    else begin
-                      v_group_cnt <= v_group_cnt;
-                    end
-                  end
-            default: begin
-              v_group_cnt <= 0;
-            end
-          endcase
-        end
-        default: v_group_cnt <= 0;
-      endcase
-    end   
-  end
-
-/*
-  ******************** calculate h_group_cnt ********************
-*/
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      h_group_cnt_max <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_7: begin
-              if(seq_cnt == seq_cnt_max) begin
-                if(h_group_cnt == h_group_cnt_max) 
-                  h_group_cnt_max <= h_group_cnt_max + 1'b1;
-                else
-                  h_group_cnt_max <= h_group_cnt_max;
-              end
-              else begin
-                h_group_cnt_max <= h_group_cnt_max;
-              end
-            end
-            default: h_group_cnt_max <= 0;
-          endcase
-        end
-        default: h_group_cnt_max <= 0;
-      endcase
-    end
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      h_group_cnt <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_7: begin
-              if(seq_cnt == seq_cnt_max) begin
-                if(h_group_cnt == h_group_cnt_max) 
-                  h_group_cnt <= 0;
-                else
-                  h_group_cnt <= h_group_cnt + 1'b1;
-              end
-              else begin
-                h_group_cnt <= h_group_cnt;
-              end
-            end
-            default: h_group_cnt <= 0;
-          endcase
-        end
-        default: h_group_cnt <= 0;
-      endcase
-    end
-  end
 
 /*
   ********************* sequential RSA work-mode Config ************************
@@ -2099,7 +2003,7 @@ module PE_config #(
               CBa_mode = {CBa_A,CB_cov_mv};
               CBb_mode = CB_IDLE;
 
-              A_TB_base_addr_set = 0;
+              A_TB_base_addr_set = t_cov_l;
               B_TB_base_addr_set = 0;
               M_TB_base_addr_set = 0;
               C_TB_base_addr_set = cov_HT;
@@ -2127,7 +2031,7 @@ module PE_config #(
 
               TBa_mode = {TBa_A,DIR_POS};
               TBb_mode = TB_IDLE;
-              CBa_mode = CB_IDLE;
+              CBa_mode = {CBa_A,CB_cov_ml}; //保证en
               CBb_mode = CB_IDLE;
 
               A_TB_base_addr_set = t_cov_l;
@@ -2161,7 +2065,7 @@ module PE_config #(
               CBa_mode = {CBa_A,CB_cov_ml}; 
               CBb_mode = CB_IDLE;
 
-              A_TB_base_addr_set = 0;
+              A_TB_base_addr_set = t_cov_l;
               B_TB_base_addr_set = 0;
               M_TB_base_addr_set = 0;
               C_TB_base_addr_set = 0;
@@ -3138,9 +3042,6 @@ module PE_config #(
                       end
                     endcase 
                   end
-        // CB_cov    : begin
-                      
-        //             end
         CB_cov_lv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
@@ -4542,6 +4443,7 @@ end
       case(CBa_mode[2:0])
         CB_cov_vv: CBa_vm_AGD_en <= 1'b1;
         CB_cov_mv: CBa_vm_AGD_en <= 1'b1;
+        CB_cov_ml: CBa_vm_AGD_en <= 1'b1;
         default:   CBa_vm_AGD_en <= 1'b0;
       endcase
     end
@@ -4577,6 +4479,9 @@ end
             CB_addra_base <= CB_addra_base_raw;
           else
             CB_addra_base <= CB_addra_base;
+        end
+        CB_cov_ml: begin
+          CB_addra_base <= CB_addra_base;
         end
         default:   CB_addra_base <= 0;
       endcase
@@ -4628,6 +4533,9 @@ end
           else
             CB_addrb_base <= CB_addrb_base;
         end
+        CB_cov_ml: begin
+          CB_addra_base <= CB_addra_base;
+        end
         default:   CB_addrb_base <= 0;
       endcase
     end
@@ -4656,7 +4564,7 @@ end
     	.clk          (clk          ),
       .sys_rst      (sys_rst      ),
       .en           (l_k_AGD_en         ),
-      .v_group_cnt    (l_k          ),
+      .v_group_cnt  (l_k          ),
       .CB_base_addr (l_k_base_addr)
     );
     
