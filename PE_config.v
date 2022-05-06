@@ -80,10 +80,10 @@ module PE_config #(
   output [L*CB_AW-1 : 0]      CB_addra,
   output [L*CB_AW-1 : 0]      CB_addrb,
 
-  output  [Y-1:0] B_CONS_en,
-  output  [Y-1:0] B_CONS_we,
-  output  [Y*3-1:0] B_CONS_addr,
-  output  [Y*RSA_DW-1:0] B_CONS_dout, 
+  output  [Y-1:0] B_cache_en,
+  output  [Y-1:0] B_cache_we,
+  output  [Y*3-1:0] B_cache_addr,
+  output  [Y*RSA_DW-1:0] B_cache_dout, 
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -132,7 +132,7 @@ module PE_config #(
 
 //B map mode
   localparam B_TBb = 2'b00;
-  localparam B_CONS = 2'b01;
+  localparam B_cache = 2'b01;
   localparam B_CBa = 2'b10;
 
 //M map mode
@@ -163,12 +163,14 @@ module PE_config #(
   localparam TBa_A = 3'b001;
   localparam TBa_M = 3'b010;
   localparam TBa_AM = 3'b011;
+  localparam TBa_cov_l = 3'b100;
+  localparam TBa_nonlinear = 3'b100;
 
   localparam TBb_IDLE = 3'b000;
   localparam TBb_B = 3'b001;
   localparam TBb_C = 3'b010;
   localparam TBb_BC = 3'b011;
-  localparam TBb_CONS_C = 3'b100;
+  localparam TBb_cache = 3'b100;
 
   //MODE[1:0] PARAMS （declared above）
   // localparam DIR_IDLE = 2'b00;
@@ -184,6 +186,7 @@ module PE_config #(
   localparam CBa_A = 2'b01;
   localparam CBa_B = 2'b10;
   localparam CBa_M = 2'b11;
+  localparam CBa_cov_l = 2'b11;
 
   localparam CBb_C = 2'b01;  
 
@@ -414,10 +417,10 @@ module PE_config #(
   reg                           TB_web_new;
   reg [TB_AW-1 : 0]             TB_addrb_new;
   
-  //B_CONS def
-  reg                           B_CONS_en_new;
-  reg                           B_CONS_we_new;
-  reg [2 : 0]                   B_CONS_addr_new;
+  //B_cache def
+  reg                           B_cache_en_new;
+  reg                           B_cache_we_new;
+  reg [2 : 0]                   B_cache_addr_new;
 
   //CB def
     //port A
@@ -444,6 +447,7 @@ module PE_config #(
     landmark_num & l_k 
 */
     // reg [ROW_LEN-1 : 0]  landmark_num;
+    reg [ROW_LEN-1:0]   l_k_row;
     reg [ROW_LEN-1:0]   l_k_group;
     wire [CB_AW-1 : 0]  l_k_base_addr; 
 
@@ -876,12 +880,20 @@ module PE_config #(
 */
   always @(posedge clk) begin
     if(sys_rst) begin
+      l_k_row <= 0;
+    end
+    else 
+      l_k_row <= (l_k + 1'b1) << 1;
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
       l_k_group <= 0;
     end
     else begin
       case (stage_cur)
-        STAGE_NEW: l_k_group <= (l_k_group + 1'b1) >> 1;
-        STAGE_UPD: l_k_group <= (l_k_group + 1'b1) >> 1;
+        STAGE_NEW: l_k_group <= (l_k + 1'b1) >> 1;
+        STAGE_UPD: l_k_group <= (l_k + 1'b1) >> 1;
         default: l_k_group <= 0;
       endcase
     end
@@ -1454,7 +1466,7 @@ module PE_config #(
   //             cov_mv * H_T = cov_HT
   //             X=4 Y=2 N=3
   //             Ain: CB-A
-  //             Bin: B-CONS
+  //             Bin: B-cache
   //             Min: 0
   //             Cout: TB-B
   //           */
@@ -1466,7 +1478,7 @@ module PE_config #(
   //             CAL_mode <= N_W;
 
   //             A_in_mode <= A_CBa;   
-  //             B_in_mode <= B_CONS;
+  //             B_in_mode <= B_cache;
   //             M_in_mode <= M_NONE;
   //             C_out_mode <= C_TBb;
   //             M_adder_mode_set <= NONE;
@@ -1486,7 +1498,7 @@ module PE_config #(
   //             t_cov_l * H_T = cov_HT
   //             X=4 Y=2 N=2
   //             Ain: TB-A
-  //             Bin: B-CONS
+  //             Bin: B-cache
   //             Min: 0
   //             Cout: 0
   //           */
@@ -1497,7 +1509,7 @@ module PE_config #(
   //             CAL_mode <= N_W;
 
   //             A_in_mode <= A_TBa;   
-  //             B_in_mode <= B_CONS;
+  //             B_in_mode <= B_cache;
   //             M_in_mode <= M_NONE;
   //             C_out_mode <= C_TBb;
   //             M_adder_mode_set <= NONE;
@@ -1517,7 +1529,7 @@ module PE_config #(
   //             cov_l * H_T = cov_HT
   //             X=4 Y=2 N=2
   //             Ain: CB-A
-  //             Bin: B-CONS
+  //             Bin: B-cache
   //             Min: 0
   //             Cout: 0
   //           */
@@ -1528,7 +1540,7 @@ module PE_config #(
   //             CAL_mode <= N_W;
 
   //             A_in_mode <= A_CBa;   
-  //             B_in_mode <= B_CONS;
+  //             B_in_mode <= B_cache;
   //             M_in_mode <= M_NONE;
   //             C_out_mode <= C_TBb;
   //             M_adder_mode_set <= NONE;
@@ -1548,7 +1560,7 @@ module PE_config #(
   //             H_T * cov_HT + Q = S
   //             X=2 Y=2 N=2
   //             Ain: TB-A
-  //             Bin: B_CONS
+  //             Bin: B_cache
   //             Min: TB-A  
   //             Cout: TB-B
   //           */
@@ -1559,7 +1571,7 @@ module PE_config #(
   //             CAL_mode <= N_W;
 
   //             A_in_mode <= A_TBa;   
-  //             B_in_mode <= B_CONS;
+  //             B_in_mode <= B_cache;
   //             M_in_mode <= M_TBa;
   //             C_out_mode <= C_TBb;
   //             M_adder_mode_set <= ADD;
@@ -2009,7 +2021,7 @@ module PE_config #(
               cov_mv * H_T = cov_HT
               X=4 Y=2 N=3
               Ain: CB-A
-              Bin: B-CONS
+              Bin: B-cache
               Min: 0
               Cout: TB-B
             */
@@ -2021,7 +2033,7 @@ module PE_config #(
               CAL_mode = N_W;
 
               A_in_mode = A_CBa;   
-              B_in_mode = B_CONS;
+              B_in_mode = B_cache;
               M_in_mode = M_NONE;
               C_out_mode = C_TBb;
               M_adder_mode_set = NONE;
@@ -2041,7 +2053,7 @@ module PE_config #(
               t_cov_l * H_T = cov_HT
               X=4 Y=2 N=2
               Ain: TB-A
-              Bin: B-CONS
+              Bin: B-cache
               Min: 0
               Cout: 0
             */
@@ -2052,7 +2064,7 @@ module PE_config #(
               CAL_mode = N_W;
 
               A_in_mode = A_TBa;   
-              B_in_mode = B_CONS;
+              B_in_mode = B_cache;
               M_in_mode = M_NONE;
               C_out_mode = C_TBb;
               M_adder_mode_set = NONE;
@@ -2072,7 +2084,7 @@ module PE_config #(
               cov_l * H_T = cov_HT
               X=4 Y=2 N=2
               Ain: CB-A
-              Bin: B-CONS
+              Bin: B-cache
               Min: 0
               Cout: 0
             */
@@ -2083,7 +2095,7 @@ module PE_config #(
               CAL_mode = N_W;
 
               A_in_mode = A_CBa;   
-              B_in_mode = B_CONS;
+              B_in_mode = B_cache;
               M_in_mode = M_NONE;
               C_out_mode = C_TBb;
               M_adder_mode_set = NONE;
@@ -2103,7 +2115,7 @@ module PE_config #(
               H_T * cov_HT + Q = S
               X=2 Y=2 N=2
               Ain: TB-A
-              Bin: B_CONS
+              Bin: B_cache
               Min: TB-A  
               Cout: TB-B
             */
@@ -2114,7 +2126,7 @@ module PE_config #(
               CAL_mode = N_W;
 
               A_in_mode = A_TBa;   
-              B_in_mode = B_CONS;
+              B_in_mode = B_cache;
               M_in_mode = M_TBa;
               C_out_mode = C_TBb;
               M_adder_mode_set = ADD;
@@ -2902,7 +2914,7 @@ module PE_config #(
             endcase
           end
         end
-        TBb_CONS_C: begin
+        TBb_cache: begin
           TB_doutb_sel_new[2] <= 1'b1;
           if(seq_cnt < PE_n) begin
             TB_enb_new <= 1'b1;
@@ -3124,7 +3136,7 @@ module PE_config #(
                       'd0: begin
                         CBa_shift_dir <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + (l_k+1'b1) << 2;
+                        CB_addra_new <= l_k_base_addr + l_k_row;
                       end     
                       'd1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
@@ -3927,7 +3939,7 @@ module PE_config #(
                       case(seq_cnt_WR)
                         'd0: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr + l_k << 1 + 2'b10;
+                          CB_addrb_new <= l_k_base_addr + l_k_row;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b1;
@@ -4326,19 +4338,19 @@ end
     );
 
 /*
-    **********************shift of B_CONS**************************
+    **********************shift of B_cache**************************
 */
     dshift 
     #(
       .DW  (1 ),
       .DEPTH (L )
     )
-    B_CONS_en_dshift(
+    B_cache_en_dshift(
       .clk  (clk  ),
       .dir  (DIR_POS   ),
       .sys_rst ( sys_rst),
-      .din  (B_CONS_en_new  ),
-      .dout (B_CONS_en )
+      .din  (B_cache_en_new  ),
+      .dout (B_cache_en )
     );
 
     dshift 
@@ -4346,12 +4358,12 @@ end
       .DW  (1 ),
       .DEPTH (L )
     )
-    B_CONS_we_dshift(
+    B_cache_we_dshift(
       .clk  (clk  ),
       .dir   (DIR_POS   ),
       .sys_rst ( sys_rst),
-      .din  (B_CONS_we_new  ),
-      .dout (B_CONS_we )
+      .din  (B_cache_we_new  ),
+      .dout (B_cache_we )
     );
 
     dshift 
@@ -4359,12 +4371,12 @@ end
       .DW  (3  ),
       .DEPTH (L )
     )
-    B_CONS_addr_dshift(
+    B_cache_addr_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
       .dir  (DIR_POS   ),
-      .din  (B_CONS_addr_new  ),
-      .dout (B_CONS_addr )
+      .din  (B_cache_addr_new  ),
+      .dout (B_cache_addr )
     );
 
 /*

@@ -13,13 +13,13 @@ module TB_doutb_map #(
 
   input   [L*RSA_DW-1 : 0]         TB_doutb,
   output  reg  [Y*RSA_DW-1 : 0]    B_TB_doutb,
-  output  reg  [Y*RSA_DW-1 : 0]    B_CONS_TB_doutb
+  output  reg  [Y*RSA_DW-1 : 0]    B_cache_TB_doutb
 );
 
 //
 /*
   TB_doutb_sel[2]
-    1: B_CONS
+    1: B_cache
     0: B
   TB_douta_sel[1:0]
     00: DIR_IDLE
@@ -28,7 +28,7 @@ module TB_doutb_map #(
     11：X
 */
 localparam TB_B = 1'b0;
-localparam TB_B_CONS = 1'b1;
+localparam TB_B_cache = 1'b1;
 
 localparam DIR_IDLE = 2'b00;
 localparam DIR_POS  = 2'b01;
@@ -62,27 +62,27 @@ always @(posedge clk) begin
 end
 
 /*
-  B_CONS_TB_doutb
+  B_cache_TB_doutb
 */
-integer i_TB_B_CONS;
+integer i_TB_B_cache;
 always @(posedge clk) begin
   if(sys_rst)
-    B_CONS_TB_doutb <= 0;
+    B_cache_TB_doutb <= 0;
   else begin
     case(TB_doutb_sel[2])
-      TB_B_CONS: begin
+      TB_B_cache: begin
         case(TB_doutb_sel[1:0])
-          DIR_IDLE: B_CONS_TB_doutb <= 0;
-          DIR_POS : B_CONS_TB_doutb <= TB_doutb;
+          DIR_IDLE: B_cache_TB_doutb <= 0;
+          DIR_POS : B_cache_TB_doutb <= TB_doutb;
           DIR_NEG :begin
-            for(i_TB_B_CONS=0; i_TB_B_CONS<Y; i_TB_B_CONS=i_TB_B_CONS+1) begin
-              B_CONS_TB_doutb[i_TB_B_CONS*RSA_DW +: RSA_DW] <= TB_doutb[(X-1-i_TB_B_CONS)*RSA_DW +: RSA_DW];
+            for(i_TB_B_cache=0; i_TB_B_cache<Y; i_TB_B_cache=i_TB_B_cache+1) begin
+              B_cache_TB_doutb[i_TB_B_cache*RSA_DW +: RSA_DW] <= TB_doutb[(X-1-i_TB_B_cache)*RSA_DW +: RSA_DW];
             end
           end
-          DIR_NEW : B_CONS_TB_doutb <= 0;
+          DIR_NEW : B_cache_TB_doutb <= 0;
         endcase
       end
-      default: B_CONS_TB_doutb <= 0;
+      default: B_cache_TB_doutb <= 0;
     endcase
   end     
 end

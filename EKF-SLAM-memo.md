@@ -858,14 +858,14 @@ cal_mode[11:0]
   * 10: CB
 * B来源(B_in_en, B_in_sel_new)
   * 00: TB
-  * 01: TB_CONS
+  * 01: TB_cache
   * 10: CB
 * M来源(M_in_en, M_in_sel_new)
   * 00: TB
   * 10: CB
 * C去向(C_in_en, C_in_sel_new)
   * 00: TB
-  * 01: TB_CONS
+  * 01: TB_cache
   * 10: CB
 * adder_mode
   * 00: NONE
@@ -893,7 +893,7 @@ cal_mode[11:0]
   * 配置模式[4:2]
     * 3'b001: B
     * 3’b010: C
-    * 3'b100: B_CONS
+    * 3'b100: B_cache
     * 3'b011: B+C
   * 顺序 [1:0]
     * POS：01
@@ -939,19 +939,27 @@ cal_mode[11:0]
 | 12(WR 2) | CB_dinb   | addr[0]                                     |
 |          |           |                                             |
 
+以addr_new为参考(addr_new对应到seq_cnt=0)
+
 RD_2_WR_D: 7(1 + 4 + 2)
 
-* 1: addr_new -> addr[0]
-* 4: addr[0] -> A_data
+* 1: A_addr_new -> A_addr[0]
+* 4: A_addr[0] -> A_data
 * N + 2 : A_data -> C_data
+* 1：C_data -> C_addr_new
+* 1: C_addr_new -> C_addr[0]
 
-N=1时，写入为读取的8级延迟
+N=1时，C_addr_new为A_addr_new 的8级延迟
 
-N=2时，写入为读取的9级延迟
+N=2时，C_addr_new为A_addr_new 的9级延迟
 
-N=3时，写入为读取的10级延迟
+N=3时，C_addr_new为A_addr_new 的10级延迟
 
-N=5时，写入为读取的12级延迟
+N=5时，C_addr_new为A_addr_new 的12级延迟
+
+
+
+M_addr_new为A_addr_new的N+1级延迟
 
 
 
@@ -1158,7 +1166,7 @@ addrb_new: NEW_2_PE_in+N+3
 ### problems
 
 * **PE array使能条件**
-* B_CONS
+* B_cache
 * 需在group_cnt更新时采样基址
 * group_cnt更新后4T输出新基址
 
@@ -1192,7 +1200,7 @@ addrb_new: NEW_2_PE_in+N+3
   * 再计算addr_base
   * 第一个group用addr_base_set
 * **cov_l -> t_cov_l**
-* **CONS**
+* **cache**
   * 特殊的RAM
     * 深度为5
     * 写: 地址从0开始递增，wr_addr=4则令wr_addr=0
@@ -1207,3 +1215,14 @@ addrb_new: NEW_2_PE_in+N+3
 * **求逆**
   * 再UPD_5时序内完成求逆
 * 都换为2位dir
+
+
+
+### 220506 ToDo
+
+* TB_doutb_map
+  * CONS转换
+* CB_douta_map
+  * cov_l转换映射
+  * sel
+* TBa: 分离AM；TBb: 分离BC

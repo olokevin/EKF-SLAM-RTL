@@ -340,7 +340,7 @@ wire [X-1 : 0]          A_in_en;
 
 //B in
 wire [Y*RSA_DW-1 : 0]   B_TB_doutb; 
-wire [Y*RSA_DW-1 : 0]   B_CONS_TB_doutb;
+wire [Y*RSA_DW-1 : 0]   B_cache_TB_doutb;
 wire [Y*RSA_DW-1 : 0]   B_CB_douta;
 wire [B_IN_SEL_DW*Y-1 : 0]        B_in_sel;     //B_in有三个来源
 wire [Y-1 : 0]          B_in_en;   
@@ -459,10 +459,10 @@ endgenerate
 
 //Bin 临时寄存H
 
-wire [Y-1:0] B_CONS_en;
-wire [Y-1:0] B_CONS_we;
-wire [Y*3-1:0] B_CONS_addr;
-wire [Y*RSA_DW-1:0] B_CONS_dout; 
+wire [Y-1:0] B_cache_en;
+wire [Y-1:0] B_cache_we;
+wire [Y*3-1:0] B_cache_addr;
+wire [Y*RSA_DW-1:0] B_cache_dout; 
 
 generate
   genvar i_Y;
@@ -472,14 +472,14 @@ generate
       .DW (RSA_DW ),
       .AW (3 )
     )
-    B_CONS_ram(
+    B_cache_ram(
     	.clk     (clk     ),
       .sys_rst (sys_rst ),
-      .en      (B_CONS_en[i_Y]      ),
-      .we      (B_CONS_we[i_Y]      ),
-      .addr    (B_CONS_addr[3*i_Y +: 3]    ),
-      .din     (B_CONS_TB_doutb[RSA_DW*i_Y +: RSA_DW]     ),
-      .dout    (B_CONS_dout[RSA_DW*i_Y +: RSA_DW]    )
+      .en      (B_cache_en[i_Y]      ),
+      .we      (B_cache_we[i_Y]      ),
+      .addr    (B_cache_addr[3*i_Y +: 3]    ),
+      .din     (B_cache_TB_doutb[RSA_DW*i_Y +: RSA_DW]     ),
+      .dout    (B_cache_dout[RSA_DW*i_Y +: RSA_DW]    )
     );
     
     regMUX_sel2 
@@ -492,7 +492,7 @@ generate
       .en      (B_in_en[i_Y]  ),
       .sel     (B_in_sel[2*i_Y +: 2]   ),
       .din_00  (B_TB_doutb[RSA_DW*i_Y +: RSA_DW]  ),
-      .din_01  (B_CONS_dout[RSA_DW*i_Y +: RSA_DW]  ),
+      .din_01  (B_cache_dout[RSA_DW*i_Y +: RSA_DW]  ),
       .din_10  (B_CB_douta[RSA_DW*i_Y +: RSA_DW]  ),
       .din_11  (0   ),
       .dout    (B_data[RSA_DW*i_Y +: RSA_DW]  )
@@ -585,7 +585,7 @@ wire [1:0] landmark_num_10;
     .TB_doutb_sel    (TB_doutb_sel    ),
     .TB_doutb        (TB_doutb        ),
     .B_TB_doutb      (B_TB_doutb      ),
-    .B_CONS_TB_doutb (B_CONS_TB_doutb )
+    .B_cache_TB_doutb (B_cache_TB_doutb )
   );
 
 //COV BANK data MUX and deMUX
@@ -794,10 +794,10 @@ u_PE_config(
   .CB_dina              (CB_dina           ),
   .CB_addra             (CB_addra          ),
   .CB_addrb             (CB_addrb          ),
-  .B_CONS_en            (B_CONS_en),
-  .B_CONS_we            (B_CONS_we),
-  .B_CONS_addr          (B_CONS_addr),
-  .B_CONS_dout          (B_CONS_dout),
+  .B_cache_en            (B_cache_en),
+  .B_cache_we            (B_cache_we),
+  .B_cache_addr          (B_cache_addr),
+  .B_cache_dout          (B_cache_dout),
   .M_adder_mode         (M_adder_mode      ),
   .PE_mode              (PE_mode           ),
   .new_cal_en           (new_cal_en        ),
