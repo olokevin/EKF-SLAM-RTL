@@ -15,12 +15,20 @@ module CB_base_AGD #(
     input sys_rst,
 
     input en,
-    input [ROW_LEN-1 : 0]  v_group_cnt,
+    input [ROW_LEN-1 : 0]  group_cnt,
 
     output reg [CB_AW-1 : 0] CB_base_addr
 );
-  localparam VM_BASE = 0;
-  localparam LK_BASE = 1;
+  localparam NEXT_BASE = 0;
+  localparam THIS_BASE = 1;
+
+  /*
+    group对应的首地址:
+    2 * (1+group_cnt) * group_cnt = (group_cnt*group_cnt + group_cnt) << 1
+    NEXT_BASE模式下，需计算下一group的首地址
+    THIS_BASE模式下，计算当前输入的group的首地址
+
+  */
 
   reg en_d;
   always @(posedge clk) begin
@@ -32,7 +40,6 @@ module CB_base_AGD #(
 
   reg [ROW_LEN-1 : 0]  group_cnt_T1;
   reg [ROW_LEN-1 : 0]  group_cnt_T2;
-  reg [ROW_LEN-1 : 0]  group_cnt_T3;
   reg [CB_AW-1 : 0] CB_base_addr_T2;
   reg [CB_AW-1 : 0] CB_base_addr_T3;
 
@@ -48,33 +55,26 @@ module CB_base_AGD #(
     if(sys_rst) begin
       group_cnt_T1 <= 0;
       group_cnt_T2 <= 0;
-      group_cnt_T3 <= 0;
       CB_base_addr <= 0;
       CB_base_addr_T2 <= 0;
       CB_base_addr_T3 <= 0;
     end
     else begin
       if(en==1'b1) begin
-        group_cnt_T1 <= v_group_cnt + 1'b1;
+        if(AGD_MODE == NEXT_BASE)
+          group_cnt_T1 <= group_cnt + 1'b1;
+        else
+          group_cnt_T1 <= group_cnt;
 
         CB_base_addr_T2 <= group_cnt_T1 * group_cnt_T1;
         group_cnt_T2 <= group_cnt_T1;
 
-        group_cnt_T3    <= group_cnt_T2;
-
-        if(AGD_MODE == VM_BASE) begin
-          CB_base_addr_T3 <= CB_base_addr_T2 + group_cnt_T2;
-          CB_base_addr <= CB_base_addr_T3 << 1;
-        end
-        else begin
-          CB_base_addr_T3 <= CB_base_addr_T2 >> 1; 
-          CB_base_addr    <= CB_base_addr_T3 + group_cnt_T3;
-        end
+        CB_base_addr_T3 <= CB_base_addr_T2 + group_cnt_T2;
+        CB_base_addr <= CB_base_addr_T3 << 1;
       end
       else begin
         group_cnt_T1 <= 0;
         group_cnt_T2 <= 0;
-        group_cnt_T3 <= 0;
         CB_base_addr <= 0;
         CB_base_addr_T2 <= 0;
         CB_base_addr_T3 <= 0;

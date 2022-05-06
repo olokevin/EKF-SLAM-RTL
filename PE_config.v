@@ -111,8 +111,14 @@ module PE_config #(
   localparam ADDER_2_NEW = 'd1;   //adder输出到给addr_new
 
 //shift 
-  localparam LEFT_SHIFT = 1'b0;
-  localparam RIGHT_SHIFT = 1'b1;
+//   localparam DIR_POS = 1'b0;
+//   localparam DIR_NEG = 1'b1;
+  localparam DIR_IDLE = 2'b00;
+  localparam DIR_POS  = 2'b01;
+  localparam DIR_NEW_0  = 2'b10;
+  localparam DIR_NEW_1  = 2'b11;
+
+  localparam DIR_NEG  = 2'b00;
 
 //PE_mode
   localparam N_W = 2'b00;
@@ -164,11 +170,11 @@ module PE_config #(
   localparam TBb_BC = 3'b011;
   localparam TBb_CONS_C = 3'b100;
 
-  //MODE[1:0] PARAMS
-  localparam DIR_IDLE = 2'b00;
-  localparam DIR_POS  = 2'b01;
-  localparam DIR_NEW_0  = 2'b10;
-  localparam DIR_NEW_1  = 2'b11;
+  //MODE[1:0] PARAMS （declared above）
+  // localparam DIR_IDLE = 2'b00;
+  // localparam DIR_POS  = 2'b01;
+  // localparam DIR_NEW_0  = 2'b10;
+  // localparam DIR_NEW_1  = 2'b11;
 
 /*
   ************************** CB mode config *********************
@@ -382,12 +388,12 @@ module PE_config #(
   wire [1:0]             M_adder_mode_new;
   wire [C_OUT_SEL_DW-1:0] C_out_sel_new;
 
-  reg A_in_sel_dir;
-  reg B_in_sel_dir;
-  reg M_in_sel_dir;
-  reg C_out_sel_dir;
+  reg [1:0] A_in_sel_dir;
+  reg [1:0] B_in_sel_dir;
+  reg [1:0] M_in_sel_dir;
+  reg [1:0] C_out_sel_dir;
 
-  reg cal_en_done_dir;
+  reg [1:0] cal_en_done_dir;
 
 /*
   **************Address Generate Config*****************
@@ -397,8 +403,8 @@ module PE_config #(
   reg [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel_new;
   reg [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel_new; 
     
-  reg                           TBa_shift_dir;
-  reg                           TBb_shift_dir;
+  reg [1:0]                          TBa_shift_dir;
+  reg [1:0]                          TBb_shift_dir;
 
   reg                           TB_ena_new;
   reg                           TB_wea_new;
@@ -434,7 +440,12 @@ module PE_config #(
 
     reg [CB_AW-1 : 0]             CB_addrb_base;
 
-    wire [CB_AW-1 : 0]            l_k_base_addr; 
+/*
+    landmark_num & l_k 
+*/
+    // reg [ROW_LEN-1 : 0]  landmark_num;
+    reg [ROW_LEN-1:0]   l_k_group;
+    wire [CB_AW-1 : 0]  l_k_base_addr; 
 
 /*
   ******* variables of FSM of STAGE(IDLE PRD NEW UPD) *************
@@ -455,7 +466,6 @@ module PE_config #(
   reg [ROW_LEN-1 : 0] v_group_cnt_max;    //组数目
   reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
-  // reg [ROW_LEN-1 : 0]  landmark_num;
 
   //******************* 写入状态延迟 *************************
     wire [ROW_LEN-1 : 0] seq_cnt_WR;
@@ -617,20 +627,6 @@ module PE_config #(
   //     endcase 
   //   end
   // end
-  
-  //(6) output: v_group_cnt_max
-  always @(posedge clk) begin
-    if(sys_rst)
-      v_group_cnt_max <= 0;
-    else begin
-      case(stage_rdy & stage_val)
-        STAGE_PRD: v_group_cnt_max <= (landmark_num+1) >> 1;
-        STAGE_NEW: v_group_cnt_max <= (landmark_num+1) >> 1;
-        STAGE_UPD: v_group_cnt_max <= (landmark_num+1) >> 1;
-        default: v_group_cnt_max <= v_group_cnt_max;
-      endcase  
-    end
-  end
 
 /*
   (using) FSM of PRD stage, with seq_cnt back to 0 when prd_cur changes
@@ -690,6 +686,21 @@ module PE_config #(
 /*
   ******************** calculate v_group_cnt ********************
 */
+  //*********************** v_group_cnt_max ***************
+  always @(posedge clk) begin
+    if(sys_rst)
+      v_group_cnt_max <= 0;
+    else begin
+      case(stage_rdy & stage_val)
+        STAGE_PRD: v_group_cnt_max <= (landmark_num+1) >> 1;
+        STAGE_NEW: v_group_cnt_max <= (landmark_num+1) >> 1;
+        STAGE_UPD: v_group_cnt_max <= (landmark_num+1) >> 1;
+        default: v_group_cnt_max <= v_group_cnt_max;
+      endcase  
+    end
+  end
+
+  //*********************** v_group_cnt ***************
   always @(posedge clk) begin
     if(sys_rst) begin
       v_group_cnt <= 0;
@@ -804,6 +815,7 @@ module PE_config #(
 /*
   ******************** calculate h_group_cnt ********************
 */
+  //*********************** h_group_cnt_max ***************
   always @(posedge clk) begin
     if(sys_rst) begin
       h_group_cnt_max <= 0;
@@ -831,6 +843,7 @@ module PE_config #(
     end
   end
 
+  //*********************** h_group_cnt ***************
   always @(posedge clk) begin
     if(sys_rst) begin
       h_group_cnt <= 0;
@@ -858,9 +871,28 @@ module PE_config #(
     end
   end
 
-//(1)&(2)sequential: state transfer & state switch
+/*
+  ************************** calculate l_k group ******************8
+*/
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      l_k_group <= 0;
+    end
+    else begin
+      case (stage_cur)
+        STAGE_NEW: l_k_group <= (l_k_group + 1'b1) >> 1;
+        STAGE_UPD: l_k_group <= (l_k_group + 1'b1) >> 1;
+        default: l_k_group <= 0;
+      endcase
+    end
+  end
+
+/*
+  ****************** 2nd FSM sequential stage transfer ***************
+*/
+  
   /*
-    PRD state transfer
+    ******************** PRD state transfer **************************
   */
     always @(posedge clk) begin
       if(stage_val & stage_rdy == STAGE_PRD) begin
@@ -914,8 +946,8 @@ module PE_config #(
     end
   
   /*
-    NEW state transfer
-  */
+    ************************ NEW state transfer **********************
+  */ 
     always @(posedge clk) begin
       if(stage_val & stage_rdy == STAGE_NEW) begin
         new_cur <= NEW_IDLE;
@@ -984,7 +1016,7 @@ module PE_config #(
     end
 
   /*
-    UPD state transfer
+    ************************ UPD state transfer **********************
   */
     always @(posedge clk) begin
       if(stage_val & stage_rdy == STAGE_UPD) begin
@@ -1079,11 +1111,7 @@ module PE_config #(
     end
 
 /*
-  ********************* sequential RSA work-mode Config ************************
-*/
-
-/*
-  (disabled) sequential DATA FLOW Config
+  **************(disabled) sequential RSA work-mode Config ************************
 */
   // always @(posedge clk) begin
   //   if(sys_rst) begin
@@ -1638,7 +1666,7 @@ module PE_config #(
   // end
 
 /*
-  ************* using combinational LUT *************
+  ************* (using) combinational RSA work-mode Config *************
 */
   always @(posedge clk) begin
     if(sys_rst) begin
@@ -2364,36 +2392,36 @@ module PE_config #(
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      A_in_sel_dir <= LEFT_SHIFT;
-      B_in_sel_dir <= LEFT_SHIFT;
-      M_in_sel_dir <= LEFT_SHIFT;
-      C_out_sel_dir <= LEFT_SHIFT;
+      A_in_sel_dir <= DIR_POS;
+      B_in_sel_dir <= DIR_POS;
+      M_in_sel_dir <= DIR_POS;
+      C_out_sel_dir <= DIR_POS;
     end
     else begin
       case(CAL_mode_d[AB_IN_SEL_D])
         N_W: begin
-          A_in_sel_dir <= LEFT_SHIFT;
-          B_in_sel_dir <= LEFT_SHIFT;
-          M_in_sel_dir <= LEFT_SHIFT;
-          C_out_sel_dir <= LEFT_SHIFT;
+          A_in_sel_dir <= DIR_POS;
+          B_in_sel_dir <= DIR_POS;
+          M_in_sel_dir <= DIR_POS;
+          C_out_sel_dir <= DIR_POS;
         end
         S_W: begin
-          A_in_sel_dir <= RIGHT_SHIFT;
-          B_in_sel_dir <= LEFT_SHIFT;
-          M_in_sel_dir <= RIGHT_SHIFT;
-          C_out_sel_dir <= RIGHT_SHIFT;
+          A_in_sel_dir <= DIR_NEG;
+          B_in_sel_dir <= DIR_POS;
+          M_in_sel_dir <= DIR_NEG;
+          C_out_sel_dir <= DIR_NEG;
         end 
         N_E: begin
-          A_in_sel_dir <= LEFT_SHIFT;
-          B_in_sel_dir <= RIGHT_SHIFT;
-          M_in_sel_dir <= LEFT_SHIFT;
-          C_out_sel_dir <= LEFT_SHIFT;
+          A_in_sel_dir <= DIR_POS;
+          B_in_sel_dir <= DIR_NEG;
+          M_in_sel_dir <= DIR_POS;
+          C_out_sel_dir <= DIR_POS;
         end
         S_E: begin
-          A_in_sel_dir <= RIGHT_SHIFT;
-          B_in_sel_dir <= RIGHT_SHIFT;
-          M_in_sel_dir <= RIGHT_SHIFT;
-          C_out_sel_dir <= RIGHT_SHIFT;
+          A_in_sel_dir <= DIR_NEG;
+          B_in_sel_dir <= DIR_NEG;
+          M_in_sel_dir <= DIR_NEG;
+          C_out_sel_dir <= DIR_NEG;
         end
       endcase
     end
@@ -2406,16 +2434,16 @@ module PE_config #(
     else begin
       case(CAL_mode_d[CAL_EN_D])
         N_W: begin
-          cal_en_done_dir <= LEFT_SHIFT;
+          cal_en_done_dir <= DIR_POS;
         end
         S_W: begin
-          cal_en_done_dir <= LEFT_SHIFT;
+          cal_en_done_dir <= DIR_POS;
         end 
         N_E: begin
-          cal_en_done_dir <= RIGHT_SHIFT;
+          cal_en_done_dir <= DIR_NEG;
         end
         S_E: begin
-          cal_en_done_dir <= RIGHT_SHIFT;
+          cal_en_done_dir <= DIR_NEG;
         end
       endcase
     end
@@ -2761,19 +2789,19 @@ module PE_config #(
       case(TBa_mode_d[1:0])
         DIR_IDLE: begin
           TB_douta_sel_new[1:0] = DIR_IDLE;
-          TBa_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= DIR_POS;
         end
         DIR_POS: begin
           TB_douta_sel_new[1:0] = DIR_POS;
-          TBa_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= DIR_POS;
         end
         DIR_NEW_0: begin
           TB_douta_sel_new[1:0] = DIR_NEW_0;
-          TBa_shift_dir <= RIGHT_SHIFT;
+          TBa_shift_dir <= DIR_NEG;
         end
         DIR_NEW_1: begin
           TB_douta_sel_new[1:0] = DIR_NEW_1;
-          TBa_shift_dir <= LEFT_SHIFT;
+          TBa_shift_dir <= DIR_POS;
         end
       endcase
     end
@@ -2932,19 +2960,19 @@ module PE_config #(
       case(TBb_mode_d[1:0])
         DIR_IDLE: begin
           TB_doutb_sel_new[1:0] = DIR_IDLE;
-          TBb_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= DIR_POS;
         end
         DIR_POS: begin
           TB_doutb_sel_new[1:0] = DIR_POS;
-          TBb_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= DIR_POS;
         end
         DIR_NEW_0: begin
           TB_doutb_sel_new[1:0] = DIR_NEW_0;
-          TBb_shift_dir <= RIGHT_SHIFT;
+          TBb_shift_dir <= DIR_NEG;
         end
         DIR_NEW_1: begin
           TB_doutb_sel_new[1:0] = DIR_NEW_1;
-          TBb_shift_dir <= LEFT_SHIFT;
+          TBb_shift_dir <= DIR_POS;
         end
       endcase
     end
@@ -4307,7 +4335,7 @@ end
     )
     B_CONS_en_dshift(
       .clk  (clk  ),
-      .dir  (LEFT_SHIFT   ),
+      .dir  (DIR_POS   ),
       .sys_rst ( sys_rst),
       .din  (B_CONS_en_new  ),
       .dout (B_CONS_en )
@@ -4320,7 +4348,7 @@ end
     )
     B_CONS_we_dshift(
       .clk  (clk  ),
-      .dir   (LEFT_SHIFT   ),
+      .dir   (DIR_POS   ),
       .sys_rst ( sys_rst),
       .din  (B_CONS_we_new  ),
       .dout (B_CONS_we )
@@ -4334,7 +4362,7 @@ end
     B_CONS_addr_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
-      .dir  (LEFT_SHIFT   ),
+      .dir  (DIR_POS   ),
       .din  (B_CONS_addr_new  ),
       .dout (B_CONS_addr )
     );
@@ -4342,7 +4370,7 @@ end
 /*
   *********************shift of CB-portA****************
 */
-    CB_dshift 
+    dshift 
     #(
       .DW  (1 ),
       .DEPTH (L )
@@ -4350,12 +4378,12 @@ end
     CB_ena_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
-      .CB_dir          (CBa_shift_dir          ),
+      .dir          (CBa_shift_dir          ),
       .din  (CB_ena_new  ),
       .dout (CB_ena )
     );
 
-    CB_dshift 
+    dshift 
     #(
       .DW  (1 ),
       .DEPTH (L )
@@ -4363,12 +4391,12 @@ end
     CB_wea_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
-      .CB_dir          (CBa_shift_dir          ),
+      .dir          (CBa_shift_dir          ),
       .din  (CB_wea_new  ),
       .dout (CB_wea )
     );
 
-    CB_dshift 
+    dshift 
     #(
       .DW        (CB_AW        ),
       .DEPTH     (L     )
@@ -4376,7 +4404,7 @@ end
     CB_addra_dshift(
     	.clk     (clk     ),
       .sys_rst (sys_rst ),
-      .CB_dir  (CBa_shift_dir  ),
+      .dir  (CBa_shift_dir  ),
       .din     (CB_addra_new     ),
       .dout    (CB_addra    )
     );
@@ -4384,7 +4412,7 @@ end
 /*
   *********************shift of CB-portB****************
 */
-    CB_dshift 
+    dshift 
     #(
       .DW  (1 ),
       .DEPTH (L )
@@ -4392,12 +4420,12 @@ end
     CB_enb_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
-      .CB_dir          (CBb_shift_dir          ),
+      .dir          (CBb_shift_dir          ),
       .din  (CB_enb_new  ),
       .dout (CB_enb )
     );
 
-    CB_dshift 
+    dshift 
     #(
       .DW  (1 ),
       .DEPTH (L )
@@ -4405,12 +4433,12 @@ end
     CB_web_dshift(
       .clk  (clk  ),
       .sys_rst ( sys_rst),
-      .CB_dir          (CBb_shift_dir          ),
+      .dir          (CBb_shift_dir          ),
       .din  (CB_web_new  ),
       .dout (CB_web )
     );
 
-    CB_dshift 
+    dshift 
     #(
       .DW        (CB_AW        ),
       .DEPTH     (L     )
@@ -4418,7 +4446,7 @@ end
     CB_addrb_dshift(
     	.clk     (clk     ),
       .sys_rst (sys_rst ),
-      .CB_dir  (CBb_shift_dir  ),
+      .dir  (CBb_shift_dir  ),
       .din     (CB_addrb_new     ),
       .dout    (CB_addrb    )
     );
@@ -4458,7 +4486,7 @@ end
     	.clk          (clk          ),
       .sys_rst      (sys_rst      ),
       .en           (CBa_vm_AGD_en           ),
-      .v_group_cnt    (v_group_cnt    ),
+      .group_cnt    (v_group_cnt    ),
       .CB_base_addr (CB_addra_base_raw )
     );
   
@@ -4511,7 +4539,7 @@ end
     	.clk          (clk          ),
       .sys_rst      (sys_rst      ),
       .en           (CBb_vm_AGD_en           ),
-      .v_group_cnt    (v_group_cnt_WR    ),
+      .group_cnt    (v_group_cnt_WR    ),
       .CB_base_addr (CB_addrb_base_raw )
     );
 
@@ -4554,6 +4582,7 @@ end
         endcase
       end
     end
+
     CB_base_AGD 
     #(
       .CB_AW   (CB_AW   ),
@@ -4564,7 +4593,7 @@ end
     	.clk          (clk          ),
       .sys_rst      (sys_rst      ),
       .en           (l_k_AGD_en         ),
-      .v_group_cnt  (l_k          ),
+      .group_cnt    (l_k_group          ),
       .CB_base_addr (l_k_base_addr)
     );
     

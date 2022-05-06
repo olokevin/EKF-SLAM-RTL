@@ -1188,9 +1188,15 @@ addrb_new: NEW_2_PE_in+N+3
     * A: K
     * B: cov_HT
 * **采用的递增方案：**
-  * group_cnt==0: 正常
-  * group_cnt!=0: 先+3 再+1
+  * 设置addr_base_set
+  * 再计算addr_base
+  * 第一个group用addr_base_set
+* **cov_l -> t_cov_l**
 * **CONS**
+  * 特殊的RAM
+    * 深度为5
+    * 写: 地址从0开始递增，wr_addr=4则令wr_addr=0
+    * 读: 地址从0开始递增，rd_addr=4则令rd_addr=0
   * 写：
     * 按照时序给addr en we
   * 读：
@@ -1200,3 +1206,4 @@ addrb_new: NEW_2_PE_in+N+3
   * 并转串
 * **求逆**
   * 再UPD_5时序内完成求逆
+* 都换为2位dir
