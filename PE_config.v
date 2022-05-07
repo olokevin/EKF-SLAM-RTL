@@ -697,6 +697,41 @@ module PE_config #(
   //   end
   // end
 
+  /*
+    ************************** calculate l_k group ******************8
+  */
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        l_k_row <= 0;
+      end
+      else 
+        l_k_row <= (l_k + 1'b1) << 1;
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        l_k_group <= 0;
+      end
+      else begin
+        case (stage_cur)
+          STAGE_NEW: l_k_group <= (l_k + 1'b1) >> 1;
+          STAGE_UPD: l_k_group <= (l_k + 1'b1) >> 1;
+          default: l_k_group <= 0;
+        endcase
+      end
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        l_k_t_cov_l <= 0;
+      end
+      else begin
+        if(l_k == 1'b1)
+          l_k_t_cov_l <= 1'b1;      //保证H_T能读完
+        else
+          l_k_t_cov_l <= l_k >> 1;      
+      end
+    end
 /*
   (using) FSM of PRD stage, with seq_cnt back to 0 when prd_cur changes
 */
@@ -955,42 +990,6 @@ module PE_config #(
   end
 
 /*
-  ************************** calculate l_k group ******************8
-*/
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      l_k_row <= 0;
-    end
-    else 
-      l_k_row <= (l_k + 1'b1) << 1;
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      l_k_group <= 0;
-    end
-    else begin
-      case (stage_cur)
-        STAGE_NEW: l_k_group <= (l_k + 1'b1) >> 1;
-        STAGE_UPD: l_k_group <= (l_k + 1'b1) >> 1;
-        default: l_k_group <= 0;
-      endcase
-    end
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      l_k_t_cov_l <= 0;
-    end
-    else begin
-      if(l_k == 1'b1)
-        l_k_t_cov_l <= 1'b1;      //保证H_T能读完
-      else
-        l_k_t_cov_l <= l_k >> 1;      
-    end
-  end
-
-/*
   ****************** 2nd FSM sequential stage transfer ***************
 */
   
@@ -1142,7 +1141,7 @@ module PE_config #(
               upd_cur <= UPD_NONLINEAR;
           end
           UPD_1: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == l_k_t_cov_l) begin
               upd_cur <= UPD_2;
             end
             else begin
@@ -2799,7 +2798,13 @@ module PE_config #(
               else
                 A_TB_base_addr <= A_TB_base_addr;
             end
-            UPD_6: begin
+            UPD_4: begin
+              A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_5: begin
+              A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_9: begin
               if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
                 A_TB_base_addr <= A_TB_base_addr_set;
               end
@@ -2809,7 +2814,7 @@ module PE_config #(
               else
                 A_TB_base_addr <= A_TB_base_addr;
             end
-            UPD_7: begin
+            UPD_10: begin
               if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
                 A_TB_base_addr <= A_TB_base_addr_set;
               end
@@ -2837,7 +2842,7 @@ module PE_config #(
         STAGE_NEW: B_TB_base_addr <= B_TB_base_addr_set;
         STAGE_UPD: begin
           case(upd_cur)
-            UPD_7: begin
+            UPD_10: begin
               if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
                 B_TB_base_addr <= B_TB_base_addr_set;
               end
@@ -2868,7 +2873,7 @@ module PE_config #(
         STAGE_NEW: C_TB_base_addr <= C_TB_base_addr_set;
         STAGE_UPD: begin
           case(upd_cur)
-            UPD_2: begin
+            UPD_3: begin
               if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
                 C_TB_base_addr <= C_TB_base_addr_set;
               end
@@ -2878,7 +2883,13 @@ module PE_config #(
               else
                 C_TB_base_addr <= C_TB_base_addr;
             end
-            UPD_6: begin
+            UPD_4:begin
+              C_TB_base_addr <= C_TB_base_addr;
+            end
+            UPD_5:begin
+              C_TB_base_addr <= C_TB_base_addr;
+            end
+            UPD_9: begin
               if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
                 C_TB_base_addr <= C_TB_base_addr_set;
               end
