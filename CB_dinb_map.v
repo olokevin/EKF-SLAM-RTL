@@ -38,9 +38,7 @@ integer i_CB_C;
       case(CB_dinb_sel)
         DIR_IDLE: CB_dinb <= 0;
         DIR_POS: begin
-          for(i_CB_C=0; i_CB_C<X; i_CB_C=i_CB_C+1) begin
-            CB_dinb <= C_CB_dinb;
-          end
+          CB_dinb <= C_CB_dinb;
         end
         DIR_NEG :begin
           for(i_CB_C=0; i_CB_C<L; i_CB_C=i_CB_C+1) begin

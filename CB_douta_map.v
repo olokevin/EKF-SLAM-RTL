@@ -12,8 +12,10 @@ module CB_douta_map #(
 
   input   [3:0]   CB_douta_sel,
   input           l_k_0,
+  input   [ROW_LEN-1 : 0] seq_cnt_dout_sel,
 
   input   [L*RSA_DW-1 : 0]         CB_douta,
+  output  reg  [X*RSA_DW-1 : 0]    TB_dina_CB_douta,
   output  reg  [X*RSA_DW-1 : 0]    A_CB_douta,
   output  reg  [Y*RSA_DW-1 : 0]    B_CB_douta,
   output  reg  [X*RSA_DW-1 : 0]    M_CB_douta
@@ -25,6 +27,7 @@ module CB_douta_map #(
     11: M
     10: B
     01: A
+    00: tranfer
   CB_douta_sel[1:0]
     00: DIR_IDLE
     01: 正向映射
@@ -44,7 +47,7 @@ module CB_douta_map #(
   10          1         0
               0         1
 */
-localparam CBa_IDLE = 2'b00;
+localparam CBa_TBa = 2'b00;
 localparam CBa_A = 2'b01;
 localparam CBa_B = 2'b10;
 localparam CBa_M = 2'b11;
@@ -145,7 +148,7 @@ always @(posedge clk) begin
 end
 
 /*
-  B_CB_douta
+  M_CB_douta
 */
 integer i_CBa_M;
 always @(posedge clk) begin
@@ -181,6 +184,61 @@ always @(posedge clk) begin
           endcase
         end
         default: M_CB_douta <= 0;
+      endcase
+    end     
+end
+
+/*
+  TB_dina_CB_douta
+*/
+integer i_CBa_TBa;
+always @(posedge clk) begin
+    if(sys_rst)
+      TB_dina_CB_douta <= 0;
+    else begin
+      case(CB_douta_sel[3:2])
+        CBa_TBa: begin
+          case(CB_douta_sel[1:0])
+            DIR_IDLE: TB_dina_CB_douta <= 0;
+            DIR_NEW: begin
+              case(seq_cnt_dout_sel)
+                'd0:begin 
+                      TB_dina_CB_douta[0 +: RSA_DW]        <= 0;
+                      TB_dina_CB_douta[1*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[3*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+                    end
+                'd1:begin
+                      TB_dina_CB_douta[0 +: RSA_DW]        <= l_k_0 ? CB_douta[0 +: RSA_DW] : CB_douta[2*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[1*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                    end
+                'd2:begin
+                      TB_dina_CB_douta[0 +: RSA_DW]        <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[1*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[0 +: RSA_DW] : CB_douta[2*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                    end
+                'd3:begin
+                      TB_dina_CB_douta[0 +: RSA_DW]        <= 0;
+                      TB_dina_CB_douta[1*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[2*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[0 +: RSA_DW] : CB_douta[2*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                    end
+                'd4:begin
+                      TB_dina_CB_douta[0 +: RSA_DW]        <= 0;
+                      TB_dina_CB_douta[1*RSA_DW +: RSA_DW] <= 0;
+                      TB_dina_CB_douta[2*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+                      TB_dina_CB_douta[3*RSA_DW +: RSA_DW] <= l_k_0 ? CB_douta[0 +: RSA_DW] : CB_douta[2*RSA_DW +: RSA_DW];
+                    end
+                default: TB_dina_CB_douta <= 0;
+              endcase
+            end
+            default: TB_dina_CB_douta <= 0;
+          endcase
+        end
+        default: TB_dina_CB_douta <= 0;
       endcase
     end     
 end

@@ -11,12 +11,6 @@ module RSA
   parameter M_IN_SEL_DW = 2,
   parameter C_OUT_SEL_DW = 2,
 
-  parameter TB_DINB_SEL_DW  = 2,
-  parameter TB_DOUTA_SEL_DW = 3,
-  parameter TB_DOUTB_SEL_DW = 3,
-  parameter CB_DINB_SEL_DW  = 2,
-  parameter CB_DOUTA_SEL_DW = 4,  //注意MUX deMUX需手动修改
-
   parameter RSA_DW = 16,
   parameter TB_AW = 11,
   parameter CB_AW = 17,
@@ -77,6 +71,12 @@ module RSA
 //   input  [L*RSA_DW-1 : 0]   CB_doutb
 );
 
+  parameter TB_DINA_SEL_DW  = 3;
+  parameter TB_DINB_SEL_DW  = 2;
+  parameter TB_DOUTA_SEL_DW = 3;
+  parameter TB_DOUTB_SEL_DW = 3;
+  parameter CB_DINB_SEL_DW  = 2;
+  parameter CB_DOUTA_SEL_DW = 4;  //注意MUX deMUX需手动修改
 
 /*
   差分时钟信号转单端
@@ -357,6 +357,8 @@ wire [X*RSA_DW-1 : 0]   C_CB_dinb;
 wire [C_OUT_SEL_DW*X-1 : 0]        C_out_sel; 
 wire [X-1 : 0]          C_out_en; 
 
+wire [L*RSA_DW-1 : 0]   TB_dina_CB_douta;
+wire [L*RSA_DW-1 : 0]   TB_dina_non_linear;
 
 generate 
   genvar i_X;
@@ -501,9 +503,9 @@ generate
 endgenerate
 
 //TEMP BRAM
+wire [TB_DINA_SEL_DW-1 : 0]    TB_dina_sel;
 wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
 wire [TB_DOUTA_SEL_DW-1 : 0]    TB_douta_sel;
-//定义提前
 wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
 
 wire [L-1 : 0]    TB_ena;
@@ -538,9 +540,31 @@ wire [L*CB_AW-1 : 0] CB_addrb;
 wire [L*RSA_DW-1 : 0] CB_douta;
 wire [L*RSA_DW-1 : 0] CB_doutb;
 
-wire [1:0] landmark_num_10;
+//l_k
+wire l_k_0;
+assign l_k_0 = l_k[0];
+
+wire [ROW_LEN-1 : 0] seq_cnt_dout_sel;
 
 //TEMP_BANK data MUX and deMUX
+  TB_dina_map 
+  #(
+    .X              (X              ),
+    .Y              (Y              ),
+    .L              (L              ),
+    .RSA_DW         (RSA_DW         )
+  )
+  u_TB_dina_map(
+  	.clk                (clk                ),
+    .sys_rst            (sys_rst            ),
+    .TB_dina_sel        (TB_dina_sel        ),
+    .l_k_0              (l_k_0              ),
+    .TB_dina_CB_douta   (TB_dina_CB_douta   ),
+    .TB_dina_non_linear (TB_dina_non_linear ),
+    .TB_dina            (TB_dina            )
+  );
+  
+  
   TB_dinb_map 
   #(
     .X      (X      ),
@@ -552,6 +576,7 @@ wire [1:0] landmark_num_10;
   	.clk         (clk         ),
     .sys_rst     (sys_rst     ),
     .TB_dinb_sel (TB_dinb_sel ),
+    .l_k_0       (l_k_0       ),
     .C_TB_dinb   (C_TB_dinb   ),
     .TB_dinb     (TB_dinb     )
   );
@@ -567,6 +592,7 @@ wire [1:0] landmark_num_10;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .TB_douta_sel (TB_douta_sel ),
+    .l_k_0       (l_k_0       ),
     .TB_douta     (TB_douta     ),
     .A_TB_douta   (A_TB_douta   ),
     .M_TB_douta   (M_TB_douta   )
@@ -583,6 +609,8 @@ wire [1:0] landmark_num_10;
   	.clk             (clk             ),
     .sys_rst         (sys_rst         ),
     .TB_doutb_sel    (TB_doutb_sel    ),
+    .l_k_0       (l_k_0       ),
+    .seq_cnt_dout_sel (seq_cnt_dout_sel),
     .TB_doutb        (TB_doutb        ),
     .B_TB_doutb      (B_TB_doutb      ),
     .B_cache_TB_doutb (B_cache_TB_doutb )
@@ -601,6 +629,7 @@ wire [1:0] landmark_num_10;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_dinb_sel  (CB_dinb_sel  ),
+    .l_k_0       (l_k_0       ),
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
   );
@@ -617,7 +646,10 @@ wire [1:0] landmark_num_10;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_douta_sel (CB_douta_sel ),
+    .l_k_0       (l_k_0       ),
+    .seq_cnt_dout_sel (seq_cnt_dout_sel),
     .CB_douta     (CB_douta     ),
+    .TB_dina_CB_douta (TB_dina_CB_douta),
     .A_CB_douta   (A_CB_douta   ),
     .B_CB_douta   (B_CB_douta   ),
     .M_CB_douta   (M_CB_douta   )
@@ -775,6 +807,7 @@ u_PE_config(
   .M_in_en              (M_in_en           ),
   .C_out_sel            (C_out_sel         ),
   .C_out_en             (C_out_en          ),
+  .TB_dina_sel          (TB_dina_sel       ),
   .TB_dinb_sel          (TB_dinb_sel       ),
   .TB_douta_sel         (TB_douta_sel      ),
   .TB_doutb_sel         (TB_doutb_sel      ),
@@ -782,7 +815,6 @@ u_PE_config(
   .TB_enb               (TB_enb            ),
   .TB_wea               (TB_wea            ),
   .TB_web               (TB_web            ),
-  .TB_dina              (TB_dina           ),
   .TB_addra             (TB_addra          ),
   .TB_addrb             (TB_addrb          ),
   .CB_dinb_sel          (CB_dinb_sel       ),
@@ -791,13 +823,13 @@ u_PE_config(
   .CB_enb               (CB_enb            ),
   .CB_wea               (CB_wea            ),
   .CB_web               (CB_web            ),
-  .CB_dina              (CB_dina           ),
   .CB_addra             (CB_addra          ),
   .CB_addrb             (CB_addrb          ),
   .B_cache_en            (B_cache_en),
   .B_cache_we            (B_cache_we),
   .B_cache_addr          (B_cache_addr),
   .B_cache_dout          (B_cache_dout),
+  .seq_cnt_dout_sel      (seq_cnt_dout_sel),
   .M_adder_mode         (M_adder_mode      ),
   .PE_mode              (PE_mode           ),
   .new_cal_en           (new_cal_en        ),

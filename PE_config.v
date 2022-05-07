@@ -8,6 +8,7 @@ module PE_config #(
   parameter M_IN_SEL_DW = 2,
   parameter C_OUT_SEL_DW = 2,
 
+  parameter TB_DINA_SEL_DW  = 3,
   parameter TB_DINB_SEL_DW  = 2,
   parameter TB_DOUTA_SEL_DW = 3,
   parameter TB_DOUTB_SEL_DW = 3,
@@ -53,6 +54,7 @@ module PE_config #(
   output  [C_OUT_SEL_DW*X-1 : 0]      C_out_sel, 
   output reg [X-1 : 0]                C_out_en,
 
+  output reg [TB_DINA_SEL_DW-1 : 0]       TB_dina_sel,
   output reg [TB_DINB_SEL_DW-1 : 0]       TB_dinb_sel,
   output reg [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel,
   output reg [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel,
@@ -63,7 +65,6 @@ module PE_config #(
   output  [L-1 : 0]         TB_wea,
   output  [L-1 : 0]         TB_web,
 
-  output reg [L*RSA_DW-1 : 0]  TB_dina,
   output  [L*TB_AW-1 : 0]      TB_addra,
   output  [L*TB_AW-1 : 0]      TB_addrb,
 
@@ -76,14 +77,15 @@ module PE_config #(
   output [L-1 : 0]        CB_wea,
   output [L-1 : 0]        CB_web,
 
-  output reg [L*RSA_DW-1 : 0] CB_dina,
   output [L*CB_AW-1 : 0]      CB_addra,
   output [L*CB_AW-1 : 0]      CB_addrb,
 
-  output  [Y-1:0] B_cache_en,
-  output  [Y-1:0] B_cache_we,
-  output  [Y*3-1:0] B_cache_addr,
-  output  [Y*RSA_DW-1:0] B_cache_dout, 
+  output  [Y-1:0]         B_cache_en,
+  output  [Y-1:0]         B_cache_we,
+  output  [Y*3-1:0]       B_cache_addr,
+  output  [Y*RSA_DW-1:0]  B_cache_dout,
+
+  output [ROW_LEN-1:0]   seq_cnt_dout_sel, 
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -151,7 +153,7 @@ module PE_config #(
   localparam  C_TBb = 2'b00;
   localparam  C_CBb = 2'b10;
 
-//CB portB map mode
+//CB portA map mode
 
 //CB portB map mode
 
@@ -159,19 +161,26 @@ module PE_config #(
   *********************** TB mode config **********************
 */
   localparam TB_IDLE = 5'b00000;
-  //MODE[4:2] PARAMS
-  localparam TBa_IDLE = 3'b000;
-  localparam TBa_A = 3'b001;
-  localparam TBa_M = 3'b010;
-  localparam TBa_AM = 3'b011;
-  localparam TBa_cov_l = 3'b100;
-  localparam TBa_nonlinear = 3'b100;
+//MODE[4:2] PARAMS
+  //TBa RD
+    localparam TBa_IDLE = 3'b000;
+    localparam TBa_A = 3'b001;
+    localparam TBa_M = 3'b010;
+    localparam TBa_AM = 3'b011;
+  //TBa WR
+    localparam TBa_cov_l = 3'b100;
+    localparam TBa_nonlinear = 3'b100;
 
-  localparam TBb_IDLE = 3'b000;
-  localparam TBb_B = 3'b001;
-  localparam TBb_C = 3'b010;
-  localparam TBb_BC = 3'b011;
-  localparam TBb_cache = 3'b100;
+  //TBb RD
+    localparam TBb_IDLE = 3'b000;
+    localparam TBb_B = 3'b001;
+    localparam TBb_B_cache_transfer = 3'b101;
+    localparam TBb_B_cache_transpose = 3'b110;
+    localparam TBb_B_cache_inv = 3'b111;
+
+  //TBb WR
+    localparam TBb_C = 3'b010;
+    localparam TBb_BC = 3'b011;
 
   //MODE[1:0] PARAMS （declared above）
   // localparam DIR_IDLE = 2'b00;
@@ -184,10 +193,10 @@ module PE_config #(
 */
   localparam CB_IDLE = 5'b00000;
   //CB_mode[4:3] dir
+  localparam CBa_TBa = 2'b00;
   localparam CBa_A = 2'b01;
   localparam CBa_B = 2'b10;
   localparam CBa_M = 2'b11;
-  localparam CBa_cov_l = 2'b11;
 
   localparam CBb_C = 2'b01;  
 
@@ -474,6 +483,22 @@ module PE_config #(
   reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
+  //******************* dout_sel延迟 *************************
+  // output [ROW_LEN-1:0]   seq_cnt_dout_sel;      
+    dynamic_shreg 
+    #(
+      .DW    (ROW_LEN    ),
+      .AW    (2    )
+    )
+    u_dynamic_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1   ),
+      .addr (2'b10 ),
+      .din  (seq_cnt  ),
+      .dout (seq_cnt_dout_sel )
+    );
+  
+  
   //******************* 写入状态延迟 *************************
     wire [ROW_LEN-1 : 0] seq_cnt_WR;
     wire [ROW_LEN-1 : 0] v_group_cnt_WR;
@@ -1991,7 +2016,9 @@ module PE_config #(
           case(upd_cur)
             UPD_1: begin
             /*
-              transfer H
+              transfer
+              H:    TB-B -> B_cache
+              cov_l:CB-A -> TB-A
               X=0 Y=2 N=5
               Ain: 0
               bin: CB-B
@@ -2009,9 +2036,9 @@ module PE_config #(
               C_out_mode = C_CBb;
               M_adder_mode_set = NONE;
 
-              TBa_mode = TB_IDLE;
-              TBb_mode = {TBb_B,DIR_POS};
-              CBa_mode = TB_IDLE;
+              TBa_mode = TBa_cov_l;
+              TBb_mode = {TBb_B_cache_transfer,DIR_POS};
+              CBa_mode = {CBa_TBa, CB_cov_l};
               CBb_mode = CB_IDLE;
 
               A_TB_base_addr_set = 0;
@@ -2919,7 +2946,7 @@ module PE_config #(
             endcase
           end
         end
-        TBb_cache: begin
+        TBb_B_cache_transfer: begin
           TB_doutb_sel_new[2] <= 1'b1;
           if(seq_cnt < PE_n) begin
             TB_enb_new <= 1'b1;
@@ -4155,20 +4182,6 @@ module PE_config #(
   //     endcase
   //   end       
   // end  
-
-//CB_dina, TB_dina
-always @(posedge clk) begin
-  if(sys_rst)
-    TB_dina <= 0;
-  else 
-    TB_dina <= 0;
-end
-always @(posedge clk) begin
-  if(sys_rst)
-    CB_dina <= 0;
-  else 
-    CB_dina <= 0;
-end
 
 
 /*

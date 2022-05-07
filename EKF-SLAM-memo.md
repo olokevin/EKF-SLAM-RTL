@@ -1225,5 +1225,14 @@ addrb_new: NEW_2_PE_in+N+3
 * CB_douta_map
   * cov_l转换映射
   * sel
+* new: TB_dina_map
 * TBa: 分离AM；TBb: 分离BC
 * 改回DIR_NEW, 需传入l_k[0]
+
+### cov_vv存于BANK012 or BANK123?
+
+* 若存于BANK123， 每次更新会把BANK0的state一并更新（先从BANK1开始存。要额外的控制）
+* 因此，cov_vv存于BANK012 state存于BANK3
+* 要改变的地方：
+  * cov_vv读取
+  * cov_vv cov_vm需区分
