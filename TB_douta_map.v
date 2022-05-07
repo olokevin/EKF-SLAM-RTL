@@ -28,8 +28,8 @@ module TB_douta_map #(
     10：逆向映射
     11：X
 */
-localparam TB_A = 1'b0;
-localparam TB_M = 1'b1;
+localparam TBa_A = 1'b0;
+localparam TBa_M = 1'b1;
 
 localparam DIR_IDLE = 2'b00;
 localparam DIR_POS  = 2'b01;
@@ -48,7 +48,7 @@ always @(posedge clk) begin
     A_TB_douta <= 0;
   else begin
     case(TB_douta_sel[2])
-      TB_A: begin
+      TBa_A: begin
         case(TB_douta_sel[1:0])
           DIR_IDLE: A_TB_douta <= 0;
           DIR_POS : A_TB_douta <= TB_douta;
@@ -89,7 +89,7 @@ always @(posedge clk) begin
     M_TB_douta <= 0;
   else begin
     case(TB_douta_sel[2])
-      TB_M: begin
+      TBa_M: begin
         case(TB_douta_sel[1:0])
           DIR_IDLE: M_TB_douta <= 0;
           DIR_POS : M_TB_douta <= TB_douta;

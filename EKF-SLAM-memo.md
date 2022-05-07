@@ -1228,11 +1228,13 @@ addrb_new: NEW_2_PE_in+N+3
 * new: TB_dina_map
 * TBa: 分离AM；TBb: 分离BC
 * 改回DIR_NEW, 需传入l_k[0]
+* UPD 的M N K
 
 ### cov_vv存于BANK012 or BANK123?
 
 * 若存于BANK123， 每次更新会把BANK0的state一并更新（先从BANK1开始存。要额外的控制）
 * 因此，cov_vv存于BANK012 state存于BANK3
-* 要改变的地方：
+* 要改变的地方：（已完成）
   * cov_vv读取
-  * cov_vv cov_vm需区分
+  * cov_vv cov_vm cov_lv需区分
+* 

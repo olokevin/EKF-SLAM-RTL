@@ -24,7 +24,7 @@ module TB_doutb_map #(
   TB_doutb_sel[2]
     1: B_cache
     0: B
-  TB_douta_sel[1:0]
+  TB_doutb_sel[1:0]
           B             B_cache
     00: DIR_IDLE      B_cache_IDLE
     01: POS           B_cache_trnsfer
