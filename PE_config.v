@@ -358,14 +358,14 @@ module PE_config #(
     localparam UPD_9_M       = 3'b100;
     localparam UPD_10_M      = 3'b100;
     
-    localparam UPD_1_N       = 3'b000;
+    localparam UPD_1_N       = 3'b101;
     localparam UPD_2_N       = 3'b011;
     localparam UPD_3_N       = 3'b011;
     localparam UPD_4_N       = 3'b010;
     localparam UPD_5_N       = 3'b010;
-    localparam UPD_6_N       = 3'b000;
+    localparam UPD_6_N       = 3'b101;
     localparam UPD_7_N       = 3'b101;
-    localparam UPD_8_N       = 3'b000;
+    localparam UPD_8_N       = 3'b010;
     localparam UPD_9_N       = 3'b010;
     localparam UPD_10_N      = 3'b010;
 
@@ -3036,13 +3036,13 @@ module PE_config #(
                   end
                 end
         TBb_B_cache: begin
-          TB_doutb_sel_new[2] <= 1'b1;
-          if(seq_cnt < PE_n) begin
-            TB_enb_new <= 1'b1;
-            TB_web_new <= 1'b0;
-            TB_addrb_new <= B_TB_base_addr + seq_cnt;
-          end
-        end
+                      TB_doutb_sel_new[2] <= 1'b1;
+                      if(seq_cnt < PE_n) begin
+                        TB_enb_new <= 1'b1;
+                        TB_web_new <= 1'b0;
+                        TB_addrb_new <= B_TB_base_addr + seq_cnt;
+                      end
+                    end
         default: begin
           TB_enb_new <= 1'b0;
           TB_web_new <= 1'b0;
@@ -3318,33 +3318,9 @@ module PE_config #(
   end
 
 
-  /*
-    *****************************CB-portA READ*****************************
-  */
-
-  // CB_douta_sel_new
-  // reg [4:0] CBa_mode_d;
-  // always @(posedge clk) begin
-  //   if(sys_rst) begin
-  //     CBa_mode_d <= 0;
-  //     CB_douta_sel_new <= 0;
-  //   end
-  //   else begin
-  //     CBa_mode_d <= CBa_mode;
-  //     CB_douta_sel_new[3:2] <= CBa_mode_d[4:3];
-  //     CBa_shift_dir <= CB_douta_sel_new[1:0];
-  //     case (CBa_mode_d[2:0])
-  //       CB_cov_vv : CB_douta_sel_new[1:0] <= DIR_POS;
-  //       CB_cov_mv : CB_douta_sel_new[1:0] <= DIR_POS;
-  //       CB_cov    : CB_douta_sel_new[1:0] <= DIR_POS;
-  //       CB_cov_lv : CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
-  //       CB_cov_lm : CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
-  //       CB_cov_ll : CB_douta_sel_new[1:0] <= l_k[0] ? DIR_NEW_1 : DIR_NEW_0;
-  //       default   : CB_douta_sel_new[1:0] <= DIR_IDLE;
-  //     endcase
-  //   end 
-  // end
-
+/*
+  *****************************CB-portA READ*****************************
+*/
   always @(posedge clk) begin
     if(sys_rst) begin
       CBa_shift_dir <= 0;
@@ -5070,7 +5046,6 @@ module PE_config #(
       .group_cnt    (l_k_group          ),
       .CB_base_addr (l_k_base_addr)
     );
-    
 
   /*
     ******************* sel_new -> sel ********************
