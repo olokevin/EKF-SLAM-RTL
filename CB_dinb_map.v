@@ -11,6 +11,7 @@ module CB_dinb_map #(
   input   sys_rst,
 
   input   [1:0]   CB_dinb_sel,
+  input           l_k_0,
 
   input   [X*RSA_DW-1 : 0]         C_CB_dinb,
   output  reg  [L*RSA_DW-1 : 0]    CB_dinb
@@ -18,8 +19,11 @@ module CB_dinb_map #(
   
   localparam DIR_IDLE = 2'b00;
   localparam DIR_POS  = 2'b01;
-  localparam DIR_NEW_0  = 2'b10;
-  localparam DIR_NEW_1  = 2'b11;
+  localparam DIR_NEG  = 2'b10;
+  localparam DIR_NEW  = 2'b11;
+
+  localparam DIR_NEW_0  = 1'b0;
+  localparam DIR_NEW_1  = 1'b1;
 
   // localparam  DIR_NEW_11  = 2'b11; 
   // localparam  DIR_NEW_00  = 2'b00;
@@ -35,20 +39,29 @@ integer i_CB_C;
         DIR_IDLE: CB_dinb <= 0;
         DIR_POS: begin
           for(i_CB_C=0; i_CB_C<X; i_CB_C=i_CB_C+1) begin
-            CB_dinb[i_CB_C*RSA_DW +: RSA_DW] <= C_CB_dinb[i_CB_C*RSA_DW +: RSA_DW];
+            CB_dinb <= C_CB_dinb;
           end
         end
-        DIR_NEW_1: begin
-          CB_dinb[0 +: RSA_DW]        <= C_CB_dinb[0 +: RSA_DW];
-          CB_dinb[1*RSA_DW +: RSA_DW] <= C_CB_dinb[1*RSA_DW +: RSA_DW];
-          CB_dinb[2*RSA_DW +: RSA_DW] <= 0;
-          CB_dinb[3*RSA_DW +: RSA_DW] <= 0;
+        DIR_NEG :begin
+          for(i_CB_C=0; i_CB_C<L; i_CB_C=i_CB_C+1) begin
+            CB_dinb[i_CB_C*RSA_DW +: RSA_DW] <= C_CB_dinb[(L-1-i_CB_C)*RSA_DW +: RSA_DW];
+          end
         end
-        DIR_NEW_0: begin
-          CB_dinb[0 +: RSA_DW]        <= 0;
-          CB_dinb[1*RSA_DW +: RSA_DW] <= 0;
-          CB_dinb[2*RSA_DW +: RSA_DW] <= C_CB_dinb[0 +: RSA_DW];
-          CB_dinb[3*RSA_DW +: RSA_DW] <= C_CB_dinb[1*RSA_DW +: RSA_DW];
+        DIR_NEW : begin
+          case (l_k_0)
+            DIR_NEW_1: begin
+              CB_dinb[0 +: RSA_DW]        <= C_CB_dinb[0 +: RSA_DW];
+              CB_dinb[1*RSA_DW +: RSA_DW] <= C_CB_dinb[1*RSA_DW +: RSA_DW];
+              CB_dinb[2*RSA_DW +: RSA_DW] <= 0;
+              CB_dinb[3*RSA_DW +: RSA_DW] <= 0;
+            end
+            DIR_NEW_0: begin
+              CB_dinb[0 +: RSA_DW]        <= 0;
+              CB_dinb[1*RSA_DW +: RSA_DW] <= 0;
+              CB_dinb[2*RSA_DW +: RSA_DW] <= C_CB_dinb[0 +: RSA_DW];
+              CB_dinb[3*RSA_DW +: RSA_DW] <= C_CB_dinb[1*RSA_DW +: RSA_DW];
+            end
+          endcase
         end
         default:
           CB_dinb <= 0;

@@ -10,6 +10,7 @@ module TB_doutb_map #(
   input   sys_rst,
 
   input   [2:0]   TB_doutb_sel,
+  input           l_k_0,
 
   input   [L*RSA_DW-1 : 0]         TB_doutb,
   output  reg  [Y*RSA_DW-1 : 0]    B_TB_doutb,
@@ -35,6 +36,9 @@ localparam DIR_POS  = 2'b01;
 localparam DIR_NEG  = 2'b10;
 localparam DIR_NEW  = 2'b11;
 
+localparam DIR_NEW_0  = 1'b0;
+localparam DIR_NEW_1  = 1'b1;
+
 /*
   B_TB_doutb
 */
@@ -53,7 +57,22 @@ always @(posedge clk) begin
               B_TB_doutb[i_TB_B*RSA_DW +: RSA_DW] <= TB_doutb[(X-1-i_TB_B)*RSA_DW +: RSA_DW];
             end
           end
-          DIR_NEW : B_TB_doutb <= 0;
+          DIR_NEW : begin
+            case (l_k_0)
+              DIR_NEW_1: begin
+                B_TB_doutb[0 +: RSA_DW]        <= TB_doutb[0 +: RSA_DW];
+                B_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[1*RSA_DW +: RSA_DW];
+                B_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+                B_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
+              end
+              DIR_NEW_0: begin
+                B_TB_doutb[0 +: RSA_DW]        <= TB_doutb[2*RSA_DW +: RSA_DW];
+                B_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[3*RSA_DW +: RSA_DW];
+                B_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+                B_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
+              end
+            endcase
+          end
         endcase
       end
       default: B_TB_doutb <= 0;
@@ -79,7 +98,22 @@ always @(posedge clk) begin
               B_cache_TB_doutb[i_TB_B_cache*RSA_DW +: RSA_DW] <= TB_doutb[(X-1-i_TB_B_cache)*RSA_DW +: RSA_DW];
             end
           end
-          DIR_NEW : B_cache_TB_doutb <= 0;
+          DIR_NEW : begin
+            case (l_k_0)
+              DIR_NEW_1: begin
+                B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[0 +: RSA_DW];
+                B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[1*RSA_DW +: RSA_DW];
+                B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+                B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
+              end
+              DIR_NEW_0: begin
+                B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[2*RSA_DW +: RSA_DW];
+                B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[3*RSA_DW +: RSA_DW];
+                B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+                B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
+              end
+            endcase
+          end
         endcase
       end
       default: B_cache_TB_doutb <= 0;

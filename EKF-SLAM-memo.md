@@ -1226,3 +1226,4 @@ addrb_new: NEW_2_PE_in+N+3
   * cov_l转换映射
   * sel
 * TBa: 分离AM；TBb: 分离BC
+* 改回DIR_NEW, 需传入l_k[0]

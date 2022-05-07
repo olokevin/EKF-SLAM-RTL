@@ -11,6 +11,7 @@ module CB_douta_map #(
   input   sys_rst,
 
   input   [3:0]   CB_douta_sel,
+  input           l_k_0,
 
   input   [L*RSA_DW-1 : 0]         CB_douta,
   output  reg  [X*RSA_DW-1 : 0]    A_CB_douta,
@@ -50,8 +51,11 @@ localparam CBa_M = 2'b11;
 
 localparam DIR_IDLE = 2'b00;
 localparam DIR_POS  = 2'b01;
-localparam DIR_NEW_0  = 2'b10;
-localparam DIR_NEW_1  = 2'b11;
+localparam DIR_NEG  = 2'b10;
+localparam DIR_NEW  = 2'b11;
+
+localparam DIR_NEW_0  = 1'b0;
+localparam DIR_NEW_1  = 1'b1;
 
 // localparam  DIR_NEW_11  = 2'b11; 
 // localparam  DIR_NEW_00  = 2'b00;
@@ -71,17 +75,26 @@ always @(posedge clk) begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: A_CB_douta <= 0;
             DIR_POS : A_CB_douta <= CB_douta;
-            DIR_NEW_1: begin
-              A_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
-              A_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
-              A_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              A_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEG :begin
+              for(i_CBa_A=0; i_CBa_A<L; i_CBa_A=i_CBa_A+1) begin
+                A_CB_douta[i_CBa_A*RSA_DW +: RSA_DW] <= CB_douta[(L-1-i_CBa_A)*RSA_DW +: RSA_DW];
+              end
             end
-            DIR_NEW_0: begin
-              A_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
-              A_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
-              A_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              A_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEW : begin
+              case (l_k_0)
+                DIR_NEW_1: begin
+                  A_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
+                  A_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
+                  A_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  A_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+                DIR_NEW_0: begin
+                  A_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
+                  A_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
+                  A_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  A_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+              endcase
             end
           endcase
         end
@@ -103,17 +116,26 @@ always @(posedge clk) begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: B_CB_douta <= 0;
             DIR_POS : B_CB_douta <= CB_douta;
-            DIR_NEW_1: begin
-              B_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
-              B_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
-              B_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              B_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEG :begin
+              for(i_CBa_B=0; i_CBa_B<L; i_CBa_B=i_CBa_B+1) begin
+                B_CB_douta[i_CBa_B*RSA_DW +: RSA_DW] <= CB_douta[(L-1-i_CBa_B)*RSA_DW +: RSA_DW];
+              end
             end
-            DIR_NEW_0: begin
-              B_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
-              B_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
-              B_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              B_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEW : begin
+              case (l_k_0)
+                DIR_NEW_1: begin
+                  B_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
+                  B_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
+                  B_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  B_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+                DIR_NEW_0: begin
+                  B_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
+                  B_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
+                  B_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  B_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+              endcase
             end
           endcase
         end
@@ -135,17 +157,26 @@ always @(posedge clk) begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: M_CB_douta <= 0;
             DIR_POS : M_CB_douta <= CB_douta;
-            DIR_NEW_1: begin
-              M_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
-              M_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
-              M_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              M_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEG :begin
+              for(i_CBa_M=0; i_CBa_M<L; i_CBa_M=i_CBa_M+1) begin
+                M_CB_douta[i_CBa_M*RSA_DW +: RSA_DW] <= CB_douta[(L-1-i_CBa_M)*RSA_DW +: RSA_DW];
+              end
             end
-            DIR_NEW_0: begin
-              M_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
-              M_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
-              M_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
-              M_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+            DIR_NEW : begin
+              case (l_k_0)
+                DIR_NEW_1: begin
+                  M_CB_douta[0 +: RSA_DW]        <= CB_douta[0 +: RSA_DW];
+                  M_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[1*RSA_DW +: RSA_DW];
+                  M_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  M_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+                DIR_NEW_0: begin
+                  M_CB_douta[0 +: RSA_DW]        <= CB_douta[2*RSA_DW +: RSA_DW];
+                  M_CB_douta[1*RSA_DW +: RSA_DW] <= CB_douta[3*RSA_DW +: RSA_DW];
+                  M_CB_douta[2*RSA_DW +: RSA_DW] <= 0;
+                  M_CB_douta[3*RSA_DW +: RSA_DW] <= 0;
+                end
+              endcase
             end
           endcase
         end

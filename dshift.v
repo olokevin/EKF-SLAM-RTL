@@ -6,6 +6,7 @@ module dshift #(
   input sys_rst,
 
   input [1:0] dir,
+  input           l_k_0,
   
   input   [DW-1 : 0] din,
   output  reg   [DW*DEPTH-1 : 0]  dout
@@ -13,8 +14,11 @@ module dshift #(
 
   localparam DIR_IDLE = 2'b00;
   localparam DIR_POS  = 2'b01;
-  localparam DIR_NEW_0  = 2'b10;
-  localparam DIR_NEW_1  = 2'b11;
+  localparam DIR_NEG  = 2'b10;
+  localparam DIR_NEW  = 2'b11;
+
+  localparam DIR_NEW_0  = 1'b0;
+  localparam DIR_NEW_1  = 1'b1;
 
   // localparam  DIR_NEW_11  = 2'b11; 
   // localparam  DIR_NEW_00  = 2'b00;
@@ -28,17 +32,22 @@ always @(posedge clk) begin
   else begin
     case (dir)
       DIR_POS: dout <= {dout[0 +: (DEPTH-1)*DW], din};
-      DIR_NEW_1: begin
-        dout[0 +: DW]    <= din;
-        dout[1*DW +: DW] <= dout[0 +: DW];
-        dout[2*DW +: DW] <= 0;
-        dout[3*DW +: DW] <= 0;
-      end
-      DIR_NEW_0: begin
-        dout[0 +: DW]    <= 0;
-        dout[1*DW +: DW] <= 0;
-        dout[2*DW +: DW] <= din;
-        dout[3*DW +: DW] <= dout[2*DW +: DW];
+      DIR_NEG: dout <= {din, dout[DW +: (DEPTH-1)*DW]};
+      DIR_NEW : begin
+        case (l_k_0)
+          DIR_NEW_1: begin
+            dout[0 +: DW]    <= din;
+            dout[1*DW +: DW] <= dout[0 +: DW];
+            dout[2*DW +: DW] <= 0;
+            dout[3*DW +: DW] <= 0;
+          end
+          DIR_NEW_0: begin
+            dout[0 +: DW]    <= 0;
+            dout[1*DW +: DW] <= 0;
+            dout[2*DW +: DW] <= din;
+            dout[3*DW +: DW] <= dout[2*DW +: DW];
+          end
+        endcase
       end
       default: begin
         dout <= 0;
