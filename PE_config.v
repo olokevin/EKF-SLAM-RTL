@@ -19,7 +19,7 @@ module PE_config #(
   parameter TB_AW = 11,
   parameter CB_AW = 17,
 
-  parameter MAX_LANDMARK = 500,
+  parameter SEQ_CNT_DW = 5,
   parameter ROW_LEN  = 10
 ) (
   input clk,
@@ -85,7 +85,7 @@ module PE_config #(
   output  [Y*3-1:0]       B_cache_addr,
   output  [Y*RSA_DW-1:0]  B_cache_dout,
 
-  output [ROW_LEN-1:0]   seq_cnt_dout_sel, 
+  output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel, 
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -93,6 +93,7 @@ module PE_config #(
   output  [Y-1 : 0]           new_cal_done
 
 );
+
 //delay
   localparam RD_DELAY = 3;
   localparam WR_DELAY = 2;
@@ -340,8 +341,8 @@ module PE_config #(
     localparam UPD_3_CNT_MAX     = 'd2;
     localparam UPD_4_CNT_MAX     = 'd3;
     localparam UPD_5_CNT_MAX     = 'd3;
-    localparam UPD_6_CNT_MAX     = 'd12;
-    localparam UPD_7_CNT_MAX     = 'd4;
+    localparam UPD_6_CNT_MAX     = 'd8;
+    localparam UPD_7_CNT_MAX     = 'd13;
     localparam UPD_8_CNT_MAX     = 'd8;
     localparam UPD_9_CNT_MAX     = 'd3;
     localparam UPD_10_CNT_MAX    = 'd7;
@@ -480,7 +481,7 @@ module PE_config #(
     landmark_num & l_k 
 */
     // reg [ROW_LEN-1 : 0]  landmark_num;
-    reg [ROW_LEN-1:0]   l_k_row;
+    reg [ROW_LEN:0]     l_k_row;
     reg [ROW_LEN-1:0]   l_k_group;
     reg [ROW_LEN-1:0]   l_k_t_cov_l;
     wire [CB_AW-1 : 0]  l_k_base_addr; 
@@ -500,18 +501,18 @@ module PE_config #(
   reg [3:0]   prd_cur;
   reg [5:0]   new_cur;
   reg [10:0]   upd_cur;
-  reg [ROW_LEN-1:0]   seq_cnt;      //时序计数器
-  reg [ROW_LEN-1:0]   seq_cnt_max;  //计数器上限
+  reg [SEQ_CNT_DW-1:0]   seq_cnt;      //时序计数器
+  reg [SEQ_CNT_DW-1:0]   seq_cnt_max;  //计数器上限
   reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
   reg [ROW_LEN-1 : 0] v_group_cnt_max;    //组数目
   reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
   //******************* dout_sel延迟 *************************
-  // output [ROW_LEN-1:0]   seq_cnt_dout_sel;      
+  // output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel;      
     dynamic_shreg 
     #(
-      .DW    (ROW_LEN    ),
+      .DW    (SEQ_CNT_DW    ),
       .AW    (2    )
     )
     u_dynamic_shreg(
@@ -524,7 +525,7 @@ module PE_config #(
   
   
   //******************* 写入状态延迟 *************************
-    wire [ROW_LEN-1 : 0] seq_cnt_WR;
+    wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
     wire [ROW_LEN-1 : 0] v_group_cnt_WR;
     wire [4:0]           TBb_mode_WR;
     wire [4:0]           CBb_mode_WR;
@@ -555,7 +556,7 @@ module PE_config #(
 
     dynamic_shreg 
     #(
-      .DW  (ROW_LEN  ),
+      .DW  (SEQ_CNT_DW  ),
       .AW  (4  )
     )
     seq_cnt_shreg(
@@ -1150,7 +1151,7 @@ module PE_config #(
           end
           UPD_2: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_3;
+              upd_cur <= UPD_4;
             end
             else begin
               upd_cur <= UPD_2;
@@ -1222,7 +1223,7 @@ module PE_config #(
             end
           end
           UPD_10: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max) begin
               upd_cur <= UPD_IDLE;
             end
             else begin
@@ -2685,11 +2686,11 @@ module PE_config #(
   /*
     ****************** new_cal_en & new_cal_done *****************
   */
-  wire [ROW_LEN-1 : 0] seq_cnt_cal_d;
+  wire [SEQ_CNT_DW-1 : 0] seq_cnt_cal_d;
   wire [2:0]           PEn_cal_d;
   dynamic_shreg 
     #(
-      .DW  (ROW_LEN  ),
+      .DW  (SEQ_CNT_DW  ),
       .AW  (3  )
     )
     seq_cnt_cal_d_shreg(
@@ -2774,138 +2775,6 @@ module PE_config #(
 /*
   ********************** address generate config *********************
 */
-
-  /*
-    **************************** TB_base_addr ***********************
-  */
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      A_TB_base_addr <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_PRD: A_TB_base_addr <= A_TB_base_addr_set;
-        STAGE_NEW: A_TB_base_addr <= A_TB_base_addr_set;
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_3: begin
-              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
-                A_TB_base_addr <= A_TB_base_addr_set;
-              end
-              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
-                A_TB_base_addr <= A_TB_base_addr + 3'b100;
-              end
-              else
-                A_TB_base_addr <= A_TB_base_addr;
-            end
-            UPD_4: begin
-              A_TB_base_addr <= A_TB_base_addr;
-            end
-            UPD_5: begin
-              A_TB_base_addr <= A_TB_base_addr;
-            end
-            UPD_9: begin
-              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
-                A_TB_base_addr <= A_TB_base_addr_set;
-              end
-              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
-                A_TB_base_addr <= A_TB_base_addr + 3'b100;
-              end
-              else
-                A_TB_base_addr <= A_TB_base_addr;
-            end
-            UPD_10: begin
-              if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
-                A_TB_base_addr <= A_TB_base_addr_set;
-              end
-              else if(seq_cnt == seq_cnt_max && h_group_cnt == h_group_cnt_max && v_group_cnt < v_group_cnt_max) begin
-                A_TB_base_addr <= A_TB_base_addr + 3'b100;
-              end
-              else
-                A_TB_base_addr <= A_TB_base_addr;
-            end
-            default: A_TB_base_addr <= A_TB_base_addr_set;
-          endcase
-        end
-        default: A_TB_base_addr <= A_TB_base_addr_set;
-      endcase
-    end
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      B_TB_base_addr <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_PRD: B_TB_base_addr <= B_TB_base_addr_set;
-        STAGE_NEW: B_TB_base_addr <= B_TB_base_addr_set;
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_10: begin
-              if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
-                B_TB_base_addr <= B_TB_base_addr_set;
-              end
-              else if(seq_cnt == seq_cnt_max && h_group_cnt < h_group_cnt_max)  begin
-                B_TB_base_addr <= B_TB_base_addr + 3'b100;
-              end
-              else if(seq_cnt == seq_cnt_max && h_group_cnt == h_group_cnt_max) begin
-                B_TB_base_addr <= B_TB_base_addr_set;
-              end
-              else
-                B_TB_base_addr <= B_TB_base_addr;
-            end
-            default: B_TB_base_addr <= B_TB_base_addr_set;
-          endcase
-        end
-        default: B_TB_base_addr <= B_TB_base_addr_set;
-      endcase
-    end
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      C_TB_base_addr <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_PRD: C_TB_base_addr <= C_TB_base_addr_set;
-        STAGE_NEW: C_TB_base_addr <= C_TB_base_addr_set;
-        STAGE_UPD: begin
-          case(upd_cur)
-            UPD_3: begin
-              if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
-                C_TB_base_addr <= C_TB_base_addr_set;
-              end
-              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
-                C_TB_base_addr <= C_TB_base_addr + 3'b100;
-              end
-              else
-                C_TB_base_addr <= C_TB_base_addr;
-            end
-            UPD_4:begin
-              C_TB_base_addr <= C_TB_base_addr;
-            end
-            UPD_5:begin
-              C_TB_base_addr <= C_TB_base_addr;
-            end
-            UPD_9: begin
-              if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
-                C_TB_base_addr <= C_TB_base_addr_set;
-              end
-              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
-                C_TB_base_addr <= C_TB_base_addr + 3'b100;
-              end
-              else
-                C_TB_base_addr <= C_TB_base_addr;
-            end
-            default: C_TB_base_addr <= C_TB_base_addr_set;
-          endcase
-        end
-        default: C_TB_base_addr <= C_TB_base_addr_set;
-      endcase
-    end
-  end
   /*
     *****************************TB-portA*****************************
   */
@@ -4922,9 +4791,143 @@ module PE_config #(
       .dout    (CB_addrb    )
     );
 
+
 /*
-  ********************** base addr gen *****************************
+  **************************** TB_base_addr ***********************
 */
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      A_TB_base_addr <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_PRD: A_TB_base_addr <= A_TB_base_addr_set;
+        STAGE_NEW: A_TB_base_addr <= A_TB_base_addr_set;
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_3: begin
+              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
+                A_TB_base_addr <= A_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
+                A_TB_base_addr <= A_TB_base_addr + 3'b100;
+              end
+              else
+                A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_4: begin
+              A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_5: begin
+              A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_9: begin
+              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
+                A_TB_base_addr <= A_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
+                A_TB_base_addr <= A_TB_base_addr + 3'b100;
+              end
+              else
+                A_TB_base_addr <= A_TB_base_addr;
+            end
+            UPD_10: begin
+              if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
+                A_TB_base_addr <= A_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && h_group_cnt == h_group_cnt_max && v_group_cnt < v_group_cnt_max) begin
+                A_TB_base_addr <= A_TB_base_addr + 3'b100;
+              end
+              else
+                A_TB_base_addr <= A_TB_base_addr;
+            end
+            default: A_TB_base_addr <= A_TB_base_addr_set;
+          endcase
+        end
+        default: A_TB_base_addr <= A_TB_base_addr_set;
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      B_TB_base_addr <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_PRD: B_TB_base_addr <= B_TB_base_addr_set;
+        STAGE_NEW: B_TB_base_addr <= B_TB_base_addr_set;
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_10: begin
+              if(seq_cnt == 1'b1 && h_group_cnt == 0 && v_group_cnt == 0) begin
+                B_TB_base_addr <= B_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && h_group_cnt < h_group_cnt_max)  begin
+                B_TB_base_addr <= B_TB_base_addr + 3'b100;
+              end
+              else if(seq_cnt == seq_cnt_max && h_group_cnt == h_group_cnt_max) begin
+                B_TB_base_addr <= B_TB_base_addr_set;
+              end
+              else
+                B_TB_base_addr <= B_TB_base_addr;
+            end
+            default: B_TB_base_addr <= B_TB_base_addr_set;
+          endcase
+        end
+        default: B_TB_base_addr <= B_TB_base_addr_set;
+      endcase
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      C_TB_base_addr <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_PRD: C_TB_base_addr <= C_TB_base_addr_set;
+        STAGE_NEW: C_TB_base_addr <= C_TB_base_addr_set;
+        STAGE_UPD: begin
+          case(upd_cur)
+            UPD_3: begin
+              if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
+                C_TB_base_addr <= C_TB_base_addr_set;
+              end
+              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
+                C_TB_base_addr <= C_TB_base_addr + 3'b100;
+              end
+              else
+                C_TB_base_addr <= C_TB_base_addr;
+            end
+            UPD_4:begin
+              C_TB_base_addr <= C_TB_base_addr;
+            end
+            UPD_5:begin
+              C_TB_base_addr <= C_TB_base_addr;
+            end
+            UPD_9: begin
+              if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
+                C_TB_base_addr <= C_TB_base_addr_set;
+              end
+              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
+                C_TB_base_addr <= C_TB_base_addr + 3'b100;
+              end
+              else
+                C_TB_base_addr <= C_TB_base_addr;
+            end
+            default: C_TB_base_addr <= C_TB_base_addr_set;
+          endcase
+        end
+        default: C_TB_base_addr <= C_TB_base_addr_set;
+      endcase
+    end
+  end
+
+/*
+  ********************** CB base addr gen *****************************
+*/
+
   reg                           CBa_vm_AGD_en;
   reg                           CBb_vm_AGD_en;
   reg                           l_k_AGD_en;

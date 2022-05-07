@@ -3,7 +3,7 @@ module TB_doutb_map #(
   parameter Y = 4,
   parameter L = 4,
 
-  parameter ROW_LEN = 10,
+  parameter SEQ_CNT_DW = 5,
   parameter RSA_DW = 16
 ) 
 (
@@ -12,7 +12,7 @@ module TB_doutb_map #(
 
   input   [2:0]   TB_doutb_sel,
   input           l_k_0,
-  input   [ROW_LEN-1 : 0] seq_cnt_dout_sel,
+  input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
   input   [L*RSA_DW-1 : 0]         TB_doutb,
   output  reg  [Y*RSA_DW-1 : 0]    B_TB_doutb,

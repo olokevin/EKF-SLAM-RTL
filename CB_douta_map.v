@@ -4,7 +4,7 @@ module CB_douta_map #(
   parameter L = 4,
 
   parameter RSA_DW = 16,
-  parameter ROW_LEN = 10
+  parameter SEQ_CNT_DW = 10
 ) 
 (
   input   clk,
@@ -12,7 +12,7 @@ module CB_douta_map #(
 
   input   [3:0]   CB_douta_sel,
   input           l_k_0,
-  input   [ROW_LEN-1 : 0] seq_cnt_dout_sel,
+  input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
   input   [L*RSA_DW-1 : 0]         CB_douta,
   output  reg  [X*RSA_DW-1 : 0]    TB_dina_CB_douta,

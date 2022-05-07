@@ -2,7 +2,7 @@ module CB_AGD
 #(
     parameter CB_AW = 19,
 
-    parameter MAX_LANDMARK = 500,
+    parameter SEQ_CNT_DW = 500,
     parameter GROUP_LEN    = 16
 )
 (
