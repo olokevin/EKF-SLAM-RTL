@@ -2222,7 +2222,7 @@ module PE_config #(
 
               TBa_mode = {TBa_A,DIR_POS};
               TBb_mode = TB_IDLE;
-              CBa_mode = {CBa_A,CB_cov_ml}; //保证en
+              CBa_mode = {2'b00,CB_cov_ll}; //保证en
               CBb_mode = CB_IDLE;
 
               A_TB_base_addr_set = t_cov_l;
@@ -2253,7 +2253,7 @@ module PE_config #(
 
               TBa_mode = TB_IDLE;
               TBb_mode = TB_IDLE;
-              CBa_mode = {CBa_A,CB_cov_ml}; //保证en
+              CBa_mode = {2'b00,CB_cov_ll}; //保证en
               CBb_mode = CB_IDLE;
 
               A_TB_base_addr_set = t_cov_l;
@@ -3126,10 +3126,11 @@ module PE_config #(
                               B_cache_we_new <= 1'b1;
                               B_cache_addr_new <= 3'b011;
                             end
-                            else
+                            else begin
                               B_cache_en_new <= 0;
                               B_cache_we_new <= 0;
                               B_cache_addr_new <= 0;
+                            end
                           end 
                       'd1:begin
                             if(v_group_cnt == 1'b1) begin
@@ -3137,10 +3138,11 @@ module PE_config #(
                               B_cache_we_new <= 1'b1;
                               B_cache_addr_new <= 3'b100;
                             end
-                            else
+                            else begin
                               B_cache_en_new <= 0;
                               B_cache_we_new <= 0;
                               B_cache_addr_new <= 0;
+                            end
                           end 
                       'd2:begin
                             if(v_group_cnt == 1'b0) begin
@@ -3148,10 +3150,11 @@ module PE_config #(
                               B_cache_we_new <= 1'b1;
                               B_cache_addr_new <= 0;
                             end
-                            else
+                            else begin
                               B_cache_en_new <= 0;
                               B_cache_we_new <= 0;
                               B_cache_addr_new <= 0;
+                            end
                           end 
                       'd3:begin
                             if(v_group_cnt == 1'b0) begin
@@ -3159,10 +3162,11 @@ module PE_config #(
                               B_cache_we_new <= 1'b1;
                               B_cache_addr_new <= 3'b001;
                             end
-                            else
+                            else begin
                               B_cache_en_new <= 0;
                               B_cache_we_new <= 0;
                               B_cache_addr_new <= 0;
+                            end
                           end 
                       'd4:begin
                             if(v_group_cnt == 1'b0) begin
@@ -3170,10 +3174,11 @@ module PE_config #(
                               B_cache_we_new <= 1'b1;
                               B_cache_addr_new <= 3'b010;
                             end
-                            else
+                            else begin
                               B_cache_en_new <= 0;
                               B_cache_we_new <= 0;
                               B_cache_addr_new <= 0;
+                            end
                           end
                       default:begin
                             B_cache_en_new <= 0;
