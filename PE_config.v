@@ -1,3 +1,4 @@
+`include "macro.v"
 module PE_config #(
   parameter X = 4,
   parameter Y = 4,
@@ -26,7 +27,9 @@ module PE_config #(
   input sys_rst,
 
 //landmark numbers
+`ifdef LANDMARK_NUM_IN
   input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
+`endif
   input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
 
 //handshake of stage change
@@ -481,9 +484,8 @@ module PE_config #(
     reg [CB_AW-1 : 0]             CB_addrb_base;
 
 /*
-    landmark_num & l_k 
+    l_k 
 */
-    // reg [ROW_LEN-1 : 0]  landmark_num;
     reg [ROW_LEN:0]     l_k_row;
     reg [ROW_LEN-1:0]   l_k_group;
     reg [ROW_LEN-1:0]   l_k_t_cov_l;
@@ -690,18 +692,21 @@ module PE_config #(
       nonlinear_m_val <= 0;  
   end 
 
-  // //(5)output: calculate the landmark number
-  // always @(posedge clk) begin
-  //   if(sys_rst)
-  //     landmark_num <= 0;
-  //   else begin
-  //     if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
-  //       landmark_num <= landmark_num + 1'b1;
-  //     else 
-  //       landmark_num <= landmark_num;
-  //     endcase 
-  //   end
-  // end
+  //(5)output: calculate the landmark number
+`ifndef LANDMARK_NUM_IN
+  reg [ROW_LEN-1 : 0]  landmark_num;
+  always @(posedge clk) begin
+    if(sys_rst)
+      landmark_num <= 0;
+    else begin
+      if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+        landmark_num <= landmark_num + 1'b1;
+      else 
+        landmark_num <= landmark_num;
+      endcase 
+    end
+  end
+`endif
 
   /*
     ************************** calculate l_k group ******************8

@@ -1,5 +1,4 @@
-`define USE_DIFF_CLK
-//`define  BRAM_OUT
+`include "macro.v"
 module RSA 
 #(
   parameter X = 4,
@@ -28,10 +27,6 @@ module RSA
 
   input   sys_rst,
 
-//landmark numbers
-  input   [ROW_LEN-1 : 0]  landmark_num,
-  input   [ROW_LEN-1 : 0]  l_k,
-
 //handshake of stage change
   input   [2:0]   stage_val,
   output  [2:0]   stage_rdy,
@@ -42,33 +37,44 @@ module RSA
   input  [2:0]   nonlinear_s_val,
   //nonlinear cplt(3 stages are conbined)
   output   [2:0]   nonlinear_m_val,
-  input  [2:0]   nonlinear_s_rdy
+  input  [2:0]   nonlinear_s_rdy,
 
-// //TEMP BANK ports
-//   output  [L-1 : 0]    TB_ena,
-//   output  [L-1 : 0]    TB_wea,
-//   output  [L*TB_AW-1 : 0]    TB_addra,
-//   output  [L*RSA_DW-1 : 0]   TB_dina,
-//   input  [L*RSA_DW-1 : 0]   TB_douta,
+`ifdef BRAM_OUT
+    //TEMP BANK ports
+ 
+    output  [L-1 : 0]    TB_ena,
+    output  [L-1 : 0]    TB_wea,
+    output  [L*TB_AW-1 : 0]    TB_addra,
+    output  [L*RSA_DW-1 : 0]   TB_dina,
+    input  [L*RSA_DW-1 : 0]   TB_douta,
 
-//   output  [L-1 : 0]    TB_enb,
-//   output  [L-1 : 0]    TB_web,
-//   output  [L*TB_AW-1 : 0]    TB_addrb,
-//   output  [L*RSA_DW-1 : 0]   TB_dinb,
-//   input  [L*RSA_DW-1 : 0]   TB_doutb,
+    output  [L-1 : 0]    TB_enb,
+    output  [L-1 : 0]    TB_web,
+    output  [L*TB_AW-1 : 0]    TB_addrb,
+    output  [L*RSA_DW-1 : 0]   TB_dinb,
+    input  [L*RSA_DW-1 : 0]   TB_doutb,
 
-// //COV BANK ports
-//   output  [L-1 : 0]    CB_ena,
-//   output  [L-1 : 0]    CB_wea,
-//   output  [L*CB_AW-1 : 0]    CB_addra,
-//   output  [L*RSA_DW-1 : 0]   CB_dina,
-//   input  [L*RSA_DW-1 : 0]   CB_douta,
 
-//   output  [L-1 : 0]    CB_enb,
-//   output  [L-1 : 0]    CB_web,
-//   output  [L*CB_AW-1 : 0]    CB_addrb,
-//   output  [L*RSA_DW-1 : 0]   CB_dinb,
-//   input  [L*RSA_DW-1 : 0]   CB_doutb
+    //COV BANK ports
+    output  [L-1 : 0]    CB_ena,
+    output  [L-1 : 0]    CB_wea,
+    output  [L*CB_AW-1 : 0]    CB_addra,
+    output  [L*RSA_DW-1 : 0]   CB_dina,
+    input  [L*RSA_DW-1 : 0]   CB_douta,
+
+    output  [L-1 : 0]    CB_enb,
+    output  [L-1 : 0]    CB_web,
+    output  [L*CB_AW-1 : 0]    CB_addrb,
+    output  [L*RSA_DW-1 : 0]   CB_dinb,
+    input  [L*RSA_DW-1 : 0]   CB_doutb,
+`endif
+
+//landmark numbers
+  `ifdef LANDMARK_NUM_IN
+    input   [ROW_LEN-1 : 0]  landmark_num,
+  `endif
+
+  input   [ROW_LEN-1 : 0]  l_k
 );
 
   parameter TB_DINA_SEL_DW  = 3;
@@ -508,37 +514,41 @@ wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
 wire [TB_DOUTA_SEL_DW-1 : 0]   TB_douta_sel;
 wire [TB_DOUTB_SEL_DW-1 : 0]   TB_doutb_sel;
 
-wire [L-1 : 0]    TB_ena;
-wire [L-1 : 0]    TB_enb;
+`ifndef BRAM_OUT
+  wire [L-1 : 0]    TB_ena;
+  wire [L-1 : 0]    TB_enb;
 
-wire [L-1 : 0]    TB_wea;
-wire [L-1 : 0]    TB_web;
+  wire [L-1 : 0]    TB_wea;
+  wire [L-1 : 0]    TB_web;
 
-wire [L*RSA_DW-1 : 0] TB_dina;
-wire [L*TB_AW-1 : 0] TB_addra;
-wire [L*RSA_DW-1 : 0] TB_dinb;
-wire [L*TB_AW-1 : 0] TB_addrb;
+  wire [L*RSA_DW-1 : 0] TB_dina;
+  wire [L*TB_AW-1 : 0] TB_addra;
+  wire [L*RSA_DW-1 : 0] TB_dinb;
+  wire [L*TB_AW-1 : 0] TB_addrb;
 
-wire [L*RSA_DW-1 : 0] TB_douta;
-wire [L*RSA_DW-1 : 0] TB_doutb;
+  wire [L*RSA_DW-1 : 0] TB_douta;
+  wire [L*RSA_DW-1 : 0] TB_doutb;
+`endif
 
 //COV BRAM
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
 wire [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel;
 
-wire [L-1 : 0]    CB_ena;
-wire [L-1 : 0]    CB_enb;
+`ifndef BRAM_OUT
+  wire [L-1 : 0]    CB_ena;
+  wire [L-1 : 0]    CB_enb;
 
-wire [L-1 : 0]    CB_wea;
-wire [L-1 : 0]    CB_web;
+  wire [L-1 : 0]    CB_wea;
+  wire [L-1 : 0]    CB_web;
 
-wire [L*RSA_DW-1 : 0] CB_dina;
-wire [L*CB_AW-1 : 0] CB_addra;
-wire [L*RSA_DW-1 : 0] CB_dinb;
-wire [L*CB_AW-1 : 0] CB_addrb;
+  wire [L*RSA_DW-1 : 0] CB_dina;
+  wire [L*CB_AW-1 : 0] CB_addra;
+  wire [L*RSA_DW-1 : 0] CB_dinb;
+  wire [L*CB_AW-1 : 0] CB_addrb;
 
-wire [L*RSA_DW-1 : 0] CB_douta;
-wire [L*RSA_DW-1 : 0] CB_doutb;
+  wire [L*RSA_DW-1 : 0] CB_douta;
+  wire [L*RSA_DW-1 : 0] CB_doutb;
+`endif
 
 //l_k
 wire l_k_0;
@@ -792,7 +802,9 @@ PE_config
 u_PE_config(
   .clk                  (clk               ),
   .sys_rst              (sys_rst           ),
+  `ifdef LANDMARK_NUM_IN
   .landmark_num         (landmark_num      ),
+  `endif
   .l_k                  (l_k               ),
   .stage_val            (stage_val         ),
   .stage_rdy            (stage_rdy         ),
