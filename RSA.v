@@ -1,4 +1,4 @@
-// `define USE_DIFF_CLK
+`define USE_DIFF_CLK
 //`define  BRAM_OUT
 module RSA 
 #(
@@ -18,13 +18,13 @@ module RSA
   parameter ROW_LEN = 10
 ) 
 (
-// `ifdef USE_DIFF_CLK
-//   input   sys_clk_p,
-//   input   sys_clk_n,
-// `else 
-//   input   clk,
-// `endif
+`ifdef USE_DIFF_CLK
+  input   sys_clk_p,
+  input   sys_clk_n,
+`else 
   input   clk,
+`endif
+  // input   clk,
 
   input   sys_rst,
 
@@ -81,20 +81,20 @@ module RSA
 /*
   差分时钟信号转单端
 */
-// `ifdef USE_DIFF_CLK
-//   wire clk;
+`ifdef USE_DIFF_CLK
+  wire clk;
 
-//   IBUFDS #( 
-//   .DIFF_TERM("FALSE"), // Differential Termination 
-//   .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
-//   .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
-//   ) 
-//   IBUFDS_inst ( 
-//   .O(clk), // Buffer output 
-//   .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
-//   .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
-//   );
-// `endif
+  IBUFDS #( 
+  .DIFF_TERM("FALSE"), // Differential Termination 
+  .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
+  .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
+  ) 
+  IBUFDS_inst ( 
+  .O(clk), // Buffer output 
+  .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
+  .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
+  );
+`endif
 
 /*
   (old) PE_array
@@ -505,8 +505,8 @@ endgenerate
 //TEMP BRAM
 wire [TB_DINA_SEL_DW-1 : 0]    TB_dina_sel;
 wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
-wire [TB_DOUTA_SEL_DW-1 : 0]    TB_douta_sel;
-wire [TB_DOUTB_SEL_DW*L-1 : 0]  TB_doutb_sel;
+wire [TB_DOUTA_SEL_DW-1 : 0]   TB_douta_sel;
+wire [TB_DOUTB_SEL_DW-1 : 0]   TB_doutb_sel;
 
 wire [L-1 : 0]    TB_ena;
 wire [L-1 : 0]    TB_enb;
@@ -524,7 +524,7 @@ wire [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
-wire [CB_DOUTA_SEL_DW-1 : 0]    CB_douta_sel;
+wire [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel;
 
 wire [L-1 : 0]    CB_ena;
 wire [L-1 : 0]    CB_enb;
@@ -603,7 +603,8 @@ wire [ROW_LEN-1 : 0] seq_cnt_dout_sel;
     .X         (X         ),
     .Y         (Y         ),
     .L         (L         ),
-    .RSA_DW    (RSA_DW    )
+    .RSA_DW    (RSA_DW    ),
+    .SEQ_CNT_DW (SEQ_CNT_DW)
   )
   u_TB_doutb_map(
   	.clk             (clk             ),
@@ -640,7 +641,7 @@ wire [ROW_LEN-1 : 0] seq_cnt_dout_sel;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .ROW_LEN (ROW_LEN )
+    .SEQ_CNT_DW (SEQ_CNT_DW )
   )
   u_CB_douta_map(
   	.clk          (clk          ),
@@ -825,6 +826,7 @@ u_PE_config(
   .CB_web               (CB_web            ),
   .CB_addra             (CB_addra          ),
   .CB_addrb             (CB_addrb          ),
+  .CB_dina              (CB_dina           ),
   .B_cache_en            (B_cache_en),
   .B_cache_we            (B_cache_we),
   .B_cache_addr          (B_cache_addr),

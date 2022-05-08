@@ -1237,4 +1237,9 @@ addrb_new: NEW_2_PE_in+N+3
 * 要改变的地方：（已完成）
   * cov_vv读取
   * cov_vv cov_vm cov_lv需区分
-* 
+
+
+
+### 220508
+
+* dynamic_shreg 可实现！
