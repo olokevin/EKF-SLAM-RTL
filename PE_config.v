@@ -178,23 +178,24 @@ module PE_config #(
   //TBb RD
     localparam TBb_IDLE = 3'b000;
     localparam TBb_B = 3'b001;
-    localparam TBb_B_cache = 3'b010;
-
-    //B_cache模式下对应的TBb_mode[1:0]
-      localparam B_cache_IDLE = 2'b00;
-      localparam B_cache_trnsfer = 2'b01;
-      localparam B_cache_transpose = 2'b10;
-      localparam B_cache_inv = 2'b11;
+    localparam TBb_B_cache = 3'b100;
 
   //TBb WR
     localparam TBb_C = 3'b010;
     localparam TBb_BC = 3'b011;
 
   //MODE[1:0] PARAMS （declared above）
-  // localparam DIR_IDLE = 2'b00;
-  // localparam DIR_POS  = 2'b01;
-  // localparam DIR_NEW_0  = 2'b10;
-  // localparam DIR_NEW_1  = 2'b11;
+  //B C下的对应
+    // localparam DIR_IDLE = 2'b00;
+    // localparam DIR_POS  = 2'b01;
+    // localparam DIR_NEW_0  = 2'b10;
+    // localparam DIR_NEW_1  = 2'b11;
+
+  //B_cache模式下对应的TBb_mode[1:0]
+      localparam B_cache_IDLE = 2'b00;
+      localparam B_cache_trnsfer = 2'b01;
+      localparam B_cache_transpose = 2'b10;
+      localparam B_cache_inv = 2'b11;
 
 /*
   ************************** CB mode config *********************
@@ -484,7 +485,8 @@ module PE_config #(
     reg [ROW_LEN:0]     l_k_row;
     reg [ROW_LEN-1:0]   l_k_group;
     reg [ROW_LEN-1:0]   l_k_t_cov_l;
-    wire [CB_AW-1 : 0]  l_k_base_addr; 
+    reg [CB_AW-1 : 0]  l_k_base_addr_RD; 
+    reg [CB_AW-1 : 0]  l_k_base_addr_WR; 
     wire l_k_0;
     assign l_k_0 = l_k[0];
 
@@ -3037,11 +3039,16 @@ module PE_config #(
                 end
         TBb_B_cache: begin
                       TB_doutb_sel_new[2] <= 1'b1;
-                      if(seq_cnt < PE_n) begin
+                      if(v_group_cnt == 0 && seq_cnt < PE_n) begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b0;
-                        TB_addrb_new <= B_TB_base_addr + seq_cnt;
+                        TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
                       end
+                      else begin
+                            TB_enb_new <= 1'b0;
+                            TB_web_new <= 1'b0;
+                            TB_addrb_new <= 0;
+                          end
                     end
         default: begin
           TB_enb_new <= 1'b0;
@@ -3384,17 +3391,17 @@ module PE_config #(
                       'd0: begin
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr;
+                        CB_addra_new <= l_k_base_addr_RD;
                       end     
                       'd1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + 2'b01;
+                        CB_addra_new <= l_k_base_addr_RD + 2'b01;
                       end
                       'd2: begin
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + 2'b10;
+                        CB_addra_new <= l_k_base_addr_RD + 2'b10;
                       end
                       default: begin
                         CB_ena_new <= 1'b0;
@@ -3408,21 +3415,21 @@ module PE_config #(
                       'd0: begin
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr;
+                        CB_addra_new <= l_k_base_addr_RD;
                       end     
                       'd1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + 2'b01;
+                        CB_addra_new <= l_k_base_addr_RD + 2'b01;
                       end
                       'd2: begin
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + 2'b10;
+                        CB_addra_new <= l_k_base_addr_RD + 2'b10;
                       end
                       'd3: begin
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + 2'b11;
+                        CB_addra_new <= l_k_base_addr_RD + 2'b11;
                       end
                       default: begin
                         CB_ena_new <= 1'b0;
@@ -3436,7 +3443,7 @@ module PE_config #(
                       'd0: begin 
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr + l_k_row;
+                        CB_addra_new <= l_k_base_addr_RD + l_k_row;
                       end     
                       'd1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
@@ -4187,15 +4194,15 @@ module PE_config #(
                       case(seq_cnt_WR)
                         'd0: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr;
+                          CB_addrb_new <= l_k_base_addr_WR;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr + 2'b01;
+                          CB_addrb_new <= l_k_base_addr_WR + 2'b01;
                         end
                         'd4: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr + 2'b10;
+                          CB_addrb_new <= l_k_base_addr_WR + 2'b10;
                         end
                         default: begin
                           CB_enb_new <= 1'b0;
@@ -4210,19 +4217,19 @@ module PE_config #(
                       case(seq_cnt_WR)
                         'd0: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                          CB_addrb_new <= l_k_base_addr_WR;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                          CB_addrb_new <= l_k_base_addr_WR + 1'b1;
                         end
                         'd4: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                          CB_addrb_new <= l_k_base_addr_WR + 2'b10;
                         end
                         'd6: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
+                          CB_addrb_new <= l_k_base_addr_WR + 2'b11;
                         end
                         default: begin
                           CB_enb_new <= 1'b0;
@@ -4237,7 +4244,7 @@ module PE_config #(
                       case(seq_cnt_WR)
                         'd0: begin
                           CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr + l_k_row;
+                          CB_addrb_new <= l_k_base_addr_WR + l_k_row;
                         end  
                         'd2: begin
                           CB_enb_new <= 1'b1;
@@ -4952,15 +4959,15 @@ module PE_config #(
           else
             CB_addra_base <= 1'b1;
         end
-        CB_cov_mv: begin
-          if(seq_cnt == seq_cnt_max)
-            CB_addra_base <= CB_addra_base_raw;
-          else
-            CB_addra_base <= CB_addra_base;
-        end
-        CB_cov_ml: begin
-          CB_addra_base <= CB_addra_base;
-        end
+        CB_cov_mv:begin
+                    if(seq_cnt == seq_cnt_max)
+                      CB_addra_base <= CB_addra_base_raw;
+                    else
+                      CB_addra_base <= CB_addra_base;
+                  end
+        CB_cov_ml:begin
+                    CB_addra_base <= CB_addra_base;
+                  end
         default:   CB_addra_base <= 0;
       endcase
     end
@@ -5044,8 +5051,59 @@ module PE_config #(
       .sys_rst      (sys_rst      ),
       .en           (l_k_AGD_en         ),
       .group_cnt    (l_k_group          ),
-      .CB_base_addr (l_k_base_addr)
+      .CB_base_addr (l_k_base_addr_raw)
     );
+
+  /*
+    ********************** l_k_base_addr_RD **********************
+  */
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        l_k_base_addr_RD <= 0;
+      end
+      else begin
+        case(CBa_mode[2:0])
+          CB_cov_lv: begin
+            if(seq_cnt == seq_cnt_max)
+              l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;  //准备好 cov_lm的起始地址
+            else
+              l_k_base_addr_RD <= l_k_base_addr_raw;
+          end
+          CB_cov_lm: begin
+            if(seq_cnt == seq_cnt_max)
+              l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;
+            else
+              l_k_base_addr_RD <= l_k_base_addr_RD;
+          end
+          default:   l_k_base_addr_RD <= l_k_base_addr_raw;
+        endcase
+      end
+    end
+  /*
+    ********************** l_k_base_addr_WR **********************
+  */
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        l_k_base_addr_WR <= 0;
+      end
+      else begin
+        case(CBb_mode_WR[2:0])
+          CB_cov_lv: begin
+            if(seq_cnt_WR == seq_cnt_max)
+              l_k_base_addr_WR <= l_k_base_addr_WR + 3'b100;  //准备好 cov_lm的起始地址
+            else
+              l_k_base_addr_WR <= l_k_base_addr_raw;
+          end
+          CB_cov_lm: begin
+            if(seq_cnt_WR == seq_cnt_max)
+              l_k_base_addr_WR <= l_k_base_addr_WR + 3'b100;
+            else
+              l_k_base_addr_WR <= l_k_base_addr_WR;
+          end
+          default:   l_k_base_addr_WR <= l_k_base_addr_raw;
+        endcase
+      end
+    end
 
   /*
     ******************* sel_new -> sel ********************
