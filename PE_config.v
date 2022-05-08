@@ -88,7 +88,6 @@ module PE_config #(
   output  [Y-1:0]         B_cache_en,
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
-  output  [Y*RSA_DW-1:0]  B_cache_dout,
 
   output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel, 
 
@@ -623,36 +622,36 @@ module PE_config #(
     else begin
       case(stage_cur)
         IDLE: begin
-            case(stage_val & stage_rdy)
-              IDLE:       stage_cur <= IDLE;
-              STAGE_PRD:  stage_cur <= STAGE_PRD;
-              STAGE_NEW:  stage_cur <= STAGE_NEW;
-              STAGE_UPD:  stage_cur <= STAGE_UPD;
-              default: begin
-                stage_cur <= IDLE;
-                stage_change_err <= 1'b1;
-              end  
-            endcase
-          end
+                case(stage_val & stage_rdy)
+                  IDLE:       stage_cur <= IDLE;
+                  STAGE_PRD:  stage_cur <= STAGE_PRD;
+                  STAGE_NEW:  stage_cur <= STAGE_NEW;
+                  STAGE_UPD:  stage_cur <= STAGE_UPD;
+                  default: begin
+                    stage_cur <= IDLE;
+                    stage_change_err <= 1'b1;
+                  end  
+                endcase
+              end
         //STAGE_PRD  STAGE_NEW  STAGE_UPD
-        STAGE_PRD: begin
-          if(prd_cur == PRD_3 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
-            stage_cur <= IDLE;
-          else
-            stage_cur <= STAGE_PRD;
-        end
-        STAGE_NEW: begin
-          if(new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
-            stage_cur <= IDLE;
-          else
-            stage_cur <= STAGE_NEW;
-        end
-        STAGE_PRD: begin
-          if(upd_cur == UPD_10 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max)
-            stage_cur <= IDLE;
-          else
-            stage_cur <= STAGE_PRD;
-        end
+        STAGE_PRD:begin
+                    if(prd_cur == PRD_3 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+                      stage_cur <= IDLE;
+                    else
+                      stage_cur <= STAGE_PRD;
+                  end
+        STAGE_NEW:begin
+                    if(new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+                      stage_cur <= IDLE;
+                    else
+                      stage_cur <= STAGE_NEW;
+                  end
+        STAGE_PRD:begin
+                    if(upd_cur == UPD_10 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max)
+                      stage_cur <= IDLE;
+                    else
+                      stage_cur <= STAGE_PRD;
+                  end
         default: stage_cur <= IDLE;
       endcase
     end
@@ -703,7 +702,6 @@ module PE_config #(
         landmark_num <= landmark_num + 1'b1;
       else 
         landmark_num <= landmark_num;
-      endcase 
     end
   end
 `endif
