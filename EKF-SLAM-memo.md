@@ -1228,7 +1228,7 @@ addrb_new: NEW_2_PE_in+N+3
 * new: TB_dina_map
 * TBa: 分离AM；TBb: 分离BC
 * 改回DIR_NEW, 需传入l_k[0]
-* UPD 的M N K
+* UPD 的M N K, 转移条件
 
 ### cov_vv存于BANK012 or BANK123?
 
