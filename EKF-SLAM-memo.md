@@ -1243,3 +1243,17 @@ addrb_new: NEW_2_PE_in+N+3
 ### 220508
 
 * dynamic_shreg 可实现！
+
+
+
+### Clock Wizard
+
+* 实现时找不到sys_clk_p端口？
+* sys_clk_p端口为make external后改名
+* 现在改用ZYNQ输出时钟
+
+### Block Design中添加RTL模块
+
+* 需在.bd里添加！
+* <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220509125131866.png" alt="image-20220509125131866" style="zoom:50%;" />
+* 否则会在外部识别

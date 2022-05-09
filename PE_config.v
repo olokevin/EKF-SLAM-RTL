@@ -2811,7 +2811,7 @@ module PE_config #(
   */
   always @(posedge clk) begin
     if(sys_rst) begin
-      TB_douta_sel_new <= 3'b000;  
+      TB_douta_sel_new[2] <= 1'b0;  
 
       TB_ena_new <= 1'b0;
       TB_wea_new <= 1'b0;
@@ -2976,8 +2976,7 @@ module PE_config #(
   */
   always @(posedge clk) begin
     if(sys_rst) begin
-      TB_dinb_sel_new  <= 2'b00;
-      TB_doutb_sel_new <= 3'b000;  
+      TB_doutb_sel_new[2] <= 1'b0;  
 
       TB_enb_new <= 1'b0;
       TB_web_new <= 1'b0;
