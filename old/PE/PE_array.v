@@ -60,11 +60,11 @@ generate
   genvar i_h;
   for(i_h=0; i_h<X; i_h=i_h+1) begin: h_map
     //输入 inout接口
-    assign  h_data[i_h*(Y+1)*RSA_DW +: RSA_DW]         = A_data[i_h*RSA_DW +: RSA_DW];
-    assign  h_data[((i_h+1)*(Y+1)-1)*RSA_DW +: RSA_DW] = {RSA_DW{1'bz}};
+    assign  h_data[i_h*(Y+1)*RSA_DW +: RSA_DW]         = (PE_mode[0] == W_2_E) ? A_data[i_h*RSA_DW +: RSA_DW] : {RSA_DW{1'bz}};
+    assign  h_data[((i_h+1)*(Y+1)-1)*RSA_DW +: RSA_DW] = (PE_mode[0] == E_2_W) ? A_data[i_h*RSA_DW +: RSA_DW] : {RSA_DW{1'bz}};
     //输出 直接接到
-    assign  mulres_val_out[i_h]                  = mulres_val[i_h*(Y+1)];
-    assign  mulres_out[i_h*RSA_DW +: RSA_DW]     = mulres[i_h*(Y+1)*RSA_DW +: RSA_DW];
+    assign  mulres_val_out[i_h]                    = (PE_mode[0] == W_2_E) ? mulres_val[i_h*(Y+1)]                  : mulres_val[(i_h+1)*(Y+1)-1];
+    assign  mulres_out[i_h*RSA_DW +: RSA_DW]     = (PE_mode[0] == W_2_E) ? mulres[i_h*(Y+1)*RSA_DW +: RSA_DW]       : mulres[((i_h+1)*(Y+1)-1)*RSA_DW +: RSA_DW];
     
     //adder of A*B + M 
     sync_adder 
@@ -85,12 +85,12 @@ endgenerate
 generate
   genvar j_v;
   for(j_v=0; j_v<Y; j_v=j_v+1) begin: v_map
-    assign  v_data[j_v*RSA_DW +: RSA_DW]            = B_data[j_v*RSA_DW +: RSA_DW];
-    assign  v_data[(X*(Y+1)+j_v)*RSA_DW +: RSA_DW]  = {RSA_DW{1'bz}};
-    assign  cal_en[j_v]                             = new_cal_en[j_v];
-    assign  cal_en[(X*(Y+1)+j_v)]                   = 1'bz;
-    assign  cal_done[j_v]                           = new_cal_done[j_v];
-    assign  cal_done[(X*(Y+1)+j_v)]                 = 1'bz;
+    assign  v_data[j_v*RSA_DW +: RSA_DW]       = (PE_mode[1] == N_2_S) ? B_data[j_v*RSA_DW +: RSA_DW]       : {RSA_DW{1'bz}};
+    assign  v_data[(X*(Y+1)+j_v)*RSA_DW +: RSA_DW] = (PE_mode[1] == S_2_N) ? B_data[j_v*RSA_DW +: RSA_DW]       : {RSA_DW{1'bz}};
+    assign  cal_en[j_v]                        = (PE_mode[1] == N_2_S) ? new_cal_en[j_v]                     : 1'bz;
+    assign  cal_en[(X*(Y+1)+j_v)]                  = (PE_mode[1] == S_2_N) ? new_cal_en[j_v]                     : 1'bz;
+    assign  cal_done[j_v]                      = (PE_mode[1] == N_2_S) ? new_cal_done[j_v]                   : 1'bz;
+    assign  cal_done[(X*(Y+1)+j_v)]                = (PE_mode[1] == S_2_N) ? new_cal_en[j_v]                     : 1'bz;
   end
 endgenerate
 

@@ -1,7 +1,6 @@
 /*
-    PE_MAC with only one mode, no inout ports
+    PE_MAC with 4 modes, using inout ports(need to designate as IOBUF primitives)
 */
-
 module PE_MAC 
 #(
     parameter RSA_DW = 16
@@ -13,22 +12,22 @@ module PE_MAC
     input       [1:0]             PE_mode,
 
 //Vertical
-    input                         cal_en_N,
-    output                        cal_en_S,
-    input                         cal_done_N,
-    output                        cal_done_S,
+    inout                         cal_en_N,
+    inout                         cal_en_S,
+    inout                         cal_done_N,
+    inout                         cal_done_S,
 
-    input           [RSA_DW-1:0]  v_data_N,
-    output          [RSA_DW-1:0]  v_data_S,
+    inout           [RSA_DW-1:0]  v_data_N,
+    inout           [RSA_DW-1:0]  v_data_S,
 
 //Horizontal
-    input           [RSA_DW-1:0]  h_data_W,
-    output          [RSA_DW-1:0]  h_data_E,
+    inout           [RSA_DW-1:0]  h_data_W,
+    inout           [RSA_DW-1:0]  h_data_E,
 
-    output                        mulres_val_W,
-    input                         mulres_val_E,
-    output          [RSA_DW-1:0]  mulres_W,
-    input           [RSA_DW-1:0]  mulres_E
+    inout                         mulres_val_W,
+    inout                         mulres_val_E,
+    inout           [RSA_DW-1:0]  mulres_W,
+    inout           [RSA_DW-1:0]  mulres_E
 );
     localparam W_2_E = 1'b0;
     localparam E_2_W = 1'b1;
@@ -55,25 +54,31 @@ module PE_MAC
     mode == 1'b1: South to North, East to West
 */
 //Vertical
-    assign cal_en     = cal_en_N;
-    assign cal_done_S = cal_en_r;
+    assign cal_en   = (PE_mode[1] == N_2_S)  ? cal_en_N : cal_en_S;
+    assign cal_en_N = (PE_mode[1] == S_2_N)  ? cal_en_r : 1'bz;
+    assign cal_en_S = (PE_mode[1] == N_2_S)  ? cal_en_r : 1'bz;
 
-    assign cal_done   = cal_done_N;
-    assign cal_done_S = cal_done_r;
+    assign cal_done   = (PE_mode[1] == N_2_S)  ? cal_done_N : cal_done_S;
+    assign cal_done_N = (PE_mode[1] == S_2_N)  ? cal_done_r : 1'bz;
+    assign cal_done_S = (PE_mode[1] == N_2_S)  ? cal_done_r : 1'bz;
 
-    assign v_data   = v_data_N;
-    assign v_data_S = v_data_r;
+    assign v_data   = (PE_mode[1] == N_2_S)  ? v_data_N : v_data_S;
+    assign v_data_N = (PE_mode[1] == S_2_N)  ? v_data_r : {RSA_DW{1'bz}};
+    assign v_data_S = (PE_mode[1] == N_2_S)  ? v_data_r : {RSA_DW{1'bz}};
 
 //Horizontal
-    assign h_data   = h_data_W;
-    assign h_data_E = h_data_r;
+    assign h_data   = (PE_mode[0] == W_2_E)  ? h_data_W : h_data_E;
+    assign h_data_W = (PE_mode[0] == E_2_W)  ? h_data_r : {RSA_DW{1'bz}};
+    assign h_data_E = (PE_mode[0] == W_2_E)  ? h_data_r : {RSA_DW{1'bz}};
 
     //输入模式为W_2_E时，结果mulres从east传向west
-    assign mulres_val   = mulres_val_E;
-    assign mulres_val_W = mulres_val_r;
+    assign mulres_val   = (PE_mode[0] == W_2_E)  ? mulres_val_E : mulres_val_W;
+    assign mulres_val_W = (PE_mode[0] == W_2_E)  ? mulres_val_r : 1'bz;
+    assign mulres_val_E = (PE_mode[0] == E_2_W)  ? mulres_val_r : 1'bz;
     
-    assign mulres   = mulres_E;
-    assign mulres_W = mulres_r;
+    assign mulres   = (PE_mode[0] == W_2_E)  ? mulres_E : mulres_W;
+    assign mulres_W = (PE_mode[0] == W_2_E)  ? mulres_r : {RSA_DW{1'bz}};
+    assign mulres_E = (PE_mode[0] == E_2_W)  ? mulres_r : {RSA_DW{1'bz}};
 
 //乘积 部分和
     reg [RSA_DW-1:0] product;
