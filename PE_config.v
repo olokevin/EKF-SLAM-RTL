@@ -30,8 +30,9 @@ module PE_config #(
 `ifdef LANDMARK_NUM_IN
   input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
 `endif
+// `ifdef L_K_IN
   input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
-
+// `endif
 //handshake of stage change
   input   [2:0]   stage_val,
   output  reg [2:0]   stage_rdy,
@@ -103,19 +104,19 @@ module PE_config #(
   localparam WR_DELAY = 2;
   localparam AGD_DELAY = 5;
 
-  localparam RD_SEL_D = 'd1;
-  localparam AB_IN_SEL_D = 'd3;
-  localparam CAL_EN_D = 'd3;
-  localparam PE_MODE_D = 'd4;
-  localparam M_IN_SEL_D = 'd7;
-  localparam C_OUT_SEL_D = 'd8;
-  localparam WR_SEL_D = 'd9;
+  localparam RD_SEL_D = 1'd1;
+  localparam AB_IN_SEL_D = 2'd3;
+  localparam CAL_EN_D = 2'd3;
+  localparam PE_MODE_D = 3'd4;
+  localparam M_IN_SEL_D = 3'd7;
+  localparam C_OUT_SEL_D = 4'd8;
+  localparam WR_SEL_D = 4'd9;
 
-  localparam SET_2_PEin = 'd4;    //给出addr_new到westin
+  localparam SET_2_PEin = 3'd4;    //给出addr_new到westin
 
-  localparam RD_2_WR_D = 'd7;
+  localparam RD_2_WR_D = 3'd7;
   
-  localparam ADDER_2_NEW = 'd1;   //adder输出到给addr_new
+  localparam ADDER_2_NEW = 1'd1;   //adder输出到给addr_new
 
 //shift 
 //   localparam DIR_POS = 1'b0;
@@ -236,15 +237,24 @@ module PE_config #(
   localparam BUSY  = 3'b000;
   localparam READY   = 3'b111;
 
+//SEQ_CNT_PARAM
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 'd0;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_1 = 'd1;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_2 = 'd2;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_3 = 'd3;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_4 = 'd4;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_5 = 'd5;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_6 = 'd6;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_7 = 'd7;
 /*
   ******************* params of Prediction stage *****************
 */
   // TEMP BANK offsets of PRD
-    localparam F_xi = 'd0;
-    localparam F_xi_T = 'd3;
-    localparam t_cov = 'd6;
-    localparam F_cov = 'd9;
-    localparam M_t = 'd12;
+    localparam [TB_AW-1 : 0] F_xi = 'd0;
+    localparam [TB_AW-1 : 0] F_xi_T = 'd3;
+    localparam [TB_AW-1 : 0] t_cov = 'd6;
+    localparam [TB_AW-1 : 0] F_cov = 'd9;
+    localparam [TB_AW-1 : 0] M_t = 'd12;
   // PREDICTION SERIES
     localparam PRD_IDLE = 'b0000;
     localparam PRD_NONLINEAR = 'b0001;
@@ -256,9 +266,9 @@ module PE_config #(
     // localparam PRD_2_START = 'd18;
     // localparam PRD_3_START = 'd36;
 
-    localparam PRD_1_CNT_MAX = 'd17;
-    localparam PRD_2_CNT_MAX = 'd17;
-    localparam PRD_3_CNT_MAX = 'd5;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd17;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_3_CNT_MAX = 'd5;
 
     localparam PRD_1_M = 3'b011;
     localparam PRD_2_M = 3'b011;
@@ -277,11 +287,11 @@ module PE_config #(
   NEW: params of New landmark initialization stage
 */
   // TEMP BANK offsets of PRD
-    localparam G_xi          = 'd15;
-    localparam G_z           = 'd18;
-    localparam Q         = 'd20;
-    localparam G_z_Q         = 'd22;
-    localparam lv_G_xi           = 'd24;
+    localparam [TB_AW-1 : 0] G_xi          = 'd15;
+    localparam [TB_AW-1 : 0] G_z           = 'd18;
+    localparam [TB_AW-1 : 0] Q         = 'd20;
+    localparam [TB_AW-1 : 0] G_z_Q         = 'd22;
+    localparam [TB_AW-1 : 0] lv_G_xi           = 'd24;
   // PREDICTION SERIES
     localparam NEW_IDLE      = 'b000000;
     localparam NEW_NONLINEAR = 'b000001;
@@ -291,11 +301,11 @@ module PE_config #(
     localparam NEW_4         = 'b010000;
     localparam NEW_5         = 'b100000;
 
-    localparam NEW_1_CNT_MAX     = 'd5;
-    localparam NEW_2_CNT_MAX     = 'd7;
-    localparam NEW_3_CNT_MAX     = 'd7;
-    localparam NEW_4_CNT_MAX     = 'd11;
-    localparam NEW_5_CNT_MAX     = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_1_CNT_MAX     = 'd5;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_2_CNT_MAX     = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_3_CNT_MAX     = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_4_CNT_MAX     = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_5_CNT_MAX     = 'd11;
 
     localparam NEW_1_M       = 3'b010;
     localparam NEW_2_M       = 3'b010;
@@ -320,13 +330,13 @@ module PE_config #(
   UPD: params of Update stage
 */
   // TEMP BANK offsets of PRD
-    localparam H_xi          = 'd26;
-    localparam H_z           = 'd29;
-    localparam S_t           = 'd31;
-    localparam t_cov_HT      = 'd33;
-    localparam cov_HT        = 'd38;
-    localparam t_cov_l       = 'd40;
-    localparam K_t           = 'd40;
+    localparam [TB_AW-1 : 0] H_xi          = 'd26;
+    localparam [TB_AW-1 : 0] H_z           = 'd29;
+    localparam [TB_AW-1 : 0] S_t           = 'd31;
+    localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
+    localparam [TB_AW-1 : 0] cov_HT        = 'd38;
+    localparam [TB_AW-1 : 0] t_cov_l       = 'd40;
+    localparam [TB_AW-1 : 0] K_t           = 'd40;
   // PREDICTION SERIES
     localparam UPD_IDLE      = 11'b000_0000_0000;
     localparam UPD_NONLINEAR = 11'b1;
@@ -341,16 +351,16 @@ module PE_config #(
     localparam UPD_9         = 11'b10_0000_0000;
     localparam UPD_10        = 11'b100_0000_0000;
 
-    localparam UPD_1_CNT_MAX     = 'd4;
-    localparam UPD_2_CNT_MAX     = 'd2;
-    localparam UPD_3_CNT_MAX     = 'd2;
-    localparam UPD_4_CNT_MAX     = 'd3;
-    localparam UPD_5_CNT_MAX     = 'd3;
-    localparam UPD_6_CNT_MAX     = 'd8;
-    localparam UPD_7_CNT_MAX     = 'd13;
-    localparam UPD_8_CNT_MAX     = 'd8;
-    localparam UPD_9_CNT_MAX     = 'd3;
-    localparam UPD_10_CNT_MAX    = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_1_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_2_CNT_MAX     = 'd2;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_3_CNT_MAX     = 'd2;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_4_CNT_MAX     = 'd3;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd13;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
 
     localparam UPD_1_M       = 3'b000;
     localparam UPD_2_M       = 3'b011;
@@ -706,6 +716,9 @@ module PE_config #(
   end
 `endif
 
+// `ifndef L_K_IN
+  // reg [ROW_LEN-1 : 0]  l_k = 'd3;
+// `endif
   /*
     ************************** calculate l_k group ******************8
   */
@@ -2898,12 +2911,12 @@ module PE_config #(
                 end
         TBa_cov_lm: begin
                       case(seq_cnt)
-                        'd3: begin
+                        SEQ_3: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
                           TB_addra_new <= A_TB_base_addr;
                         end
-                        'd4: begin
+                        SEQ_4: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
                           TB_addra_new <= A_TB_base_addr + 1'b1;
@@ -3002,7 +3015,7 @@ module PE_config #(
               end
         TBb_C:begin
                 case (seq_cnt_WR)
-                  'd0: begin
+                  SEQ_0: begin
                     TB_enb_new <= 1'b1;
                     TB_web_new <= 1'b1;
                     if(v_group_cnt == 0)
@@ -3010,12 +3023,12 @@ module PE_config #(
                     else
                       TB_addrb_new <= C_TB_base_addr;
                   end
-                  'd2: begin
+                  SEQ_2: begin
                     TB_enb_new <= 1'b1;
                     TB_web_new <= 1'b1;
                     TB_addrb_new <= TB_addrb_new + 1'b1;
                   end
-                  'd4: begin
+                  SEQ_4: begin
                     TB_enb_new <= 1'b1;
                     TB_web_new <= 1'b1;
                     TB_addrb_new <= TB_addrb_new + 1'b1;
@@ -3039,7 +3052,7 @@ module PE_config #(
                   end
                   else begin
                     case (seq_cnt_WR)
-                      'd0: begin
+                      SEQ_0: begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b1;
                         if(v_group_cnt == 0)
@@ -3047,12 +3060,12 @@ module PE_config #(
                         else
                           TB_addrb_new <= C_TB_base_addr;
                       end
-                      'd2: begin
+                      SEQ_2: begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b1;
                         TB_addrb_new <= TB_addrb_new + 1'b1;
                       end
-                      'd4: begin
+                      SEQ_4: begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b1;
                         TB_addrb_new <= TB_addrb_new + 1'b1;
@@ -3148,7 +3161,7 @@ module PE_config #(
           case(upd_cur)
             UPD_1:begin
                     case (seq_cnt)
-                      'd0:begin
+                      SEQ_0:begin
                             if(v_group_cnt == 1'b1) begin
                               B_cache_en_new <= 1'b1;
                               B_cache_we_new <= 1'b1;
@@ -3160,7 +3173,7 @@ module PE_config #(
                               B_cache_addr_new <= 0;
                             end
                           end 
-                      'd1:begin
+                      SEQ_1:begin
                             if(v_group_cnt == 1'b1) begin
                               B_cache_en_new <= 1'b1;
                               B_cache_we_new <= 1'b1;
@@ -3172,7 +3185,7 @@ module PE_config #(
                               B_cache_addr_new <= 0;
                             end
                           end 
-                      'd2:begin
+                      SEQ_2:begin
                             if(v_group_cnt == 1'b0) begin
                               B_cache_en_new <= 1'b1;
                               B_cache_we_new <= 1'b1;
@@ -3184,7 +3197,7 @@ module PE_config #(
                               B_cache_addr_new <= 0;
                             end
                           end 
-                      'd3:begin
+                      SEQ_3:begin
                             if(v_group_cnt == 1'b0) begin
                               B_cache_en_new <= 1'b1;
                               B_cache_we_new <= 1'b1;
@@ -3196,7 +3209,7 @@ module PE_config #(
                               B_cache_addr_new <= 0;
                             end
                           end 
-                      'd4:begin
+                      SEQ_4:begin
                             if(v_group_cnt == 1'b0) begin
                               B_cache_en_new <= 1'b1;
                               B_cache_we_new <= 1'b1;
@@ -3227,12 +3240,12 @@ module PE_config #(
                   end
             UPD_4:begin
                     case(seq_cnt)
-                      'd0:begin
+                      SEQ_0:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 0;
                           B_cache_addr_new <= 3'b011;
                         end
-                      'd1:begin
+                      SEQ_1:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 0;
                           B_cache_addr_new <= 3'b100;
@@ -3246,12 +3259,12 @@ module PE_config #(
                   end
             UPD_5:begin
                     case(seq_cnt)
-                      'd0:begin
+                      SEQ_0:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 0;
                           B_cache_addr_new <= 3'b011;
                         end
-                      'd1:begin
+                      SEQ_1:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 0;
                           B_cache_addr_new <= 3'b100;
@@ -3265,27 +3278,27 @@ module PE_config #(
                   end
             UPD_6:begin
                     case(seq_cnt)
-                      'd2:begin
+                      SEQ_2:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b000;
                         end
-                      'd3:begin
+                      SEQ_3:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b001;
                         end
-                      'd4:begin
+                      SEQ_4:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b010;
                         end
-                      'd6:begin
+                      SEQ_6:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b011;
                         end
-                      'd7:begin
+                      SEQ_7:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b100;
@@ -3311,12 +3324,12 @@ module PE_config #(
                   end
             UPD_8:begin
                     case(seq_cnt)
-                      'd6:begin
+                      SEQ_6:begin
                         B_cache_en_new <= 1'b1;
                         B_cache_we_new <= 1'b1;
                         B_cache_addr_new <= 0;
                       end
-                      'd7:begin
+                      SEQ_7:begin
                         B_cache_en_new <= 1'b1;
                         B_cache_we_new <= 1'b1;
                         B_cache_addr_new <= 1;
@@ -3375,17 +3388,17 @@ module PE_config #(
         CB_cov_vv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
-                      'd0: begin
+                      SEQ_0: begin
                         CBa_shift_dir <= DIR_POS;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= 0;
                       end     
-                      'd1: begin
+                      SEQ_1: begin
                         CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= 2'b01;
                       end
-                      'd2: begin
+                      SEQ_2: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= 2'b10;
                       end
@@ -3398,17 +3411,17 @@ module PE_config #(
         CB_cov_mv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)  
-                      'd0: begin
+                      SEQ_0: begin
                         CBa_shift_dir <= DIR_POS;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_base;
                       end     
-                      'd1: begin
+                      SEQ_1: begin
                         CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_base + 2'b01;
                       end
-                      'd2: begin
+                      SEQ_2: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_base + 2'b10;
                       end
@@ -3421,18 +3434,18 @@ module PE_config #(
         CB_cov_lv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
-                      'd0: begin
+                      SEQ_0: begin
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
-                      'd1: begin
+                      SEQ_1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
                       end
-                      'd2: begin
+                      SEQ_2: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b10;
                       end
@@ -3445,22 +3458,22 @@ module PE_config #(
         CB_cov_lm: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
-                      'd0: begin
+                      SEQ_0: begin
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
-                      'd1: begin
+                      SEQ_1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
                       end
-                      'd2: begin
+                      SEQ_2: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b10;
                       end
-                      'd3: begin
+                      SEQ_3: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b11;
                       end
@@ -3473,12 +3486,12 @@ module PE_config #(
           CB_cov_ml: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt) 
-                      'd0: begin 
+                      SEQ_0: begin 
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + l_k_row;
                       end     
-                      'd1: begin
+                      SEQ_1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
@@ -3502,642 +3515,10 @@ module PE_config #(
     end
   end
 
-//(old1, using PRD_1_START) 配置TB A B端口 输入数据及数据选择
-  //   always @(posedge clk) begin
-  //     if(sys_rst) begin
-  //       TB_douta_sel_new <= 1'b0;  
-  //       TB_dinb_sel_new <= 1'b0;
-  //       TB_doutb_sel_new <= 1'b0;
-
-  //       TB_ena_new <= 1'b0;
-  //       TB_wea_new <= 1'b0;
-  //       TB_addra_new <= 0;
-
-  //       TB_enb_new <= 1'b0;
-  //       TB_web_new <= 1'b0;
-  //       TB_addrb_new <= 0;
-  //     end
-  //     else begin
-  //       case(stage_cur)
-  //         IDLE: begin
-  //           TB_douta_sel_new <= 1'b0;  
-  //           TB_dinb_sel_new <= 1'b0;
-  //           TB_doutb_sel_new <= 1'b0;
-
-  //           TB_ena_new <= 1'b0;
-  //           TB_wea_new <= 1'b0;
-  //           TB_addra_new <= 0;
-
-  //           TB_enb_new <= 1'b0;
-  //           TB_web_new <= 1'b0;
-  //           TB_addrb_new <= 0;
-  //         end
-  //         STAGE_PRD: begin
-  //           case(prd_cur)
-  //             PRD_1: begin
-  //             /*
-  //               F_xi * t_cov = F_cov
-  //               X=3 Y=3 N=3
-  //               Ain: TB-A
-  //               bin: TB-B
-  //               Cout: TB-A
-  //             */
-  //               TB_douta_sel_new <= 1'b0;  
-  //               TB_dinb_sel_new <= 1'b0;
-  //               TB_doutb_sel_new <= 1'b0;
-                
-  //               if (seq_cnt < PRD_1_START+PRD_1_N) begin
-  //                 TB_ena_new <= 1'b1;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= F_xi + seq_cnt;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= t_cov + seq_cnt;
-  //               end
-  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= F_cov;
-  //               end
-  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= F_cov + 1'b1;
-  //               end
-  //               else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= F_cov + 2'b10;
-  //               end
-  //               else begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b0;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= 0;
-  //               end
-  //             end
-  //             PRD_2: begin
-  //             /*
-  //               F_cov * t_cov + M= cov
-  //               X=3 Y=3 N=3
-  //               Ain: TB-A
-  //               Bin: TB-B
-  //               Min: 0    //actual M input time is in PRD_3
-  //               Cout: CB-B
-  //             */
-  //               TB_dinb_sel_new <= 1'b0;
-  //               TB_doutb_sel_new <= 1'b0;
-                
-  //               if (seq_cnt < +PRD_1_N) begin
-  //                 TB_ena_new <= 1'b1;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= F_cov -  + seq_cnt;
-                  
-  //                 TB_douta_sel_new <= 1'b0;  
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= F_xi -  + seq_cnt;
-  //               end
-  //               else if(seq_cnt ==  + PRD_2_N + 1) begin
-  //                 TB_ena_new <= 1'b1;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= M_t;
-                  
-  //                 TB_douta_sel_new <= 1'b1; 
-
-  //                 TB_enb_new <= 1'b0;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= 0;
-  //               end
-  //               else if(seq_cnt ==  + PRD_2_N + 3) begin
-  //                 TB_ena_new <= 1'b1;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= M_t + 1'b1;
-
-  //                 TB_enb_new <= 1'b0;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= 0;
-  //               end
-  //               else if(seq_cnt ==  + PRD_2_N + 5) begin
-  //                 TB_ena_new <= 1'b1;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= M_t + 2'b10;
-
-  //                 TB_enb_new <= 1'b0;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= 0;
-  //               end
-  //               else if(seq_cnt ==  + SET_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= t_cov;
-  //               end
-  //               else if(seq_cnt ==  + SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= t_cov + 1'b1;
-  //               end
-  //               else if(seq_cnt ==  + SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b1;
-  //                 TB_web_new <= 1'b1;
-  //                 TB_addrb_new <= t_cov + 2'b10;
-  //               end
-  //               else begin
-  //                 TB_ena_new <= 1'b0;
-  //                 TB_wea_new <= 1'b0;
-  //                 TB_addra_new <= 0;
-
-  //                 TB_enb_new <= 1'b0;
-  //                 TB_web_new <= 1'b0;
-  //                 TB_addrb_new <= 0;
-  //               end
-  //             end
-  //             PRD_3: begin
-  //             /*
-  //               cov_mv * F_xi_T = cov_mv
-  //               X=3 Y=3 N=3
-  //               Ain: CB-A
-  //               Bin: TB-B
-  //               Min: TB-A   //PRD_2 adder
-  //               Cout: CB-B
-  //             */
-  //             end
-  //             default: begin
-  //               TB_douta_sel_new <= 1'b0;  
-  //               TB_dinb_sel_new <= 1'b0;
-  //               TB_doutb_sel_new <= 1'b0;
-
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //           endcase
-  //         end
-  //         STAGE_NEW: begin
-            
-  //         end
-  //         STAGE_UPD: begin
-            
-  //         end
-          
-  //       endcase
-  //     end  
-        
-  //   end
-
-//(old2, using PRD_1_CNT_MAX, manual) 配置TB A B端口 输入数据及数据选择
-  // always @(posedge clk) begin
-  //   if(sys_rst) begin
-  //     TB_douta_sel_new <= 2'b00;  
-  //     TB_dinb_sel_new <= 1'b0;
-  //     TB_doutb_sel_new <= 1'b0;
-
-  //     TB_ena_new <= 1'b0;
-  //     TB_wea_new <= 1'b0;
-  //     TB_addra_new <= 0;
-
-  //     TB_enb_new <= 1'b0;
-  //     TB_web_new <= 1'b0;
-  //     TB_addrb_new <= 0;
-  //   end
-  //   else begin
-  //     case(stage_cur)
-  //       IDLE: begin
-  //         TB_douta_sel_new <= 2'b00;   
-  //         TB_dinb_sel_new <= 1'b0;
-  //         TB_doutb_sel_new <= 1'b0;
-
-  //         TB_ena_new <= 1'b0;
-  //         TB_wea_new <= 1'b0;
-  //         TB_addra_new <= 0;
-
-  //         TB_enb_new <= 1'b0;
-  //         TB_web_new <= 1'b0;
-  //         TB_addrb_new <= 0;
-  //       end
-  //       STAGE_PRD: begin
-  //         case(prd_cur)
-  //           PRD_1: begin
-  //           /*
-  //             F_xi * t_cov = F_cov
-  //             X=3 Y=3 N=3
-  //             Ain: TB-A
-  //             bin: TB-B
-  //             Cout: TB-A
-  //           */
-  //             TB_douta_sel_new <= 2'b00;   
-  //             TB_dinb_sel_new <= 1'b0;
-  //             TB_doutb_sel_new <= 1'b0;
-              
-  //             if (seq_cnt < PRD_1_N) begin
-  //               TB_ena_new <= 1'b1;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= F_xi + seq_cnt;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= t_cov + seq_cnt;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= F_cov;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= F_cov + 1'b1;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= F_cov + 2'b10;
-  //             end
-  //             else begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //           end
-  //           PRD_2: begin
-  //           /*
-  //             F_cov * t_cov + M= cov
-  //             X=3 Y=3 N=3
-  //             Ain: TB-A
-  //             Bin: TB-B
-  //             Min: 0    //actual M input time is in PRD_3
-  //             Cout: CB-B
-  //           */
-  //             TB_dinb_sel_new <= 1'b0;
-  //             TB_doutb_sel_new <= 1'b0;
-              
-  //             if (seq_cnt < PRD_2_N) begin
-  //               TB_ena_new <= 1'b1;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= F_cov + seq_cnt;
-                
-  //               TB_douta_sel_new <= 2'b00;   
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= F_xi + seq_cnt;
-  //             end
-  //             else if(seq_cnt == PRD_2_N + 1) begin
-  //               TB_ena_new <= 1'b1;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= M_t;
-                
-  //               TB_douta_sel_new <= 2'b10; 
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //             else if(seq_cnt == PRD_2_N + 3) begin
-  //               TB_ena_new <= 1'b1;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= M_t + 1'b1;
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //             else if(seq_cnt == PRD_2_N + 5) begin
-  //               TB_ena_new <= 1'b1;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= M_t + 2'b10;
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_2_N+2+ADDER_2_NEW) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= t_cov;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 2) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= t_cov + 1'b1;
-  //             end
-  //             else if(seq_cnt == SET_2_PEin+PRD_1_N+2+ADDER_2_NEW + 4) begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b1;
-  //               TB_addrb_new <= t_cov + 2'b10;
-  //             end
-  //             else begin
-  //               TB_ena_new <= 1'b0;
-  //               TB_wea_new <= 1'b0;
-  //               TB_addra_new <= 0;
-
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //           end
-  //           PRD_3: begin
-  //           /*
-  //             cov_mv * F_xi_T = cov_mv
-  //             X=3 Y=3 N=3
-  //             Ain: CB-A
-  //             Bin: TB-B
-  //             Min: TB-A   //PRD_2 adder
-  //             Cout: CB-B
-  //           */
-  //             TB_dinb_sel_new <= 1'b0;
-  //             TB_doutb_sel_new <= 1'b0;
-              
-  //             TB_douta_sel_new <= 2'b00;   
-  //             TB_ena_new <= 1'b0;
-  //             TB_wea_new <= 1'b0;
-  //             TB_addra_new <= 0;
-  //             if (seq_cnt < PRD_1_N) begin
-  //               TB_enb_new <= 1'b1;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= F_xi + seq_cnt;
-  //             end
-  //             else begin
-  //               TB_enb_new <= 1'b0;
-  //               TB_web_new <= 1'b0;
-  //               TB_addrb_new <= 0;
-  //             end
-  //           end
-  //           default: begin
-  //             TB_douta_sel_new <= 1'b0;  
-  //             TB_dinb_sel_new <= 1'b0;
-  //             TB_doutb_sel_new <= 1'b0;
-
-  //             TB_ena_new <= 1'b0;
-  //             TB_wea_new <= 1'b0;
-  //             TB_addra_new <= 0;
-
-  //             TB_enb_new <= 1'b0;
-  //             TB_web_new <= 1'b0;
-  //             TB_addrb_new <= 0;
-  //           end
-  //         endcase
-  //       end
-  //       STAGE_NEW: begin
-          
-  //       end
-  //       STAGE_UPD: begin
-          
-  //       end
-        
-  //     endcase
-  //   end  
-      
-  // end
-
-//配置 CB-portA 输入数据及数据选择
-  
-/*
-  *****************************old CB-portA READ*****************************
-*/  
-  // always @(posedge clk) begin
-  //   if(sys_rst) begin
-  //     CBa_shift_dir <= DIR_POS;
-  //     CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
-
-  //     CB_ena_new <= 1'b0;
-  //     CB_wea_new <= 1'b0;
-  //     CB_addra_new <= 0;
-
-  //     CBa_vm_AGD_en <= 0;
-  //     CBa_vm_AGD_rst <= 0;
-  //   end
-  //   else begin
-  //     case(stage_cur)
-  //       IDLE: begin
-  //         CBa_shift_dir <= DIR_POS;
-  //         CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
-
-  //         CB_ena_new <= 1'b0;
-  //         CB_wea_new <= 1'b0;
-  //         CB_addra_new <= 0;
-
-  //         CBa_vm_AGD_en <= 0;
-  //         CBa_vm_AGD_rst <= 0;
-  //       end
-  //       STAGE_PRD: begin
-  //         case(prd_cur)
-  //           PRD_3: begin
-  //           /*
-  //             cov_mv * F_xi_T = cov_mv
-  //             X=3 Y=3 N=3
-  //             Ain: CB-A
-  //             Bin: TB-B
-  //             Min: TB-A   //PRD_2 adder
-  //             Cout: CB-B
-  //           */  
-  //             CB_wea_new <= 1'b0;
-  //             case(seq_cnt)
-  //               'd0: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end  
-  //               'd1: begin
-  //                 CBa_shift_dir <= DIR_POS;
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base;
-  //               end     
-  //               'd2: begin
-  //                 CB_douta_sel_new <= {CBa_A, DIR_POS};
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base + 'b1;
-  //               end
-  //               'd3: begin
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base + 'b10;
-  //                 CBa_vm_AGD_en <= 1'b1;
-  //               end
-  //               'd4: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end
-  //               'd5: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //                 CBa_vm_AGD_en <= 1'b0;
-  //               end
-  //               default: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end
-  //             endcase 
-  //           end
-  //           default: begin
-  //             CBa_shift_dir <= DIR_POS;
-  //             CB_douta_sel_new <= {CBa_IDLE, DIR_IDLE};  
-
-  //             CB_ena_new <= 1'b0;
-  //             CB_wea_new <= 1'b0;
-  //             CB_addra_new <= 0;
-
-  //             CBa_vm_AGD_en <= 0;
-  //             CBa_vm_AGD_rst <= 0;
-  //           end
-  //         endcase
-  //       end
-  //       STAGE_NEW: begin
-  //         case(prd_cur)
-  //           NEW_2: begin
-  //           CB_wea_new <= 1'b0;
-  //             case(seq_cnt)
-  //               'd0: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end  
-  //               'd1: begin
-  //                 // CBa_shift_dir <= v_group_cnt[0] ? DIR_NEG : DIR_POS; //0-POS 1-NEG
-  //                 CBa_shift_dir <= DIR_POS; //0-POS 1-NEG
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base + 1'b1;
-  //               end     
-  //               'd2: begin
-  //                 // CB_douta_sel_new <= v_group_cnt[0] ? {CBa_B,DIR_NEG} : {CBa_B,DIR_POS}; //0-POS 1-NEG
-  //                 CB_douta_sel_new <= {CBa_B,DIR_POS}; //0-POS 1-NEG
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base + 2'b10;
-  //               end
-  //               'd3: begin
-  //                 CB_ena_new <= 1'b1;
-  //                 CB_addra_new <= CB_addra_base + 2'b11;
-  //                 CBa_vm_AGD_en <= 1'b1;
-  //               end
-  //               'd4: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end
-  //               'd5: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //                 CBa_vm_AGD_en <= 1'b0;
-  //               end
-  //               default: begin
-  //                 CB_ena_new <= 1'b0;
-  //                 CB_addra_new <= 0;
-  //               end
-  //             endcase 
-  //           end
-  //           NEW_3: begin
-  //             CB_wea_new <= 1'b0;
-  //               case(seq_cnt)
-  //                 'd0: begin
-  //                   CB_ena_new <= 1'b0;
-  //                   CB_addra_new <= 0;
-  //                 end  
-  //                 'd1: begin
-  //                   CBa_shift_dir <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0; //0-POS 1-NEG
-  //                   CB_ena_new <= 1'b1;
-  //                   CB_addra_new <= CB_addra_base;
-  //                 end     
-  //                 'd2: begin
-  //                   CB_douta_sel_new <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0;
-  //                   CB_ena_new <= 1'b1;
-  //                   CB_addra_new <= CB_addra_base + 'b1;
-  //                 end
-  //                 'd3: begin
-  //                   CB_ena_new <= 1'b1;
-  //                   CB_addra_new <= CB_addra_base + 'b10;
-  //                   CBa_vm_AGD_en <= 1'b1;
-  //                 end
-  //                 'd4: begin
-  //                   CB_ena_new <= 1'b0;
-  //                   CB_addra_new <= 0;
-  //                 end
-  //                 'd5: begin
-  //                   CB_ena_new <= 1'b0;
-  //                   CB_addra_new <= 0;
-  //                   CBa_vm_AGD_en <= 1'b0;
-  //                 end
-  //                 default: begin
-  //                   CB_ena_new <= 1'b0;
-  //                   CB_addra_new <= 0;
-  //                 end
-  //               endcase 
-  //           end
-  //         endcase
-  //       end
-  //       STAGE_UPD: begin
-          
-  //       end
-        
-  //     endcase
-  //   end       
-  // end
-
 //CB portB
   /*
     *****************************CB-portB write*****************************
   */
-  // wire [2:0]       stage_cur_CB_B;
-  // wire [3:0]       prd_cur_CB_B;
-  // wire [5:0]       new_cur_CB_B;
-  // wire [7:0]       upd_cur_CB_B;
-
   always @(posedge clk) begin
     if(sys_rst) begin
       CBb_shift_dir   <= 0;
@@ -4154,23 +3535,23 @@ module PE_config #(
                       CB_dinb_sel_new <= DIR_POS;
                       CBb_shift_dir <= DIR_POS;
                       case(seq_cnt_WR)
-                        'd0: begin
+                        SEQ_0: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= 2'b00;
                         end  
-                        'd1: begin
+                        SEQ_1: begin
                           CB_enb_new <= 1'b0;
                           CB_addrb_new <= 0;
                         end
-                        'd2: begin
+                        SEQ_2: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= 2'b01;
                         end
-                        'd3: begin
+                        SEQ_3: begin
                           CB_enb_new <= 1'b0;
                           CB_addrb_new <= 0;
                         end
-                        'd4: begin
+                        SEQ_4: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= 2'b10;
                         end
@@ -4185,17 +3566,17 @@ module PE_config #(
                       CB_dinb_sel_new <= DIR_POS;
                       CBb_shift_dir <= DIR_POS;
                       case(seq_cnt_WR)
-                        'd0: begin
+                        SEQ_0: begin
                           CBb_shift_dir <= DIR_POS;
 
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= CB_addrb_base;
                         end  
-                        'd2: begin
+                        SEQ_2: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= CB_addrb_base + 2'b01;
                         end
-                        'd4: begin
+                        SEQ_4: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= CB_addrb_base + 2'b10;
                         end
@@ -4225,15 +3606,15 @@ module PE_config #(
                       CB_dinb_sel_new <= DIR_NEW;
                       CBb_shift_dir <= DIR_NEW;
                       case(seq_cnt_WR)
-                        'd0: begin
+                        SEQ_0: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR;
                         end  
-                        'd2: begin
+                        SEQ_2: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + 2'b01;
                         end
-                        'd4: begin
+                        SEQ_4: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + 2'b10;
                         end
@@ -4248,19 +3629,19 @@ module PE_config #(
                       CB_dinb_sel_new <= DIR_NEW;
                       CBb_shift_dir <= DIR_NEW;
                       case(seq_cnt_WR)
-                        'd0: begin
+                        SEQ_0: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR;
                         end  
-                        'd2: begin
+                        SEQ_2: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + 1'b1;
                         end
-                        'd4: begin
+                        SEQ_4: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + 2'b10;
                         end
-                        'd6: begin
+                        SEQ_6: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + 2'b11;
                         end
@@ -4275,11 +3656,11 @@ module PE_config #(
                       CB_dinb_sel_new <= DIR_NEW;
                       CBb_shift_dir <= DIR_NEW;
                       case(seq_cnt_WR)
-                        'd0: begin
+                        SEQ_0: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= l_k_base_addr_WR + l_k_row;
                         end  
-                        'd2: begin
+                        SEQ_2: begin
                           CB_enb_new <= 1'b1;
                           CB_addrb_new <= CB_addrb_new + 1'b1;
                         end
@@ -4303,214 +3684,12 @@ module PE_config #(
   end
 
 /*
-    ************************ old CB-portB config *****************
-*/
-  // always @(posedge clk) begin
-  //   if(sys_rst) begin   
-  //     CBb_shift_dir   <= DIR_IDLE;
-  //     CB_dinb_sel_new <= DIR_IDLE;
-
-  //     CB_enb_new <= 1'b0;
-  //     CB_web_new <= 1'b0;
-  //     CB_addrb_new <= 0;
-
-  //     CBb_vm_AGD_en <= 0;
-  //     CBb_vm_AGD_rst <= 1'b0;
-  //   end
-  //   else begin
-  //     case(stage_cur_CB_B)
-  //       STAGE_PRD: begin
-  //         case(prd_cur_CB_B)
-  //           PRD_3: begin
-  //           /*
-  //             cov_mv * F_xi_T = cov_mv
-  //             X=3 Y=3 N=3
-  //             Ain: CB-A
-  //             Bin: TB-B
-  //             Min: TB-A   //PRD_2 adder
-  //             Cout: CB-B
-  //           */  
-  //             CB_web_new <= 1'b1;
-
-  //             case(seq_cnt_WR)
-  //               'd0: begin
-  //                 CB_dinb_sel_new <= DIR_POS;
-
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd1: begin
-  //                 CBb_shift_dir <= DIR_POS;
-
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 1'b1;
-  //               end  
-  //               'd2: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd3: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 2'b10;
-  //                 CBb_vm_AGD_en <= 1'b1;
-  //               end
-  //               'd4: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd5: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 3'b11;
-  //                 CBb_vm_AGD_en <= 1'b0;
-  //               end
-  //             endcase 
-  //           end
-  //           default: begin
-  //             CBb_shift_dir   <= DIR_IDLE;
-  //             CB_dinb_sel_new <= DIR_IDLE;
-
-  //             CB_enb_new <= 1'b0;
-  //             CB_web_new <= 1'b0;
-  //             CB_addrb_new <= 0;
-
-  //             CBb_vm_AGD_en <= 0;
-  //             CBb_vm_AGD_rst <= 1'b0;
-  //           end
-  //         endcase
-  //       end
-  //       STAGE_NEW: begin
-  //         case(new_cur_CB_B)
-  //           NEW_1: begin
-  //             CB_web_new <= 1'b1;
-  //             CBb_vm_AGD_en <= 1'b0;
-  //             case(seq_cnt_WR)
-  //               'd0: begin
-  //                 CB_dinb_sel_new <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0;
-
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd1: begin
-  //                 CBb_shift_dir <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0;
-
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base;
-  //               end  
-  //               'd2: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd3: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_new + 1'b1;
-  //               end
-  //               'd4: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd5: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 'b10;
-  //               end
-  //             endcase
-  //           end
-  //           NEW_2: begin
-  //             CB_web_new <= 1'b1;
-
-  //             case(seq_cnt_WR)
-  //               'd0: begin
-  //                 CB_dinb_sel_new <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0;
-
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd1: begin
-  //                 CBb_shift_dir <= v_group_cnt_max[0] ? DIR_NEW_1 : DIR_NEW_0;
-
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base;
-  //               end  
-  //               'd2: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd3: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 'b1;
-  //               end
-  //               'd4: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd5: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 'b10;
-  //                 CBb_vm_AGD_en <= 1'b1;
-  //               end
-  //               'd6: begin
-  //                 CB_enb_new <= 1'b0;
-  //                 CB_addrb_new <= 0;
-  //               end
-  //               'd7: begin
-  //                 CB_enb_new <= 1'b1;
-  //                 CB_addrb_new <= CB_addrb_base + 'b11;
-  //                 CBb_vm_AGD_en <= 1'b0;
-  //               end
-  //             endcase
-  //           end
-  //           default: begin
-  //             CBb_shift_dir   <= DIR_IDLE;
-  //             CB_dinb_sel_new <= DIR_IDLE;
-
-  //             CB_enb_new <= 1'b0;
-  //             CB_web_new <= 1'b0;
-  //             CB_addrb_new <= 0;
-
-  //             CBb_vm_AGD_en <= 0;
-  //             CBb_vm_AGD_rst <= 1'b0;
-  //           end
-  //         endcase
-  //       end
-  //       STAGE_UPD: begin
-          
-  //       end
-  //       default: begin
-  //         CBb_shift_dir   <= DIR_IDLE;
-  //         CB_dinb_sel_new <= DIR_IDLE;
-
-  //         CB_enb_new <= 1'b0;
-  //         CB_web_new <= 1'b0;
-  //         CB_addrb_new <= 0;
-
-  //         CBb_vm_AGD_en <= 0;
-  //         CBb_vm_AGD_rst <= 1'b0;
-  //       end
-  //     endcase
-  //   end       
-  // end  
-
-
-/*
-  prd_cur_M & prd_cur_C
-  M：4级延迟
-  均为读取
-  从输入数据到得到dout N+1=4
-
-  C：9级延迟(3 + 5 + 1)
-
-  从输入地址到给写入地址
-  * 输入地址到输入数据 3
-  * 输入数据到输出结果 N+2=5
-  * 输出结果到给写入地址 1
-
-*/
-/*
   ************************shift inst***************************
 */
 
-/*
-  ************************ABCM shift***************************
-*/
+  /*
+    ************************ABCM shift***************************
+  */
   //shift of PE_sel
     dshift 
     #(

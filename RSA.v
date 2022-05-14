@@ -174,9 +174,9 @@ module RSA
   `ifdef LANDMARK_NUM_IN
     input   [ROW_LEN-1 : 0]  landmark_num,
   `endif
-  `ifdef L_k_IN
+  // `ifdef L_k_IN
     input   [ROW_LEN-1 : 0]  l_k,
-  `endif
+  // `endif
 
   //handshake of stage change
   input   [2:0]   stage_val,
@@ -617,9 +617,9 @@ wire [L*RSA_DW-1 : 0] CB_douta;
 wire [L*RSA_DW-1 : 0] CB_doutb;
 
 //l_k
-`ifndef L_k_IN
-  reg [ROW_LEN-1 : 0] l_k = 3'b100;
-`endif
+// `ifndef L_k_IN
+//   reg [ROW_LEN-1 : 0] l_k = 3'b100;
+// `endif
 wire l_k_0;
 assign l_k_0 = l_k[0];
 
@@ -984,7 +984,9 @@ u_PE_config(
   `ifdef LANDMARK_NUM_IN
   .landmark_num         (landmark_num      ),
   `endif
+  // `ifdef L_K_IN
   .l_k                  (l_k               ),
+  // `endif
   .stage_val            (stage_val         ),
   .stage_rdy            (stage_rdy         ),
   .nonlinear_m_rdy      (nonlinear_m_rdy   ),
