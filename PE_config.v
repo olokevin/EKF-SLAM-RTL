@@ -656,11 +656,11 @@ module PE_config #(
                     else
                       stage_cur <= STAGE_NEW;
                   end
-        STAGE_PRD:begin
+        STAGE_UPD:begin
                     if(upd_cur == UPD_10 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max)
                       stage_cur <= IDLE;
                     else
-                      stage_cur <= STAGE_PRD;
+                      stage_cur <= STAGE_UPD;
                   end
         default: stage_cur <= IDLE;
       endcase
