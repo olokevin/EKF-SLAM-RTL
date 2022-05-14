@@ -139,7 +139,9 @@ RSA #(
 `ifdef LANDMARK_NUM_IN    
     .landmark_num            (landmark_num            ),
 `endif
+// `ifdef L_K_IN
     .l_k                     (l_k                     ),
+// `endif
     .stage_val               ( stage_val        [2:0] ),
     .nonlinear_s_val         ( nonlinear_s_val  [2:0] ),
     .nonlinear_s_rdy         ( nonlinear_s_rdy  [2:0] ),
