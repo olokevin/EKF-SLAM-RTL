@@ -178,7 +178,7 @@ module PE_config #(
     localparam TBa_AM = 3'b011;
   //TBa WR
     localparam TBa_cov_lm = 3'b100;
-    localparam TBa_nonlinear = 3'b100;
+    localparam TBa_nonlinear = 3'b101;
 
   //TBb RD
     localparam TBb_IDLE = 3'b000;
@@ -2914,12 +2914,18 @@ module PE_config #(
                         SEQ_3: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
-                          TB_addra_new <= A_TB_base_addr;
+                          if(v_group_cnt == 0)
+                            TB_addra_new <= A_TB_base_addr_set;
+                          else
+                            TB_addra_new <= A_TB_base_addr;
                         end
                         SEQ_4: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
-                          TB_addra_new <= A_TB_base_addr + 1'b1;
+                          if(v_group_cnt == 0)
+                            TB_addra_new <= A_TB_base_addr_set + 1'b1;
+                          else
+                            TB_addra_new <= A_TB_base_addr + 1'b1;
                         end
                         default:begin
                           TB_ena_new <= 1'b0;
@@ -2940,13 +2946,16 @@ module PE_config #(
     /*
       ******************* TB_douta_sel_new, TBa_shift_dir *****************
     */
-    reg [4:0] TBa_mode_d;
+    reg [4:0] TBa_mode_d1;
+    reg [4:0] TBa_mode_d2;
     always @(posedge clk) begin
       if(sys_rst) begin
-        TBa_mode_d <= 0;
+        TBa_mode_d1 <= 0;
+        TBa_mode_d2 <= 0;
       end
       else 
-        TBa_mode_d <= TBa_mode;
+        TBa_mode_d1 <= TBa_mode;
+        TBa_mode_d2 <= TBa_mode_d1;
     end
 
     always @(posedge clk) begin
@@ -2955,7 +2964,7 @@ module PE_config #(
         TBa_shift_dir <= 0;
       end
       else begin
-        case(TBa_mode_d[1:0])
+        case(TBa_mode_d1[1:0])
           DIR_IDLE: begin
             TB_douta_sel_new[1:0] <= DIR_IDLE;
             TBa_shift_dir <= DIR_POS;
@@ -2976,12 +2985,27 @@ module PE_config #(
       end
     end
 
+
+  /*
+    ********************** TB_dina_sel *****************************
+  */
     always @(posedge clk) begin
       if(sys_rst) begin
-        TB_dina_sel_new <= 0;
+        TB_dina_sel_new[2] <= 0;
+      end
+      else begin
+        case (TBa_mode_d2[4:2])
+          TBa_cov_lm:    TB_dina_sel_new[2] <= 1'b0;
+          TBa_nonlinear: TB_dina_sel_new[2] <= 1'b1;
+        endcase
+      end
+    end
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        TB_dina_sel_new[1:0] <= 0;
       end
       else 
-        TB_dina_sel_new <= 0;
+        TB_dina_sel_new[1:0] <= TBa_mode_d2[1:0];
     end
 
   /*
@@ -4000,6 +4024,16 @@ module PE_config #(
         STAGE_NEW: A_TB_base_addr <= A_TB_base_addr_set;
         STAGE_UPD: begin
           case(upd_cur)
+            UPD_1: begin
+              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
+                A_TB_base_addr <= A_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
+                A_TB_base_addr <= A_TB_base_addr + 3'b100;
+              end
+              else
+                A_TB_base_addr <= A_TB_base_addr;
+            end
             UPD_3: begin
               if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
                 A_TB_base_addr <= A_TB_base_addr_set;
