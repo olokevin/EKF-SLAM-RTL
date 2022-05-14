@@ -56,7 +56,7 @@ module PE_MAC
 */
 //Vertical
     assign cal_en     = cal_en_N;
-    assign cal_en_S   = cal_en_r;
+    assign cal_done_S = cal_en_r;
 
     assign cal_done   = cal_done_N;
     assign cal_done_S = cal_done_r;
