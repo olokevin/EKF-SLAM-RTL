@@ -31,8 +31,8 @@ module RSA
   //************************ TEMP BANK *************************
       output [TB_AW-1:0]  TB0_addra,
       output              TB0_clka,
-      output  [RSA_DW-1:0] TB0_dina,
-      input [RSA_DW-1:0] TB0_douta,
+      output signed [RSA_DW-1:0] TB0_dina,
+      input  signed [RSA_DW-1:0] TB0_douta,
       output              TB0_ena,
       output              TB0_wea,
 
@@ -45,100 +45,100 @@ module RSA
 
       output [TB_AW-1:0]  TB1_addra,
       output              TB1_clka,
-      output  [RSA_DW-1:0] TB1_dina,
-      input [RSA_DW-1:0] TB1_douta,
+      output signed  [RSA_DW-1:0] TB1_dina,
+      input  signed [RSA_DW-1:0] TB1_douta,
       output              TB1_ena,
       output              TB1_wea,
 
       output [TB_AW-1:0]  TB1_addrb,
       output              TB1_clkb,
-      output  [RSA_DW-1:0] TB1_dinb,
-      input [RSA_DW-1:0] TB1_doutb,
+      output signed  [RSA_DW-1:0] TB1_dinb,
+      input  signed [RSA_DW-1:0] TB1_doutb,
       output              TB1_enb,
       output              TB1_web,
 
       output [TB_AW-1:0]  TB2_addra,
       output              TB2_clka,
-      output  [RSA_DW-1:0] TB2_dina,
-      input [RSA_DW-1:0] TB2_douta,
+      output signed  [RSA_DW-1:0] TB2_dina,
+      input signed [RSA_DW-1:0] TB2_douta,
       output              TB2_ena,
       output              TB2_wea,
 
       output [TB_AW-1:0]  TB2_addrb,
       output              TB2_clkb,
-      output  [RSA_DW-1:0] TB2_dinb,
-      input [RSA_DW-1:0] TB2_doutb,
+      output signed  [RSA_DW-1:0] TB2_dinb,
+      input signed [RSA_DW-1:0] TB2_doutb,
       output              TB2_enb,
       output              TB2_web,
 
       output [TB_AW-1:0]  TB3_addra,
       output              TB3_clka,
-      output  [RSA_DW-1:0] TB3_dina,
-      input [RSA_DW-1:0] TB3_douta,
+      output signed  [RSA_DW-1:0] TB3_dina,
+      input signed [RSA_DW-1:0] TB3_douta,
       output              TB3_ena,
       output              TB3_wea,
 
       output [TB_AW-1:0]  TB3_addrb,
       output              TB3_clkb,
-      output  [RSA_DW-1:0] TB3_dinb,
-      input [RSA_DW-1:0] TB3_doutb,
+      output signed  [RSA_DW-1:0] TB3_dinb,
+      input signed [RSA_DW-1:0] TB3_doutb,
       output              TB3_enb,
       output              TB3_web,
 
   //************************** COV BANK *************************
       output [CB_AW-1:0]  CB0_addra,
       output              CB0_clka,
-      output  [RSA_DW-1:0] CB0_dina,
-      input [RSA_DW-1:0] CB0_douta,
+      output signed  [RSA_DW-1:0] CB0_dina,
+      input signed [RSA_DW-1:0] CB0_douta,
       output              CB0_ena,
       output              CB0_wea,
 
       output [CB_AW-1:0]  CB0_addrb,
       output              CB0_clkb,
-      output  [RSA_DW-1:0] CB0_dinb,
-      input [RSA_DW-1:0] CB0_doutb,
+      output signed  [RSA_DW-1:0] CB0_dinb,
+      input signed [RSA_DW-1:0] CB0_doutb,
       output              CB0_enb,
       output              CB0_web,
 
       output [CB_AW-1:0]  CB1_addra,
       output              CB1_clka,
-      output  [RSA_DW-1:0] CB1_dina,
-      input [RSA_DW-1:0] CB1_douta,
+      output signed  [RSA_DW-1:0] CB1_dina,
+      input signed [RSA_DW-1:0] CB1_douta,
       output              CB1_ena,
       output              CB1_wea,
 
       output [CB_AW-1:0]  CB1_addrb,
       output              CB1_clkb,
-      output  [RSA_DW-1:0] CB1_dinb,
-      input [RSA_DW-1:0] CB1_doutb,
+      output signed  [RSA_DW-1:0] CB1_dinb,
+      input signed [RSA_DW-1:0] CB1_doutb,
       output              CB1_enb,
       output              CB1_web,
 
       output [CB_AW-1:0]  CB2_addra,
       output              CB2_clka,
-      output  [RSA_DW-1:0] CB2_dina,
-      input [RSA_DW-1:0] CB2_douta,
+      output signed  [RSA_DW-1:0] CB2_dina,
+      input signed [RSA_DW-1:0] CB2_douta,
       output              CB2_ena,
       output              CB2_wea,
 
       output [CB_AW-1:0]  CB2_addrb,
       output              CB2_clkb,
-      output  [RSA_DW-1:0] CB2_dinb,
-      input [RSA_DW-1:0] CB2_doutb,
+      output signed  [RSA_DW-1:0] CB2_dinb,
+      input signed [RSA_DW-1:0] CB2_doutb,
       output              CB2_enb,
       output              CB2_web,
 
       output [CB_AW-1:0]  CB3_addra,
       output              CB3_clka,
-      output  [RSA_DW-1:0] CB3_dina,
-      input [RSA_DW-1:0] CB3_douta,
+      output signed  [RSA_DW-1:0] CB3_dina,
+      input signed [RSA_DW-1:0] CB3_douta,
       output              CB3_ena,
       output              CB3_wea,
 
       output [CB_AW-1:0]  CB3_addrb,
       output              CB3_clkb,
-      output  [RSA_DW-1:0] CB3_dinb,
-      input [RSA_DW-1:0] CB3_doutb,
+      output signed  [RSA_DW-1:0] CB3_dinb,
+      input signed [RSA_DW-1:0] CB3_doutb,
       output              CB3_enb,
       output              CB3_web,
     
@@ -146,28 +146,28 @@ module RSA
       // output  [L-1 : 0]    TB_ena,
       // output  [L-1 : 0]    TB_wea,
       // output  [L*TB_AW-1 : 0]    TB_addra,
-      // output  [L*RSA_DW-1 : 0]   TB_dina,
-      // input  [L*RSA_DW-1 : 0]   TB_douta,
+      // output  signed [L*RSA_DW-1 : 0]   TB_dina,
+      // input   signed [L*RSA_DW-1 : 0]   TB_douta,
 
       // output  [L-1 : 0]    TB_enb,
       // output  [L-1 : 0]    TB_web,
       // output  [L*TB_AW-1 : 0]    TB_addrb,
-      // output  [L*RSA_DW-1 : 0]   TB_dinb,
-      // input  [L*RSA_DW-1 : 0]   TB_doutb,
+      // output  signed [L*RSA_DW-1 : 0]   TB_dinb,
+      // input   signed [L*RSA_DW-1 : 0]   TB_doutb,
 
 
     //COV BANK ports
       // output  [L-1 : 0]    CB_ena,
       // output  [L-1 : 0]    CB_wea,
       // output  [L*CB_AW-1 : 0]    CB_addra,
-      // output  [L*RSA_DW-1 : 0]   CB_dina,
-      // input  [L*RSA_DW-1 : 0]   CB_douta,
+      // output  signed [L*RSA_DW-1 : 0]   CB_dina,
+      // input   signed [L*RSA_DW-1 : 0]   CB_douta,
 
       // output  [L-1 : 0]    CB_enb,
       // output  [L-1 : 0]    CB_web,
       // output  [L*CB_AW-1 : 0]    CB_addrb,
-      // output  [L*RSA_DW-1 : 0]   CB_dinb,
-      // input  [L*RSA_DW-1 : 0]   CB_doutb,
+      // output  signed [L*RSA_DW-1 : 0]   CB_dinb,
+      // input   signed [L*RSA_DW-1 : 0]   CB_doutb,
 `endif
 
 //landmark numbers
@@ -420,10 +420,10 @@ module RSA
 
 
 
-wire   [X*RSA_DW-1 : 0]  A_data;
-wire   [Y*RSA_DW-1 : 0]  B_data;
-wire   [X*RSA_DW-1 : 0]  M_data;
-wire   [X*RSA_DW-1 : 0]  C_data;
+wire   signed [X*RSA_DW-1 : 0]  A_data;
+wire   signed [Y*RSA_DW-1 : 0]  B_data;
+wire   signed [X*RSA_DW-1 : 0]  M_data;
+wire   signed [X*RSA_DW-1 : 0]  C_data;
 
 wire   [2*X-1 : 0]    M_adder_mode;
 wire   [1:0]          PE_mode;
@@ -452,33 +452,33 @@ wire   [Y-1 : 0]      new_cal_done;
 
 
 //A in
-wire [X*RSA_DW-1 : 0]   A_TB_douta;
-wire [X*RSA_DW-1 : 0]   A_CB_douta;
+wire signed [X*RSA_DW-1 : 0]   A_TB_douta;
+wire signed [X*RSA_DW-1 : 0]   A_CB_douta;
 wire [A_IN_SEL_DW*X-1 : 0]        A_in_sel;
 wire [X-1 : 0]          A_in_en;   
 
 
 //B in
-wire [Y*RSA_DW-1 : 0]   B_TB_doutb; 
-wire [Y*RSA_DW-1 : 0]   B_cache_TB_doutb;
-wire [Y*RSA_DW-1 : 0]   B_CB_douta;
+wire signed [Y*RSA_DW-1 : 0]   B_TB_doutb; 
+wire signed [Y*RSA_DW-1 : 0]   B_cache_TB_doutb;
+wire signed [Y*RSA_DW-1 : 0]   B_CB_douta;
 wire [B_IN_SEL_DW*Y-1 : 0]        B_in_sel;     //B_in有三个来源
 wire [Y-1 : 0]          B_in_en;   
 
 //M in
-wire [X*RSA_DW-1 : 0]   M_TB_douta; 
-wire [X*RSA_DW-1 : 0]   M_CB_douta;
+wire signed [X*RSA_DW-1 : 0]   M_TB_douta; 
+wire signed [X*RSA_DW-1 : 0]   M_CB_douta;
 wire [M_IN_SEL_DW*X-1 : 0]        M_in_sel;  
 wire [X-1 : 0]          M_in_en;  
 
 //C out
-wire [X*RSA_DW-1 : 0]   C_TB_dinb; 
-wire [X*RSA_DW-1 : 0]   C_CB_dinb;
+wire signed [X*RSA_DW-1 : 0]   C_TB_dinb; 
+wire signed [X*RSA_DW-1 : 0]   C_CB_dinb;
 wire [C_OUT_SEL_DW*X-1 : 0]        C_out_sel; 
 wire [X-1 : 0]          C_out_en; 
 
-wire [L*RSA_DW-1 : 0]   TB_dina_CB_douta;
-wire [L*RSA_DW-1 : 0]   TB_dina_non_linear;
+wire signed [L*RSA_DW-1 : 0]   TB_dina_CB_douta;
+wire signed [L*RSA_DW-1 : 0]   TB_dina_non_linear;
 
 generate 
   genvar i_X;
@@ -540,7 +540,7 @@ endgenerate
 wire [Y-1:0] B_cache_en;
 wire [Y-1:0] B_cache_we;
 wire [Y*3-1:0] B_cache_addr;
-wire [Y*RSA_DW-1:0] B_cache_dout; 
+wire signed [Y*RSA_DW-1:0] B_cache_dout; 
 
 generate
   genvar i_Y;
@@ -590,13 +590,13 @@ wire [L-1 : 0]    TB_enb;
 wire [L-1 : 0]    TB_wea;
 wire [L-1 : 0]    TB_web;
 
-wire [L*RSA_DW-1 : 0] TB_dina;
+wire signed [L*RSA_DW-1 : 0] TB_dina;
 wire [L*TB_AW-1 : 0] TB_addra;
-wire [L*RSA_DW-1 : 0] TB_dinb;
+wire signed [L*RSA_DW-1 : 0] TB_dinb;
 wire [L*TB_AW-1 : 0] TB_addrb;
 
-wire [L*RSA_DW-1 : 0] TB_douta;
-wire [L*RSA_DW-1 : 0] TB_doutb;
+wire signed [L*RSA_DW-1 : 0] TB_douta;
+wire signed [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
@@ -608,13 +608,13 @@ wire [L-1 : 0]    CB_enb;
 wire [L-1 : 0]    CB_wea;
 wire [L-1 : 0]    CB_web;
 
-wire [L*RSA_DW-1 : 0] CB_dina;
+wire signed [L*RSA_DW-1 : 0] CB_dina;
 wire [L*CB_AW-1 : 0] CB_addra;
-wire [L*RSA_DW-1 : 0] CB_dinb;
+wire signed [L*RSA_DW-1 : 0] CB_dinb;
 wire [L*CB_AW-1 : 0] CB_addrb;
 
-wire [L*RSA_DW-1 : 0] CB_douta;
-wire [L*RSA_DW-1 : 0] CB_doutb;
+wire signed [L*RSA_DW-1 : 0] CB_douta;
+wire signed [L*RSA_DW-1 : 0] CB_doutb;
 
 //l_k
 // `ifndef L_k_IN

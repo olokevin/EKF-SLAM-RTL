@@ -1,7 +1,7 @@
 /*
     PE_MAC with only one mode, no inout ports
 */
-
+`include "macro.v"
 module PE_MAC 
 #(
     parameter RSA_DW = 16
@@ -18,17 +18,17 @@ module PE_MAC
     input                         cal_done_N,
     output                        cal_done_S,
 
-    input           [RSA_DW-1:0]  v_data_N,
-    output          [RSA_DW-1:0]  v_data_S,
+    input           signed [RSA_DW-1:0]  v_data_N,
+    output          signed [RSA_DW-1:0]  v_data_S,
 
 //Horizontal
-    input           [RSA_DW-1:0]  h_data_W,
-    output          [RSA_DW-1:0]  h_data_E,
+    input           signed [RSA_DW-1:0]  h_data_W,
+    output          signed [RSA_DW-1:0]  h_data_E,
 
     output                        mulres_val_W,
     input                         mulres_val_E,
-    output          [RSA_DW-1:0]  mulres_W,
-    input           [RSA_DW-1:0]  mulres_E
+    output          signed [RSA_DW-1:0]  mulres_W,
+    input           signed [RSA_DW-1:0]  mulres_E
 );
     localparam W_2_E = 1'b0;
     localparam E_2_W = 1'b1;
@@ -40,15 +40,15 @@ module PE_MAC
     wire cal_done;
     reg  cal_done_r;
 
-    wire [RSA_DW-1:0] v_data;
-    reg  [RSA_DW-1:0] v_data_r;
-    wire [RSA_DW-1:0] h_data;
-    reg  [RSA_DW-1:0] h_data_r;
+    wire signed [RSA_DW-1:0] v_data;
+    reg  signed [RSA_DW-1:0] v_data_r;
+    wire signed [RSA_DW-1:0] h_data;
+    reg  signed [RSA_DW-1:0] h_data_r;
 
     wire mulres_val;
     reg  mulres_val_r;
-    wire [RSA_DW-1:0] mulres;
-    reg  [RSA_DW-1:0] mulres_r;
+    wire signed [RSA_DW-1:0] mulres;
+    reg  signed [RSA_DW-1:0] mulres_r;
 
 /*
     mode == 1'b0: North to South, West to East
@@ -76,9 +76,18 @@ module PE_MAC
     assign mulres   = mulres_E;
     assign mulres_W = mulres_r;
 
-//乘积 部分和
-    reg [RSA_DW-1:0] product;
-    reg [RSA_DW-1:0] partial_sum;
+//乘积 部分和  32-bit signed (Q1.12.19) multiplier
+    localparam  INT_BIT = 12;
+    localparam  DEC_BIT = 19;
+    reg signed [2*RSA_DW-1:0] product_temp;
+    wire signed [RSA_DW-1:0] product;
+    reg signed [RSA_DW-1:0] partial_sum;
+  `ifdef USE_QUANT
+    assign product = {product_temp[2*RSA_DW-1], product_temp[DEC_BIT+RSA_DW-2 : DEC_BIT]};
+  `else 
+    assign product = product_temp[RSA_DW-1:0];
+  `endif
+
 
 //mode的一级缓存，用于判断mode跳变
     reg [1:0] PE_mode_r;
@@ -111,11 +120,11 @@ module PE_MAC
 //multiply
     always @(posedge clk) begin
         if(sys_rst)
-            product <= 0;
+            product_temp <= 0;
         else if(cal_en == 1'b1)
-            product <= h_data * v_data;
+            product_temp <= h_data * v_data;
         else
-            product <= 0;        
+            product_temp <= 0;        
     end
 
 //add on partial sum

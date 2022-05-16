@@ -14,11 +14,11 @@ module CB_douta_map #(
   input           l_k_0,
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
-  input   [L*RSA_DW-1 : 0]         CB_douta,
-  output  reg  [X*RSA_DW-1 : 0]    TB_dina_CB_douta,
-  output  reg  [X*RSA_DW-1 : 0]    A_CB_douta,
-  output  reg  [Y*RSA_DW-1 : 0]    B_CB_douta,
-  output  reg  [X*RSA_DW-1 : 0]    M_CB_douta
+  input   signed [L*RSA_DW-1 : 0]         CB_douta,
+  output  reg  signed [X*RSA_DW-1 : 0]    TB_dina_CB_douta,
+  output  reg  signed [X*RSA_DW-1 : 0]    A_CB_douta,
+  output  reg  signed [Y*RSA_DW-1 : 0]    B_CB_douta,
+  output  reg  signed [X*RSA_DW-1 : 0]    M_CB_douta
 );
 
 //

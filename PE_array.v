@@ -12,10 +12,10 @@ module PE_array
 
   input   [1:0]               PE_mode,
 
-  input   [X*RSA_DW-1 : 0]    A_data,
-  input   [Y*RSA_DW-1 : 0]    B_data,
-  input   [X*RSA_DW-1 : 0]    M_data,
-  output  [X*RSA_DW-1 : 0]    C_data,
+  input   signed [X*RSA_DW-1 : 0]    A_data,
+  input   signed [Y*RSA_DW-1 : 0]    B_data,
+  input   signed [X*RSA_DW-1 : 0]    M_data,
+  output  signed [X*RSA_DW-1 : 0]    C_data,
 
   input   [Y-1 : 0]           new_cal_en,
   input   [Y-1 : 0]           new_cal_done,

@@ -14,9 +14,9 @@ module TB_doutb_map #(
   input           l_k_0,
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
-  input   [L*RSA_DW-1 : 0]         TB_doutb,
-  output  reg  [Y*RSA_DW-1 : 0]    B_TB_doutb,
-  output  reg  [Y*RSA_DW-1 : 0]    B_cache_TB_doutb
+  input   signed [L*RSA_DW-1 : 0]         TB_doutb,
+  output  reg  signed [Y*RSA_DW-1 : 0]    B_TB_doutb,
+  output  reg  signed [Y*RSA_DW-1 : 0]    B_cache_TB_doutb
 );
 
 //

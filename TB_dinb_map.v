@@ -12,8 +12,8 @@ module TB_dinb_map #(
   input   [1:0]   TB_dinb_sel,
   input           l_k_0,
 
-  input   [X*RSA_DW-1 : 0]         C_TB_dinb,
-  output  reg  [L*RSA_DW-1 : 0]    TB_dinb
+  input   signed [X*RSA_DW-1 : 0]         C_TB_dinb,
+  output  reg  signed [L*RSA_DW-1 : 0]    TB_dinb
 );
 
 localparam DIR_IDLE = 2'b00;

@@ -13,8 +13,8 @@ module CB_dinb_map #(
   input   [1:0]   CB_dinb_sel,
   input           l_k_0,
 
-  input   [X*RSA_DW-1 : 0]         C_CB_dinb,
-  output  reg  [L*RSA_DW-1 : 0]    CB_dinb
+  input   signed [X*RSA_DW-1 : 0]         C_CB_dinb,
+  output  reg  signed [L*RSA_DW-1 : 0]    CB_dinb
 );
   
   localparam DIR_IDLE = 2'b00;

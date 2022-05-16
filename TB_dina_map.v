@@ -12,9 +12,9 @@ module TB_dina_map #(
   input   [2:0]   TB_dina_sel,
   input           l_k_0,
 
-  input   [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
-  input   [L*RSA_DW-1 : 0]         TB_dina_non_linear,
-  output  reg  [L*RSA_DW-1 : 0]    TB_dina
+  input   signed [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
+  input   signed [L*RSA_DW-1 : 0]         TB_dina_non_linear,
+  output  reg  signed [L*RSA_DW-1 : 0]    TB_dina
 );
 
 localparam TBa_CBa = 1'b0;
