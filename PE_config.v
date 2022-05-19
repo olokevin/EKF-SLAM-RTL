@@ -2683,6 +2683,7 @@ module PE_config #(
     .dout (C_out_sel_new )
   );
 
+//****//
 /*
   ******************* CAL_mode config *****************************
 */

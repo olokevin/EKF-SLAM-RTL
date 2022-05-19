@@ -1268,3 +1268,4 @@ addrb_new: NEW_2_PE_in+N+3
 ### 220519
 
 * dynamic_shreg 不能直接用parameter作为addr! 得用reg
+* B_cache: 读出要加一级buffer（与CB TB读出匹配）
