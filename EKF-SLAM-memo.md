@@ -1243,6 +1243,7 @@ addrb_new: NEW_2_PE_in+N+3
 ### 220508
 
 * dynamic_shreg 可实现！
+* 
 
 
 
@@ -1262,3 +1263,8 @@ addrb_new: NEW_2_PE_in+N+3
 
 ### 要检查的内容
 
+
+
+### 220519
+
+* dynamic_shreg 不能直接用parameter作为addr! 得用reg

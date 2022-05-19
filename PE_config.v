@@ -2600,15 +2600,33 @@ module PE_config #(
 /*
   ******************* in_sel_new config *****************************
 */
+  reg [1:0] AB_in_sel_d_addr;
+  reg [2:0] M_in_sel_d_addr;
+  reg [3:0] C_out_sel_d_addr;
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      AB_in_sel_d_addr <= 0;
+      M_in_sel_d_addr  <= 0;
+      C_out_sel_d_addr <= 0;
+    end
+    else begin
+      AB_in_sel_d_addr <= AB_IN_SEL_D;
+      M_in_sel_d_addr  <= M_IN_SEL_D;
+      C_out_sel_d_addr <= C_OUT_SEL_D;
+    end
+      
+  end
+  
   dynamic_shreg 
   #(
     .DW    (A_IN_SEL_DW    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   A_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (AB_IN_SEL_D ),
+    .addr (AB_in_sel_d_addr ),
     .din  (A_in_mode  ),
     .dout (A_in_sel_new )
   );
@@ -2616,12 +2634,12 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (B_IN_SEL_DW    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   B_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (AB_IN_SEL_D ),
+    .addr (AB_in_sel_d_addr ),
     .din  (B_in_mode  ),
     .dout (B_in_sel_new )
   );
@@ -2634,7 +2652,7 @@ module PE_config #(
   M_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (M_IN_SEL_D ),
+    .addr (M_in_sel_d_addr ),
     .din  (M_in_mode  ),
     .dout (M_in_sel_new )
   );
@@ -2660,7 +2678,7 @@ module PE_config #(
   C_out_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (C_OUT_SEL_D ),
+    .addr (C_out_sel_d_addr ),
     .din  (C_out_mode  ),
     .dout (C_out_sel_new )
   );
@@ -2755,15 +2773,27 @@ module PE_config #(
   */
   wire [SEQ_CNT_DW-1 : 0] seq_cnt_cal_d;
   wire [2:0]           PEn_cal_d;
+
+  reg [1:0] cal_en_d_addr;
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      cal_en_d_addr <= 0;
+    end
+    else begin
+      cal_en_d_addr <= CAL_EN_D;
+    end
+  end
+
   dynamic_shreg 
     #(
       .DW  (SEQ_CNT_DW  ),
-      .AW  (3  )
+      .AW  (2  )
     )
     seq_cnt_cal_d_shreg(
       .clk  (clk  ),
       .ce   (1'b1  ),
-      .addr (CAL_EN_D ),
+      .addr (cal_en_d_addr ),
       .din  (seq_cnt  ),
       .dout (seq_cnt_cal_d )
     );
@@ -2771,12 +2801,12 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (3    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   PEn_cal_d_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (CAL_EN_D ),
+    .addr (cal_en_d_addr ),
     .din  (PE_n  ),
     .dout (PEn_cal_d )
   );
@@ -3587,7 +3617,7 @@ module PE_config #(
                       SEQ_0: begin 
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD + l_k_row;
+                        CB_addra_new <= CB_addra_base + l_k_row;
                       end     
                       SEQ_1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 

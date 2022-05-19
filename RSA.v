@@ -541,6 +541,15 @@ wire [Y-1:0] B_cache_en;
 wire [Y-1:0] B_cache_we;
 wire [Y*3-1:0] B_cache_addr;
 wire signed [Y*RSA_DW-1:0] B_cache_dout; 
+reg  signed [Y*RSA_DW-1:0] B_cache_dout_d;    //B_cache需加一级缓冲
+
+always @(posedge clk) begin
+  if(sys_rst) begin
+    B_cache_dout_d <= 0;
+  end
+  else 
+    B_cache_dout_d <= B_cache_dout;
+end
 
 generate
   genvar i_Y;
@@ -570,7 +579,7 @@ generate
       .en      (B_in_en[i_Y]  ),
       .sel     (B_in_sel[2*i_Y +: 2]   ),
       .din_00  (B_TB_doutb[RSA_DW*i_Y +: RSA_DW]  ),
-      .din_01  (B_cache_dout[RSA_DW*i_Y +: RSA_DW]  ),
+      .din_01  (B_cache_dout_d[RSA_DW*i_Y +: RSA_DW]  ),
       .din_10  (B_CB_douta[RSA_DW*i_Y +: RSA_DW]  ),
       .din_11  (0   ),
       .dout    (B_data[RSA_DW*i_Y +: RSA_DW]  )
