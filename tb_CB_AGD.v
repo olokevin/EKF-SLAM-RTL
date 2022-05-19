@@ -5,7 +5,7 @@ module tb_CB_AGD;
 // CB_AGD Parameters
 parameter PERIOD        = 10 ;
 parameter CB_AW  = 19;
-parameter MAX_LANDMARK = 500;       //500 landmarks, 1003rows of data, 1003/8 = 126 groups
+parameter SEQ_CNT_DW = 500;       //500 landmarks, 1003rows of data, 1003/8 = 126 groups
 parameter ROW_LEN      = 10;
 
 // CB_AGD Inputs
@@ -31,7 +31,7 @@ end
 
 CB_AGD #(
     .CB_AW  ( CB_AW  ),
-    .MAX_LANDMARK ( MAX_LANDMARK ),
+    .SEQ_CNT_DW ( SEQ_CNT_DW ),
     .ROW_LEN      ( ROW_LEN    ))
  u_CB_AGD (
     .clk                     ( clk                               ),

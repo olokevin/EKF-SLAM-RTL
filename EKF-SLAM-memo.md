@@ -837,3 +837,435 @@ generate
 endgenerate
 ```
 
+
+
+## 运算指令集
+
+输入和输出分开
+
+**A B M C移位方向由PE_mode决定！**
+
+**TB CB移位方向、地址移位方向由数据映射决定**!
+
+### 运算输入配置
+
+m, n, k
+
+cal_mode[11:0]
+
+* A来源(A_in_en, A_in_sel_new)
+  * 00: TB
+  * 10: CB
+* B来源(B_in_en, B_in_sel_new)
+  * 00: TB
+  * 01: TB_cache
+  * 10: CB
+* M来源(M_in_en, M_in_sel_new)
+  * 00: TB
+  * 10: CB
+* C去向(C_in_en, C_in_sel_new)
+  * 00: TB
+  * 01: TB_cache
+  * 10: CB
+* adder_mode
+  * 00: NONE
+  * 01: ADD
+  * 10: C_MINUS_M
+  * 11: M_MINUS_C
+* PE_mode(dir)
+  * N_W, S_W, ...
+
+### TB CB译码控制量
+
+* TBa_mode
+
+  * 配置模式[4:2]
+    * 3’b001: A
+    * 3'b010: M
+    * 3'b011: A+M
+    * 3'b100: non_linear写入
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+* TBb_mode
+
+  * 配置模式[4:2]
+    * 3'b001: B
+    * 3’b010: C
+    * 3'b100: B_cache
+    * 3'b011: B+C
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+* CBa_mode
+
+  * 配置模式[4:2]
+    * 3’b001: A
+    * 3'b010: B
+    * 3'b100: M
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+* CBb_mode
+
+  * 配置模式[4:2]
+    * 3'b001: C
+    * 3’b010: 
+    * 3'b100: non_linear读取
+  * 顺序 [1:0]
+    * POS：01
+    * NEG：10
+    * NEW：11
+
+### 时序
+
+| T        |           | set                                         |
+| -------- | --------- | ------------------------------------------- |
+| 0        | stage     | CAL_mode, TB_mode, CB_mode，addr_base       |
+| 1        | addr_new  | addr_shift_dir                              |
+| 2        | addr[0]   | CB_douta_sel_new, CB_douta_sel_dir          |
+| 3        | CB_dout   | A_in_sel_new, A_in_sel_dir,                 |
+| 4        | A_CB_dout | cal_en_new, cal_done_new, A_in_en           |
+| 5        | A_data    | PE_mode                                     |
+| 6        |           |                                             |
+| 7        |           |                                             |
+| 8        |           | M_in_sel_new, M_in_sel_dir                  |
+| 9        | M_data    | C_in_sel_new, C_in_sel_dir                  |
+| 10(WR 0) | C_data    | CB_dinb_sel_new, CB_dinb_sel_dir, addr_base |
+| 11(WR 1) | C_CB_dinb | addr_new, addr_shift_dir                    |
+| 12(WR 2) | CB_dinb   | addr[0]                                     |
+|          |           |                                             |
+
+以addr_new为参考(addr_new对应到seq_cnt=0)
+
+RD_2_WR_D: 7(1 + 4 + 2)
+
+* 1: A_addr_new -> A_addr[0]
+* 4: A_addr[0] -> A_data
+* N + 2 : A_data -> C_data
+* 1：C_data -> C_addr_new
+* 1: C_addr_new -> C_addr[0]
+
+N=1时，C_addr_new为A_addr_new 的8级延迟
+
+N=2时，C_addr_new为A_addr_new 的9级延迟
+
+N=3时，C_addr_new为A_addr_new 的10级延迟
+
+N=5时，C_addr_new为A_addr_new 的12级延迟
+
+
+
+M_addr_new为A_addr_new的N+1级延迟
+
+
+
+### 方向控制量：
+
+CBa_shift_dir: CBa_mode[1:0]
+
+CB_douta_sel_shift: CBa_mode[1:0]的2级延迟
+
+
+
+A_in_sel_shift_dir, B_in_sel_shift_dir: cal_mode的NEW_2_A_sel(3)级延迟
+
+PE_mode, cal_en, cal_done: cal_mode的NEW_2_PE_in(4)级延迟
+
+M_in_sel_dir, M_adder_mode: cal_mode的NEW_2_PE_in+N+1级延迟，将延迟固定为7
+
+C_out_sel_dir: cal_mode的NEW_2_PE_in+N+2级延迟，将延迟固定为8
+
+
+
+CB_dinb_shift: CBb_mode[1:0]的NEW_2_PE_in+N+3级延迟，固定为9
+
+CBb_shift_dir：CBb_mode[1:0]的NEW_2_PE_in+N+3级延迟，固定为9
+
+NEW_2_PE_in+N+4 T后，数据输入到CB_dinb；同时addrb应有效 
+
+addrb_new: NEW_2_PE_in+N+3
+
+### 读取时序
+
+0：配置
+
+1：给new, CBa_shift_dir，PE_mode
+
+2：addr[0]
+
+3：addr[1]	CB_douta[0]
+
+4：addr[2]	CB_douta[1]	B_CB_douta[0]
+
+5：addr[3]	CB_douta[2]	B_CB_douta[1]	northin[0]
+
+0：配置		 
+
+1：给new
+
+结论：
+
+* CBa_shift_dir可以保证en we addr正确移位、送入   即：一个seq_cnt周期内，CBa_shift_dir一直为该段对应的值。这也保证了后面只需通过延迟，即可保证每一行都为正确的方向。无需每一行的移位都独立检查上一行的移位方向
+* **CB_douta_sel的方向应为CBa_shift_dir的2级延迟** 
+*  **A_in_sel, B_in_sel的方向应由PE_mode的3级延迟决定。**
+* **实际PE_array的mode应为控制量PE_mode的4级延迟**
+
+**TB同理。TB CB延迟一致**
+
+### 写入时序
+
+#### TB
+
+* M_in_sel， M_adder_mode 应为PE_mode的1+NEW_2_PE_in+N+1级延迟，将延迟固定为7
+* C_out_sel由PE_mode的 1+NEW_2_PE_in+N+2级延迟决定  由于PE_mode会持续技术时间，将延迟固定为8
+* 写地址和写数据同步
+* 因此TB_dinb_sel的方向无需延迟
+
+
+### 输出控制量
+
+* BRAM
+  * en_new
+  * we_new
+  * addr_new
+  * shift 移位方向（由来源、去向决定）
+* BRAM-out MUX&deMUX
+  * 选择信号
+* PE array MUX&deMUX
+  * A_in_sel_new
+  * B_in_sel_new
+  * M_in_sel_new
+  * C_out_sel_new
+  * M_adder_mode
+* PE array
+  * PE_mode
+
+
+
+
+
+### 220429
+
+* CB_AGD:
+  * 只生成BANK0对应的每行首地址
+  * 实际使用，也是在第一周期，使得CB_addra_new <= CB_addra_base
+  * 因此：CB_addra_base 应得到(0,0) (7,0) (8,0) (15,0)的地址，从而可读state！
+* CB_addr_shift
+  * 
+
+#### TBD：
+
+* non_linear 
+  * CB-B read
+  * TB-A write
+* CB_2_TB
+  * CB-B read
+  * TB-A write
+
+### 220430
+
+* NEW_3的读取按最坏情况计算，否则需改变shift顺序
+* 考虑把shift也放到map中？
+
+
+
+### 220510
+
+* prd_cnt的归零值也可设置为寄存器
+* 移位控制量也应是输入的dir的移位
+
+
+
+### 输入时序
+
+0：配置
+
+1~n：输入A B addr_new 共n个
+
+1+(N+1): 输入M 共n个
+
+### 输出时序
+
+* TB输出：时序由seq_cnt决定
+  * 1+NEW_2_PEin + N+2 + ADDER2_NEW=11
+  * 1：输入第一个addr_new的时刻
+  * NEW_2_PEin=4：addr_new到输入第一个数据
+  * N+2: 计算用时
+  * ADDER_NEW=1：加法结果到给写入addr_new
+* CB输出：
+  * 由专门的out、_cnt决定
+  * 每两个一输出：根据cnt[0]=0/1决定
+  * 由config中的控制单元确定要读多少个，算出对应的addr_new(由addr_base递增)
+    * cov_vm: 3
+    * cov_l: 2*landmark_num+1
+    * cov_ll: 2
+    * cov: 2*landmark_num+3
+
+  * addr_shift只管映射
+
+
+
+### problems
+
+* 现在的TB CB sel无需移位，只有一个
+  * 注意：RSA中的sel应为config输出的sel_new的一级缓存
+* landmark_num_10
+* cal_en_new, cal_done_new
+* group_cnt起始0在何处？相应的尚未更改
+  * 暂时设定：ROW4~7为group_0 应反向
+
+## 220503 改存储方案！
+
+* addr_shift: CB的地址也是对齐的，直接移位即可
+* group_cnt: 在进入该group就先+1, 中间给了en信号才会计算出新的base_addr
+* CB_base_AGD：
+  * **模式0：计算group_cnt+1的首地址**
+  * 模式1：计算group_cnt的首地址
+  * **cov_vv直接赋地址1 2 3**
+* 注意：CBb 使用延迟后的group_cnt
+
+### problems
+
+* CB-A:
+  * '1 addr_dir
+  * '2: out_sel
+* CB-B
+  * '0: in_sel
+  * '1 addr_dir
+
+### 终止条件
+
+#### PRD
+
+* 由landmark_num计算group_cnt_max
+  * group_cnt_max = (landmark_num+1) >> 1
+  * 最后一个group 不齐 算完就行了
+
+#### NEW
+
+* **完成后**再landmark_num <= landmark_num + 1
+* 由landmark_num计算group_cnt_max（CB-A读取）
+  * 当前最后一个group齐（landmark_num[0]=0, 新地标l_k[0]=1）
+    * 正常
+  * 当前最后一个group不齐（landmark_num[0]=1, 新地标l_k[0]=0）
+    * 算完最后一个。最后cov_ll可覆盖
+* 由l_k计算该新地标对应的首地址（CB-B写入）
+  * **进NEW UPD模式就算好**
+  * l_k_group <= (l_k+1) >> 1
+  * l_k_group_base
+  * 得到该列首地址
+* cov_lv
+  * l_k_group_base + 2*(l_k+1) = l_k_group_base + l_k<<1 + 2
+
+
+
+### problems
+
+* **PE array使能条件**
+* B_cache
+* 需在group_cnt更新时采样基址
+* group_cnt更新后4T输出新基址
+
+### 改组合逻辑 查找表设置模式（提前一个T）
+
+* TB CB读写逻辑修改
+* TB_base_addr如何递增？
+  * 应使用时序赋值。但好像来不及
+  * **采样？**
+* 分离TB-B输入，输出
+  * 输出用延迟后的cnt等
+
+### not complished
+
+* TB_addr_base需递增：
+  * 组合逻辑赋最初的值TB_addr_base_raw
+  * 在seq_cnt == seq_cnt_max时，递增+4
+* 需递增的内容：
+  * UPD_2: 
+    * C: cov_HT
+  * UPD_3:
+    * A: t_cov_l
+  * UPD_6
+    * A: cov_HT
+    * C: K
+  * UPD_7
+    * A: K
+    * B: cov_HT
+* **采用的递增方案：**
+  * 设置addr_base_set
+  * 再计算addr_base
+  * 第一个group用addr_base_set
+* **cov_l -> t_cov_l**
+* **cache**
+  * 特殊的RAM
+    * 深度为5
+    * 写: 地址从0开始递增，wr_addr=4则令wr_addr=0
+    * 读: 地址从0开始递增，rd_addr=4则令rd_addr=0
+  * 写：
+    * 按照时序给addr en we
+  * 读：
+    * 模式：组合逻辑切换
+    * 按照时序输出addr en we
+* **cov_HT转换**
+  * 并转串
+* **求逆**
+  * 再UPD_5时序内完成求逆
+* 都换为2位dir
+
+
+
+### 220506 ToDo
+
+* TB_doutb_map
+  * CONS转换
+* CB_douta_map
+  * cov_l转换映射
+  * sel
+* new: TB_dina_map
+* TBa: 分离AM；TBb: 分离BC
+* 改回DIR_NEW, 需传入l_k[0]
+* UPD 的M N K, 转移条件
+
+### cov_vv存于BANK012 or BANK123?
+
+* 若存于BANK123， 每次更新会把BANK0的state一并更新（先从BANK1开始存。要额外的控制）
+* 因此，cov_vv存于BANK012 state存于BANK3
+* 要改变的地方：（已完成）
+  * cov_vv读取
+  * cov_vv cov_vm cov_lv需区分
+
+
+
+### 220508
+
+* dynamic_shreg 可实现！
+* 
+
+
+
+### Clock Wizard
+
+* 实现时找不到sys_clk_p端口？
+* sys_clk_p端口为make external后改名
+* 现在改用ZYNQ输出时钟
+
+### Block Design中添加RTL模块
+
+* 需在.bd里添加！
+* <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220509125131866.png" alt="image-20220509125131866" style="zoom:50%;" />
+* 否则会在外部识别
+
+
+
+### 要检查的内容
+
+
+
+### 220519
+
+* dynamic_shreg 不能直接用parameter作为addr! 得用reg
+* B_cache: 读出要加一级buffer（与CB TB读出匹配）

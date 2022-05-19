@@ -8,12 +8,12 @@ module regdeMUX_sel2
     input   en,
 
     input  [1:0] sel,
-    input  [RSA_DW-1:0]  din,
+    input  signed [RSA_DW-1:0]  din,
 
-    output reg   [RSA_DW-1:0]  dout_00,
-    output reg   [RSA_DW-1:0]  dout_01,
-    output reg   [RSA_DW-1:0]  dout_10,
-    output reg   [RSA_DW-1:0]  dout_11
+    output reg   signed [RSA_DW-1:0]  dout_00,
+    output reg   signed [RSA_DW-1:0]  dout_01,
+    output reg   signed [RSA_DW-1:0]  dout_10,
+    output reg   signed [RSA_DW-1:0]  dout_11
 );
     always @(posedge clk) begin
         if(sys_rst == 1'b1 || en == 1'b0) begin

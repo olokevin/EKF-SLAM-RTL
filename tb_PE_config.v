@@ -11,7 +11,7 @@ parameter L              = 4     ;
 parameter RSA_DW       = 16    ;
 parameter TB_AW    = 11    ;
 parameter CB_AW    = 17    ;
-parameter MAX_LANDMARK   = 500   ;
+parameter SEQ_CNT_DW   = 500   ;
 parameter ROW_LEN      = 10    ;
 parameter IDLE           = 3'b000;
 parameter STAGE_PRD      = 3'b001;
@@ -123,7 +123,7 @@ PE_config #(
     .RSA_DW      ( RSA_DW      ),
     .TB_AW   ( TB_AW   ),
     .CB_AW   ( CB_AW   ),
-    .MAX_LANDMARK  ( MAX_LANDMARK  ),
+    .SEQ_CNT_DW  ( SEQ_CNT_DW  ),
     .ROW_LEN     ( ROW_LEN     )
 )
  u_PE_config (

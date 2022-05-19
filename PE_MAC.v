@@ -1,3 +1,7 @@
+/*
+    PE_MAC with only one mode, no inout ports
+*/
+`include "macro.v"
 module PE_MAC 
 #(
     parameter RSA_DW = 16
@@ -9,22 +13,22 @@ module PE_MAC
     input       [1:0]             PE_mode,
 
 //Vertical
-    inout                         cal_en_N,
-    inout                         cal_en_S,
-    inout                         cal_done_N,
-    inout                         cal_done_S,
+    input                         cal_en_N,
+    output                        cal_en_S,
+    input                         cal_done_N,
+    output                        cal_done_S,
 
-    inout           [RSA_DW-1:0]  v_data_N,
-    inout           [RSA_DW-1:0]  v_data_S,
+    input           signed [RSA_DW-1:0]  v_data_N,
+    output          signed [RSA_DW-1:0]  v_data_S,
 
 //Horizontal
-    inout           [RSA_DW-1:0]  h_data_W,
-    inout           [RSA_DW-1:0]  h_data_E,
+    input           signed [RSA_DW-1:0]  h_data_W,
+    output          signed [RSA_DW-1:0]  h_data_E,
 
-    inout                         mulres_val_W,
-    inout                         mulres_val_E,
-    inout           [RSA_DW-1:0]  mulres_W,
-    inout           [RSA_DW-1:0]  mulres_E
+    output                        mulres_val_W,
+    input                         mulres_val_E,
+    output          signed [RSA_DW-1:0]  mulres_W,
+    input           signed [RSA_DW-1:0]  mulres_E
 );
     localparam W_2_E = 1'b0;
     localparam E_2_W = 1'b1;
@@ -36,50 +40,54 @@ module PE_MAC
     wire cal_done;
     reg  cal_done_r;
 
-    wire [RSA_DW-1:0] v_data;
-    reg  [RSA_DW-1:0] v_data_r;
-    wire [RSA_DW-1:0] h_data;
-    reg  [RSA_DW-1:0] h_data_r;
+    wire signed [RSA_DW-1:0] v_data;
+    reg  signed [RSA_DW-1:0] v_data_r;
+    wire signed [RSA_DW-1:0] h_data;
+    reg  signed [RSA_DW-1:0] h_data_r;
 
     wire mulres_val;
     reg  mulres_val_r;
-    wire [RSA_DW-1:0] mulres;
-    reg  [RSA_DW-1:0] mulres_r;
+    wire signed [RSA_DW-1:0] mulres;
+    reg  signed [RSA_DW-1:0] mulres_r;
 
 /*
     mode == 1'b0: North to South, West to East
     mode == 1'b1: South to North, East to West
 */
 //Vertical
-    assign cal_en   = (PE_mode[1] == N_2_S)  ? cal_en_N : cal_en_S;
-    assign cal_en_N = (PE_mode[1] == S_2_N)  ? cal_en_r : 1'bz;
-    assign cal_en_S = (PE_mode[1] == N_2_S)  ? cal_en_r : 1'bz;
+    assign cal_en_S   = cal_en_r;
+    assign cal_en     = cal_en_N;
 
-    assign cal_done   = (PE_mode[1] == N_2_S)  ? cal_done_N : cal_done_S;
-    assign cal_done_N = (PE_mode[1] == S_2_N)  ? cal_done_r : 1'bz;
-    assign cal_done_S = (PE_mode[1] == N_2_S)  ? cal_done_r : 1'bz;
 
-    assign v_data   = (PE_mode[1] == N_2_S)  ? v_data_N : v_data_S;
-    assign v_data_N = (PE_mode[1] == S_2_N)  ? v_data_r : {RSA_DW{1'bz}};
-    assign v_data_S = (PE_mode[1] == N_2_S)  ? v_data_r : {RSA_DW{1'bz}};
+    assign cal_done   = cal_done_N;
+    assign cal_done_S = cal_done_r;
+
+    assign v_data   = v_data_N;
+    assign v_data_S = v_data_r;
 
 //Horizontal
-    assign h_data   = (PE_mode[0] == W_2_E)  ? h_data_W : h_data_E;
-    assign h_data_W = (PE_mode[0] == E_2_W)  ? h_data_r : {RSA_DW{1'bz}};
-    assign h_data_E = (PE_mode[0] == W_2_E)  ? h_data_r : {RSA_DW{1'bz}};
+    assign h_data   = h_data_W;
+    assign h_data_E = h_data_r;
 
     //输入模式为W_2_E时，结果mulres从east传向west
-    assign mulres_val   = (PE_mode[0] == W_2_E)  ? mulres_val_E : mulres_val_W;
-    assign mulres_val_W = (PE_mode[0] == W_2_E)  ? mulres_val_r : 1'bz;
-    assign mulres_val_E = (PE_mode[0] == E_2_W)  ? mulres_val_r : 1'bz;
+    assign mulres_val   = mulres_val_E;
+    assign mulres_val_W = mulres_val_r;
     
-    assign mulres   = (PE_mode[0] == W_2_E)  ? mulres_E : mulres_W;
-    assign mulres_W = (PE_mode[0] == W_2_E)  ? mulres_r : {RSA_DW{1'bz}};
-    assign mulres_E = (PE_mode[0] == E_2_W)  ? mulres_r : {RSA_DW{1'bz}};
+    assign mulres   = mulres_E;
+    assign mulres_W = mulres_r;
 
-//乘积 部分和
-    reg [RSA_DW-1:0] product;
-    reg [RSA_DW-1:0] partial_sum;
+//乘积 部分和  32-bit signed (Q1.12.19) multiplier
+    localparam  INT_BIT = 12;
+    localparam  DEC_BIT = 19;
+    reg signed [2*RSA_DW-1:0] product_temp;
+    wire signed [RSA_DW-1:0] product;
+    reg signed [RSA_DW-1:0] partial_sum;
+  `ifdef USE_QUANT
+    assign product = {product_temp[2*RSA_DW-1], product_temp[DEC_BIT+RSA_DW-2 : DEC_BIT]};
+  `else 
+    assign product = product_temp[RSA_DW-1:0];
+  `endif
+
 
 //mode的一级缓存，用于判断mode跳变
     reg [1:0] PE_mode_r;
@@ -112,11 +120,11 @@ module PE_MAC
 //multiply
     always @(posedge clk) begin
         if(sys_rst)
-            product <= 0;
+            product_temp <= 0;
         else if(cal_en == 1'b1)
-            product <= h_data * v_data;
+            product_temp <= h_data * v_data;
         else
-            product <= 0;        
+            product_temp <= 0;        
     end
 
 //add on partial sum
@@ -132,7 +140,7 @@ module PE_MAC
             partial_sum <= 0; 
     end
 
-    //mulres_r 1:输出乘积+求和 2:传递mulres
+//mulres_r 1:输出乘积+求和 2:传递mulres
     always @(posedge clk) begin
         if(sys_rst)  begin
             mulres_r <= 0; 
@@ -145,7 +153,7 @@ module PE_MAC
             mulres_r <= 0; 
     end
 
-    //mulres_val_r 输出有效
+//mulres_val_r 输出有效
     always @(posedge clk) begin
         if(sys_rst)  begin
             mulres_val_r <= 1'b0;
@@ -157,7 +165,7 @@ module PE_MAC
             mulres_val_r <= 1'b0;
     end
 
-    //h_data_r行数据复用
+//h_data_r行数据复用
     always @(posedge clk) begin
         if(sys_rst)  begin
             h_data_r <= 0;
@@ -169,7 +177,7 @@ module PE_MAC
             h_data_r <= 0;
     end
 
-    //v_data_r数据复用
+//v_data_r数据复用
     always @(posedge clk) begin
         if(sys_rst)  begin
             v_data_r <= 0;
