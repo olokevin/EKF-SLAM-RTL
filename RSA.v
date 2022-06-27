@@ -10,7 +10,7 @@ module RSA
   parameter M_IN_SEL_DW = 2,
   parameter C_OUT_SEL_DW = 2,
 
-  parameter RSA_DW = 32,
+  parameter RSA_DW = 16,
   parameter TB_AW = 11,
   parameter CB_AW = 17,
   parameter SEQ_CNT_DW = 5,
