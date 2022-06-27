@@ -12,9 +12,9 @@ module TB_douta_map #(
   input   [2:0]   TB_douta_sel,
   input           l_k_0,
   
-  input   [L*RSA_DW-1 : 0]         TB_douta,
-  output  reg  [X*RSA_DW-1 : 0]    A_TB_douta,
-  output  reg  [X*RSA_DW-1 : 0]    M_TB_douta
+  input   signed [L*RSA_DW-1 : 0]         TB_douta,
+  output  reg  signed [X*RSA_DW-1 : 0]    A_TB_douta,
+  output  reg  signed [X*RSA_DW-1 : 0]    M_TB_douta
 );
 
 //

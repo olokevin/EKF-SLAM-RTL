@@ -1243,6 +1243,7 @@ addrb_new: NEW_2_PE_in+N+3
 ### 220508
 
 * dynamic_shreg 可实现！
+* 
 
 
 
@@ -1257,3 +1258,14 @@ addrb_new: NEW_2_PE_in+N+3
 * 需在.bd里添加！
 * <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220509125131866.png" alt="image-20220509125131866" style="zoom:50%;" />
 * 否则会在外部识别
+
+
+
+### 要检查的内容
+
+
+
+### 220519
+
+* dynamic_shreg 不能直接用parameter作为addr! 得用reg
+* B_cache: 读出要加一级buffer（与CB TB读出匹配）

@@ -178,7 +178,7 @@ module PE_config #(
     localparam TBa_AM = 3'b011;
   //TBa WR
     localparam TBa_cov_lm = 3'b100;
-    localparam TBa_nonlinear = 3'b100;
+    localparam TBa_nonlinear = 3'b101;
 
   //TBb RD
     localparam TBb_IDLE = 3'b000;
@@ -523,22 +523,45 @@ module PE_config #(
   reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
-  //******************* dout_sel延迟 *************************
+  //******************* seq_cnt延迟 *************************
   // output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel;      
     dynamic_shreg 
     #(
       .DW    (SEQ_CNT_DW    ),
       .AW    (2    )
     )
-    u_dynamic_shreg(
+    seq_cnt_dout_sel_dynamic_shreg(
       .clk  (clk  ),
       .ce   (1'b1   ),
       .addr (2'b10 ),
       .din  (seq_cnt  ),
       .dout (seq_cnt_dout_sel )
     );
-  
-  
+
+  //******************* M读取状态延迟*************************
+    wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;
+    reg  [2:0]              M_RD_d_addr;
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        M_RD_d_addr <= 0;
+      end
+      else begin
+        M_RD_d_addr <= PE_n + 1'b1;
+      end 
+    end
+    
+    dynamic_shreg 
+    #(
+      .DW    (SEQ_CNT_DW    ),
+      .AW    (3    )
+    )
+    u_dynamic_shreg(
+    	.clk  (clk  ),
+      .ce   (1'b1   ),
+      .addr (M_RD_d_addr ),
+      .din  (seq_cnt  ),
+      .dout (seq_cnt_M )
+    );
   //******************* 写入状态延迟 *************************
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
     wire [ROW_LEN-1 : 0] v_group_cnt_WR;
@@ -2241,7 +2264,7 @@ module PE_config #(
 
                               TBa_mode = {TBa_A,DIR_POS};
                               TBb_mode = TB_IDLE;
-                              CBa_mode = {2'b00,CB_cov_ll}; //保证en
+                              CBa_mode = {CBa_A,CB_cov_ll}; //保证en
                               CBb_mode = CB_IDLE;
 
                               A_TB_base_addr_set = t_cov_l;
@@ -2272,7 +2295,7 @@ module PE_config #(
 
                               TBa_mode = TB_IDLE;
                               TBb_mode = TB_IDLE;
-                              CBa_mode = {2'b00,CB_cov_ll}; //保证en
+                              CBa_mode = {CBa_A,CB_cov_ml}; 
                               CBb_mode = CB_IDLE;
 
                               A_TB_base_addr_set = t_cov_l;
@@ -2577,15 +2600,33 @@ module PE_config #(
 /*
   ******************* in_sel_new config *****************************
 */
+  reg [1:0] AB_in_sel_d_addr;
+  reg [2:0] M_in_sel_d_addr;
+  reg [3:0] C_out_sel_d_addr;
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      AB_in_sel_d_addr <= 0;
+      M_in_sel_d_addr  <= 0;
+      C_out_sel_d_addr <= 0;
+    end
+    else begin
+      AB_in_sel_d_addr <= AB_IN_SEL_D;
+      M_in_sel_d_addr  <= M_IN_SEL_D;
+      C_out_sel_d_addr <= C_OUT_SEL_D;
+    end
+      
+  end
+  
   dynamic_shreg 
   #(
     .DW    (A_IN_SEL_DW    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   A_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (AB_IN_SEL_D ),
+    .addr (AB_in_sel_d_addr ),
     .din  (A_in_mode  ),
     .dout (A_in_sel_new )
   );
@@ -2593,12 +2634,12 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (B_IN_SEL_DW    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   B_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (AB_IN_SEL_D ),
+    .addr (AB_in_sel_d_addr ),
     .din  (B_in_mode  ),
     .dout (B_in_sel_new )
   );
@@ -2611,7 +2652,7 @@ module PE_config #(
   M_in_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (M_IN_SEL_D ),
+    .addr (M_in_sel_d_addr ),
     .din  (M_in_mode  ),
     .dout (M_in_sel_new )
   );
@@ -2637,11 +2678,12 @@ module PE_config #(
   C_out_sel_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (C_OUT_SEL_D ),
+    .addr (C_out_sel_d_addr ),
     .din  (C_out_mode  ),
     .dout (C_out_sel_new )
   );
 
+//****//
 /*
   ******************* CAL_mode config *****************************
 */
@@ -2732,15 +2774,27 @@ module PE_config #(
   */
   wire [SEQ_CNT_DW-1 : 0] seq_cnt_cal_d;
   wire [2:0]           PEn_cal_d;
+
+  reg [1:0] cal_en_d_addr;
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      cal_en_d_addr <= 0;
+    end
+    else begin
+      cal_en_d_addr <= CAL_EN_D;
+    end
+  end
+
   dynamic_shreg 
     #(
       .DW  (SEQ_CNT_DW  ),
-      .AW  (3  )
+      .AW  (2  )
     )
     seq_cnt_cal_d_shreg(
       .clk  (clk  ),
       .ce   (1'b1  ),
-      .addr (CAL_EN_D ),
+      .addr (cal_en_d_addr ),
       .din  (seq_cnt  ),
       .dout (seq_cnt_cal_d )
     );
@@ -2748,12 +2802,12 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (3    ),
-    .AW    (3    )
+    .AW    (2    )
   )
   PEn_cal_d_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (CAL_EN_D ),
+    .addr (cal_en_d_addr ),
     .din  (PE_n  ),
     .dout (PEn_cal_d )
   );
@@ -2868,6 +2922,14 @@ module PE_config #(
                     TB_wea_new <= 1'b0;
                     TB_addra_new <= M_TB_base_addr_set + 2'b10;
                 end
+                // if(seq_cnt_M < PE_n) begin
+                //   TB_ena_new <= 1'b1;
+                //   TB_wea_new <= 1'b0;
+                //   if(v_group_cnt == 0)
+                //     TB_addra_new <= M_TB_base_addr_set + seq_cnt;
+                //   else
+                //     TB_addra_new <= M_TB_base_addr + seq_cnt;
+                // end
                 else begin
                     TB_ena_new <= 1'b0;
                     TB_wea_new <= 1'b0;
@@ -2903,6 +2965,14 @@ module PE_config #(
                       TB_wea_new <= 1'b0;
                       TB_addra_new <= M_TB_base_addr_set + 2'b10;
                   end
+                  // if(seq_cnt_M < PE_n) begin
+                  //   TB_ena_new <= 1'b1;
+                  //   TB_wea_new <= 1'b0;
+                  //   if(v_group_cnt == 0)
+                  //     TB_addra_new <= M_TB_base_addr_set + seq_cnt;
+                  //   else
+                  //     TB_addra_new <= M_TB_base_addr + seq_cnt;
+                  // end
                   else begin
                       TB_ena_new <= 1'b0;
                       TB_wea_new <= 1'b0;
@@ -2914,12 +2984,18 @@ module PE_config #(
                         SEQ_3: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
-                          TB_addra_new <= A_TB_base_addr;
+                          if(v_group_cnt == 0)
+                            TB_addra_new <= A_TB_base_addr_set;
+                          else
+                            TB_addra_new <= A_TB_base_addr;
                         end
                         SEQ_4: begin
                           TB_ena_new <= 1'b1;
                           TB_wea_new <= 1'b1;
-                          TB_addra_new <= A_TB_base_addr + 1'b1;
+                          if(v_group_cnt == 0)
+                            TB_addra_new <= A_TB_base_addr_set + 1'b1;
+                          else
+                            TB_addra_new <= A_TB_base_addr + 1'b1;
                         end
                         default:begin
                           TB_ena_new <= 1'b0;
@@ -2940,13 +3016,16 @@ module PE_config #(
     /*
       ******************* TB_douta_sel_new, TBa_shift_dir *****************
     */
-    reg [4:0] TBa_mode_d;
+    reg [4:0] TBa_mode_d1;
+    reg [4:0] TBa_mode_d2;
     always @(posedge clk) begin
       if(sys_rst) begin
-        TBa_mode_d <= 0;
+        TBa_mode_d1 <= 0;
+        TBa_mode_d2 <= 0;
       end
       else 
-        TBa_mode_d <= TBa_mode;
+        TBa_mode_d1 <= TBa_mode;
+        TBa_mode_d2 <= TBa_mode_d1;
     end
 
     always @(posedge clk) begin
@@ -2955,7 +3034,7 @@ module PE_config #(
         TBa_shift_dir <= 0;
       end
       else begin
-        case(TBa_mode_d[1:0])
+        case(TBa_mode_d1[1:0])
           DIR_IDLE: begin
             TB_douta_sel_new[1:0] <= DIR_IDLE;
             TBa_shift_dir <= DIR_POS;
@@ -2976,12 +3055,27 @@ module PE_config #(
       end
     end
 
+
+  /*
+    ********************** TB_dina_sel *****************************
+  */
     always @(posedge clk) begin
       if(sys_rst) begin
-        TB_dina_sel_new <= 0;
+        TB_dina_sel_new[2] <= 0;
+      end
+      else begin
+        case (TBa_mode_d2[4:2])
+          TBa_cov_lm:    TB_dina_sel_new[2] <= 1'b0;
+          TBa_nonlinear: TB_dina_sel_new[2] <= 1'b1;
+        endcase
+      end
+    end
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        TB_dina_sel_new[1:0] <= 0;
       end
       else 
-        TB_dina_sel_new <= 0;
+        TB_dina_sel_new[1:0] <= TBa_mode_d2[1:0];
     end
 
   /*
@@ -3455,6 +3549,41 @@ module PE_config #(
                       end
                     endcase 
                   end
+        CB_cov:   begin
+                    CB_wea_new <= 1'b0;
+                    if(v_group_cnt == 0) begin
+                      case(seq_cnt)
+                        SEQ_3: begin
+                          CB_ena_new <= 1'b1;
+                          CB_addra_new <= 0;
+                        end
+                        SEQ_5: begin
+                          CB_ena_new <= 1'b1;
+                          CB_addra_new <= 1'b1;
+                        end
+                        SEQ_7: begin
+                          CB_ena_new <= 1'b1;
+                          CB_addra_new <= 2'b10;
+                        end
+                        default: begin
+                          CB_ena_new <= 1'b0;
+                          CB_addra_new <= CB_addra_new;
+                        end
+                      endcase
+                    end
+                    else begin
+                      case(seq_cnt_M[0])
+                      1'b1: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 1'b1;
+                      end
+                      1'b0: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= CB_addra_new;
+                      end
+                    endcase
+                    end
+                  end
         CB_cov_lm: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
@@ -3489,7 +3618,7 @@ module PE_config #(
                       SEQ_0: begin 
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD + l_k_row;
+                        CB_addra_new <= CB_addra_base + l_k_row;
                       end     
                       SEQ_1: begin
                         CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
@@ -4000,6 +4129,16 @@ module PE_config #(
         STAGE_NEW: A_TB_base_addr <= A_TB_base_addr_set;
         STAGE_UPD: begin
           case(upd_cur)
+            UPD_1: begin
+              if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
+                A_TB_base_addr <= A_TB_base_addr_set;
+              end
+              else if(seq_cnt == seq_cnt_max && v_group_cnt < v_group_cnt_max) begin
+                A_TB_base_addr <= A_TB_base_addr + 3'b100;
+              end
+              else
+                A_TB_base_addr <= A_TB_base_addr;
+            end
             UPD_3: begin
               if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
                 A_TB_base_addr <= A_TB_base_addr_set;
@@ -4132,6 +4271,8 @@ module PE_config #(
   wire [CB_AW-1 : 0]            l_k_base_addr_raw;
 
   //*********************** CBa_vm_AGD *************************
+
+  //CBa_vm_AGD_en有效时，CB_base_AGD就会不断更新CB_addra_base_raw
   always @(posedge clk) begin
     if(sys_rst) begin
       CBa_vm_AGD_en <= 0;
@@ -4141,6 +4282,7 @@ module PE_config #(
         CB_cov_vv: CBa_vm_AGD_en <= 1'b1;
         CB_cov_mv: CBa_vm_AGD_en <= 1'b1;
         CB_cov_ml: CBa_vm_AGD_en <= 1'b1;
+        CB_cov_ll: CBa_vm_AGD_en <= 1'b1;
         default:   CBa_vm_AGD_en <= 1'b0;
       endcase
     end
@@ -4179,6 +4321,12 @@ module PE_config #(
                   end
         CB_cov_ml:begin
                     CB_addra_base <= CB_addra_base;
+                  end
+        CB_cov_ll:begin
+                    if(seq_cnt == seq_cnt_max)
+                      CB_addra_base <= CB_addra_base_raw;
+                    else
+                      CB_addra_base <= CB_addra_base;
                   end
         default:   CB_addra_base <= 0;
       endcase
@@ -4231,7 +4379,7 @@ module PE_config #(
             CB_addrb_base <= CB_addrb_base;
         end
         CB_cov_ml: begin
-          CB_addra_base <= CB_addra_base;
+          CB_addrb_base <= CB_addrb_base;
         end
         default:   CB_addrb_base <= 0;
       endcase

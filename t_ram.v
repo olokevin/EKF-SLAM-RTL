@@ -13,7 +13,8 @@ module t_ram #(
   output reg [DW-1 : 0] dout
 );
 
-reg [DW-1:0] ram [AW-1:0];
+localparam DEPTH = 2**AW;
+reg [DW-1:0] ram [DEPTH-1:0];
 
 always @(posedge clk) begin
   if(sys_rst) begin
@@ -22,10 +23,17 @@ always @(posedge clk) begin
   else begin
     if(en) begin
       case(we)
-        1'b0: dout <= ram[addr];
-        1'b1: ram[addr] <= din;
+        1'b0: begin
+          dout <= ram[addr];
+        end
+        1'b1: begin
+          dout <= 0;
+          ram[addr] <= din;
+        end 
       endcase
-    end 
+    end
+    else
+      dout <= 0;
   end
 end
   
