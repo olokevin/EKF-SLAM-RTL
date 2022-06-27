@@ -4379,7 +4379,7 @@ module PE_config #(
             CB_addrb_base <= CB_addrb_base;
         end
         CB_cov_ml: begin
-          CB_addra_base <= CB_addra_base;
+          CB_addrb_base <= CB_addrb_base;
         end
         default:   CB_addrb_base <= 0;
       endcase
