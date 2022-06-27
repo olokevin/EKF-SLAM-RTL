@@ -450,7 +450,7 @@ module PE_config #(
   **************Address Generate Config*****************
 */
   //TB def
-  reg [TB_DINB_SEL_DW-1 : 0]       TB_dina_sel_new;
+  reg [TB_DINA_SEL_DW-1 : 0]       TB_dina_sel_new;
   reg [TB_DINB_SEL_DW-1 : 0]       TB_dinb_sel_new;
   reg [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel_new;
   reg [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel_new; 
@@ -2660,12 +2660,12 @@ module PE_config #(
   dynamic_shreg 
   #(
     .DW    (M_IN_SEL_DW    ),
-    .AW    (4    )
+    .AW    (3    )
   )
   M_adder_mode_dynamic_shreg(
   	.clk  (clk  ),
     .ce   (1'b1   ),
-    .addr (M_IN_SEL_D ),
+    .addr (M_in_sel_d_addr ),
     .din  (M_adder_mode_set  ),
     .dout (M_adder_mode_new )
   );
