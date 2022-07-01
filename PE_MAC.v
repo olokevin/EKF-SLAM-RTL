@@ -4,7 +4,7 @@
 `include "macro.v"
 module PE_MAC 
 #(
-    parameter RSA_DW = 16
+    parameter RSA_DW = 32
 )
 (
     input       clk                      ,

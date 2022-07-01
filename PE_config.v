@@ -16,7 +16,7 @@ module PE_config #(
   parameter CB_DINB_SEL_DW  = 2,
   parameter CB_DOUTA_SEL_DW = 4,  //注意MUX deMUX需手动修改
 
-  parameter RSA_DW = 16,
+  parameter RSA_DW = 32,
   parameter TB_AW = 11,
   parameter CB_AW = 17,
 

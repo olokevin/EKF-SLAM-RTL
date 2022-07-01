@@ -4,7 +4,7 @@ module TB_doutb_map #(
   parameter L = 4,
 
   parameter SEQ_CNT_DW = 5,
-  parameter RSA_DW = 16
+  parameter RSA_DW = 32
 ) 
 (
   input   clk,
