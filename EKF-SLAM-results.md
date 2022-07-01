@@ -10,6 +10,10 @@
 
 
 
+## ip核
+
+![image-20220627162559412](C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220627162559412.png)
+
 ## 220627 逐个实现
 
 ### PE config：OK

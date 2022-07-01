@@ -17,6 +17,17 @@ module TB_dina_map #(
   output  reg  signed [L*RSA_DW-1 : 0]    TB_dina
 );
 
+/*
+  TB_dina_sel[2]
+    0: TBa_CBa        从CB读取的数据
+    1: TBa_non_linear 非线性单元输入
+  TB_dina_sel[1:0]
+    00: DIR_IDLE
+    01: POS
+    10: NEG
+    11: NEW
+*/
+
 localparam TBa_CBa = 1'b0;
 localparam TBa_non_linear = 2'b1;
 
