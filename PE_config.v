@@ -30,9 +30,7 @@ module PE_config #(
 `ifdef LANDMARK_NUM_IN
   input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
 `endif
-// `ifdef L_K_IN
   input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
-// `endif
 //handshake of stage change
   input   [2:0]   stage_val,
   output  reg [2:0]   stage_rdy,

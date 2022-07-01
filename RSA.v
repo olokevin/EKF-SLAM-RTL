@@ -175,7 +175,11 @@ module RSA
       input   [ROW_LEN-1 : 0]  landmark_num,    
     `endif
   //当前地标编号
-    input   [ROW_LEN-1 : 0]  l_k,    
+    input   [ROW_LEN-1 : 0]  l_k,  
+
+/****************** PS -> RSA **************************/
+  //输出S矩阵
+    output signed [RSA_DW - 1 : 0] S_data,
 
 /******************RSA ->  NonLinear*********************/
   //开始信号

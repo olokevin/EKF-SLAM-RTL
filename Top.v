@@ -1,3 +1,5 @@
+`include "macro.v"
+
 module Top #(
   parameter RSA_DW = 32,
   parameter RSA_AW = 17,
@@ -22,7 +24,11 @@ module Top #(
 
   //更新步数据
     input signed [RSA_DW - 1 : 0] rk,
-    input signed [RSA_AW - 1 : 0] phi
+    input signed [RSA_AW - 1 : 0] phi,
+
+  //输出S矩阵
+    output signed [RSA_DW - 1 : 0] S_data
+
 );
 
   parameter X = 4;
@@ -68,6 +74,7 @@ u_RSA(
   .stage_rdy    (stage_rdy    ),
   .landmark_num (landmark_num ),
   .l_k          (l_k          ),
+  .S_data       (S_data       ),
 
   .init_predict (init_predict ),
   .init_newlm   (init_newlm   ),
