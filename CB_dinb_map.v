@@ -3,7 +3,7 @@ module CB_dinb_map #(
   parameter Y = 4,
   parameter L = 4,
 
-  parameter RSA_DW = 16,
+  parameter RSA_DW =32,
   parameter ROW_LEN = 10
 ) 
 (

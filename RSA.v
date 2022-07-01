@@ -5,12 +5,8 @@ module RSA
   parameter Y = 4,
   parameter L = 4,
 
-  parameter A_IN_SEL_DW = 2,
-  parameter B_IN_SEL_DW = 2,
-  parameter M_IN_SEL_DW = 2,
-  parameter C_OUT_SEL_DW = 2,
-
-  parameter RSA_DW = 16,
+  parameter RSA_DW = 32,
+  parameter RSA_AW = 17,
   parameter TB_AW = 11,
   parameter CB_AW = 17,
   parameter SEQ_CNT_DW = 5,
@@ -170,27 +166,40 @@ module RSA
       // input   signed [L*RSA_DW-1 : 0]   CB_doutb,
 `endif
 
-//landmark numbers
-  `ifdef LANDMARK_NUM_IN
-    input   [ROW_LEN-1 : 0]  landmark_num,
-  `endif
-  // `ifdef L_k_IN
-    input   [ROW_LEN-1 : 0]  l_k,
-  // `endif
-
+/****************** PS -> RSA **************************/
   //handshake of stage change
-  input   [2:0]   stage_val,
-  output  [2:0]   stage_rdy,
+    input   [2:0]   stage_val,
+    output  [2:0]   stage_rdy,
+  //landmark numbers, 当前地图总坐标点数目
+    `ifdef LANDMARK_NUM_IN
+      input   [ROW_LEN-1 : 0]  landmark_num,    
+    `endif
+  //当前地标编号
+    input   [ROW_LEN-1 : 0]  l_k,    
 
-//handshake of nonlinear calculation start & complete
-  //nonlinear start(3 stages are conbined)
-  output   [2:0]   nonlinear_m_rdy,
-  input  [2:0]   nonlinear_s_val,
-  //nonlinear cplt(3 stages are conbined)
-  output   [2:0]   nonlinear_m_val,
-  input  [2:0]   nonlinear_s_rdy
+/******************RSA ->  NonLinear*********************/
+  //开始信号
+    output reg init_predict, init_newlm, init_update,
+  //数据
+    output reg signed [RSA_DW-1 : 0] xk, yk,     //机器人坐标
+    output reg signed [RSA_DW-1 : 0] lkx, lky,   //地图坐标
+    output reg signed [RSA_AW-1 : 0] xita,       //机器人朝向
+  
+/******************NonLinear ->  RSA*********************/
+  //完成信号
+    input done_predict, done_newlm, done_update,
+  //数据
+    input signed [RSA_DW - 1 : 0] result_0, result_1, result_2, result_3, result_4, result_5
+
 );
 
+//PE MUX deMUX数据位宽
+  parameter A_IN_SEL_DW = 2;
+  parameter B_IN_SEL_DW = 2;
+  parameter M_IN_SEL_DW = 2;
+  parameter C_OUT_SEL_DW = 2;
+
+//BRAM map 控制信号数据位宽
   parameter TB_DINA_SEL_DW  = 3;
   parameter TB_DINB_SEL_DW  = 2;
   parameter TB_DOUTA_SEL_DW = 3;
@@ -981,9 +990,22 @@ PE_config
   .X             (X     ),
   .Y             (Y     ),
   .L             (L     ),
+
+  .A_IN_SEL_DW       (A_IN_SEL_DW       ),
+  .B_IN_SEL_DW       (B_IN_SEL_DW       ),
+  .M_IN_SEL_DW       (M_IN_SEL_DW       ),
+  .C_OUT_SEL_DW      (C_OUT_SEL_DW      ),
+  .TB_DINA_SEL_DW    (TB_DINA_SEL_DW    ),
+  .TB_DINB_SEL_DW    (TB_DINB_SEL_DW    ),
+  .TB_DOUTA_SEL_DW   (TB_DOUTA_SEL_DW   ),
+  .TB_DOUTB_SEL_DW   (TB_DOUTB_SEL_DW   ),
+  .CB_DINB_SEL_DW    (CB_DINB_SEL_DW    ),
+  .CB_DOUTA_SEL_DW   (CB_DOUTA_SEL_DW   ),
+
   .RSA_DW        (RSA_DW  ),
   .TB_AW         (TB_AW   ),
   .CB_AW         (CB_AW   ),
+
   .SEQ_CNT_DW  (SEQ_CNT_DW  ),
   .ROW_LEN       (ROW_LEN   )
 )
@@ -993,9 +1015,7 @@ u_PE_config(
   `ifdef LANDMARK_NUM_IN
   .landmark_num         (landmark_num      ),
   `endif
-  // `ifdef L_K_IN
   .l_k                  (l_k               ),
-  // `endif
   .stage_val            (stage_val         ),
   .stage_rdy            (stage_rdy         ),
   .nonlinear_m_rdy      (nonlinear_m_rdy   ),
