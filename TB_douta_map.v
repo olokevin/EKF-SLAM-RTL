@@ -3,13 +3,14 @@ module TB_douta_map #(
   parameter Y = 4,
   parameter L = 4,
 
-  parameter RSA_DW = 32
+  parameter RSA_DW = 32,
+  parameter TB_DOUTA_SEL_DW = 3
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [2:0]   TB_douta_sel,
+  input   [TB_DOUTA_SEL_DW-1 : 0]   TB_douta_sel,
   input           l_k_0,
   
   input   signed [L*RSA_DW-1 : 0]         TB_douta,
@@ -49,7 +50,7 @@ always @(posedge clk) begin
   else begin
     case(TB_douta_sel[2])
       TBa_A: begin
-        case(TB_douta_sel[1:0])
+        case(TB_douta_sel[TB_DOUTA_SEL_DW-1:0])
           DIR_IDLE: A_TB_douta <= 0;
           DIR_POS : A_TB_douta <= TB_douta;
           DIR_NEG :begin
@@ -88,7 +89,7 @@ always @(posedge clk) begin
   if(sys_rst)
     M_TB_douta <= 0;
   else begin
-    case(TB_douta_sel[2])
+    case(TB_douta_sel[TB_DOUTA_SEL_DW-1])
       TBa_M: begin
         case(TB_douta_sel[1:0])
           DIR_IDLE: M_TB_douta <= 0;

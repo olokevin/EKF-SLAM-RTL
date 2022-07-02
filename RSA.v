@@ -209,7 +209,7 @@ module RSA
   parameter TB_DOUTA_SEL_DW = 3;
   parameter TB_DOUTB_SEL_DW = 3;
   parameter CB_DINB_SEL_DW  = 2;
-  parameter CB_DOUTA_SEL_DW = 4;  //注意MUX deMUX需手动修改
+  parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
 
 /*
   差分时钟信号转单端
@@ -653,7 +653,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X              (X              ),
     .Y              (Y              ),
     .L              (L              ),
-    .RSA_DW         (RSA_DW         )
+    .RSA_DW         (RSA_DW         ),
+    .TB_DINA_SEL_DW (TB_DINA_SEL_DW)
   )
   u_TB_dina_map(
   	.clk                (clk                ),
@@ -671,7 +672,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X      (X      ),
     .Y      (Y      ),
     .L      (L      ),
-    .RSA_DW (RSA_DW )
+    .RSA_DW (RSA_DW ),
+    .TB_DINB_SEL_DW(TB_DINB_SEL_DW)
   )
   u_TB_dinb_map(
   	.clk         (clk         ),
@@ -687,7 +689,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X      (X      ),
     .Y      (Y      ),
     .L      (L      ),
-    .RSA_DW (RSA_DW )
+    .RSA_DW (RSA_DW ),
+    .TB_DOUTA_SEL_DW (TB_DOUTA_SEL_DW)
   )
   u_TB_douta_map(
   	.clk          (clk          ),
@@ -705,7 +708,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y         (Y         ),
     .L         (L         ),
     .RSA_DW    (RSA_DW    ),
-    .SEQ_CNT_DW (SEQ_CNT_DW)
+    .SEQ_CNT_DW (SEQ_CNT_DW),
+    .TB_DOUTB_SEL_DW (TB_DOUTB_SEL_DW)
   )
   u_TB_doutb_map(
   	.clk             (clk             ),
@@ -725,7 +729,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .ROW_LEN (ROW_LEN )
+    .ROW_LEN (ROW_LEN ),
+    .CB_DINB_SEL_DW(CB_DINB_SEL_DW)
   )
   u_CB_dinb_map(
   	.clk          (clk          ),
@@ -742,7 +747,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .SEQ_CNT_DW (SEQ_CNT_DW )
+    .SEQ_CNT_DW (SEQ_CNT_DW ),
+    .CB_DOUTA_SEL_DW (CB_DOUTA_SEL_DW)
   )
   u_CB_douta_map(
   	.clk          (clk          ),

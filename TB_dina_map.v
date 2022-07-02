@@ -3,13 +3,14 @@ module TB_dina_map #(
   parameter Y = 4,
   parameter L = 4,
 
-  parameter RSA_DW = 32
+  parameter RSA_DW = 32,
+  parameter TB_DINA_SEL_DW  = 3
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [2:0]   TB_dina_sel,
+  input   [TB_DINA_SEL_DW-1 : 0]   TB_dina_sel,
   input           l_k_0,
 
   input   signed [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
@@ -45,7 +46,7 @@ integer i_TB_non_linear;
     if(sys_rst)
       TB_dina <= 0;
     else begin
-      case(TB_dina_sel[2])
+      case(TB_dina_sel[TB_DINA_SEL_DW-1])
         TBa_CBa: begin
           case(TB_dina_sel[1:0])
             DIR_POS: begin

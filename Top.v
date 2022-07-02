@@ -1,8 +1,15 @@
 `include "macro.v"
 
 module Top #(
+  parameter X = 4,
+  parameter Y = 4,
+  parameter L = 4,
+
   parameter RSA_DW = 32,
   parameter RSA_AW = 17,
+  parameter TB_AW = 11,
+  parameter CB_AW = 17,
+  parameter SEQ_CNT_DW = 5,
   parameter ROW_LEN = 10
 ) (
   input clk,
@@ -30,14 +37,6 @@ module Top #(
     output signed [RSA_DW - 1 : 0] S_data
 
 );
-
-  parameter X = 4;
-  parameter Y = 4;
-  parameter L = 4;
-
-  parameter TB_AW = 11;
-  parameter CB_AW = 17;
-  parameter SEQ_CNT_DW = 5; 
 
 /******************RSA ->  NonLinear*********************/
   //开始信号

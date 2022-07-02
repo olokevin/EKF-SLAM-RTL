@@ -4,13 +4,14 @@ module TB_doutb_map #(
   parameter L = 4,
 
   parameter SEQ_CNT_DW = 5,
-  parameter RSA_DW = 32
+  parameter RSA_DW = 32,
+  parameter TB_DOUTB_SEL_DW = 3
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [2:0]   TB_doutb_sel,
+  input   [TB_DOUTB_SEL_DW-1 : 0]   TB_doutb_sel,
   input           l_k_0,
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
@@ -56,7 +57,7 @@ always @(posedge clk) begin
   if(sys_rst)
     B_TB_doutb <= 0;
   else begin
-    case(TB_doutb_sel[2])
+    case(TB_doutb_sel[TB_DOUTB_SEL_DW-1])
       TB_doutb_B: begin
         case(TB_doutb_sel[1:0])
           DIR_IDLE: B_TB_doutb <= 0;
@@ -106,7 +107,7 @@ always @(posedge clk) begin
   if(sys_rst)
     B_cache_TB_doutb <= 0;
   else begin
-    case(TB_doutb_sel[2])
+    case(TB_doutb_sel[TB_DOUTB_SEL_DW-1])
       TB_doutb_B_cache: begin
         case(TB_doutb_sel[1:0])
           B_cache_IDLE: B_cache_TB_doutb <= 0;

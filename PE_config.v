@@ -14,7 +14,7 @@ module PE_config #(
   parameter TB_DOUTA_SEL_DW = 3,
   parameter TB_DOUTB_SEL_DW = 3,
   parameter CB_DINB_SEL_DW  = 2,
-  parameter CB_DOUTA_SEL_DW = 4,  //注意MUX deMUX需手动修改
+  parameter CB_DOUTA_SEL_DW = 5,  //注意MUX deMUX需手动修改
 
   parameter RSA_DW = 32,
   parameter TB_AW = 11,
@@ -203,12 +203,15 @@ module PE_config #(
 /*
   ************************** CB mode config *********************
 */
-  localparam CB_IDLE = 5'b00000;
-  //CB_mode[4:3] dir
-  localparam CBa_TBa = 2'b00;
-  localparam CBa_A = 2'b01;
-  localparam CBa_B = 2'b10;
-  localparam CBa_M = 2'b11;
+  localparam CB_IDLE = 6'b000000;
+  //CB_mode[5:3] dir
+
+  localparam CBa_IDLE = 3'b000;
+  localparam CBa_A = 3'b001;
+  localparam CBa_B = 3'b010;
+  localparam CBa_M = 3'b011;
+  localparam CBa_TBa = 3'b100;
+  localparam CBa_NL  = 3'b101;
 
   localparam CBb_C = 2'b01;  
 
@@ -3486,7 +3489,7 @@ module PE_config #(
                         CB_addra_new <= 0;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
+                        CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= 2'b01;
                       end
@@ -3509,7 +3512,7 @@ module PE_config #(
                         CB_addra_new <= CB_addra_base;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new <= {CBa_mode[4:3], DIR_POS};
+                        CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_base + 2'b01;
                       end
@@ -3532,7 +3535,7 @@ module PE_config #(
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
+                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
@@ -3591,7 +3594,7 @@ module PE_config #(
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
+                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
@@ -3619,7 +3622,7 @@ module PE_config #(
                         CB_addra_new <= CB_addra_base + l_k_row;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[4:3]; 
+                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_new + 1'b1;

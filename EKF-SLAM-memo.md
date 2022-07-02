@@ -1269,3 +1269,13 @@ addrb_new: NEW_2_PE_in+N+3
 
 * dynamic_shreg 不能直接用parameter作为addr! 得用reg
 * B_cache: 读出要加一级buffer（与CB TB读出匹配）
+
+
+
+### 220702
+
+* 将位宽作为参数传入
+  * 修改.v文件
+  * 注意对位宽最高位进行修改
+  * 修改实例化
+  * 确保传参路径正确

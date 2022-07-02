@@ -4,13 +4,13 @@ module CB_dinb_map #(
   parameter L = 4,
 
   parameter RSA_DW =32,
-  parameter ROW_LEN = 10
+  parameter CB_DINB_SEL_DW  = 2
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [1:0]   CB_dinb_sel,
+  input   [CB_DINB_SEL_DW-1 : 0]   CB_dinb_sel,
   input           l_k_0,
 
   input   signed [X*RSA_DW-1 : 0]         C_CB_dinb,

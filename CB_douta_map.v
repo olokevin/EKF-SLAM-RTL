@@ -4,13 +4,14 @@ module CB_douta_map #(
   parameter L = 4,
 
   parameter RSA_DW = 32,
-  parameter SEQ_CNT_DW = 10
+  parameter SEQ_CNT_DW = 10,
+  parameter CB_DOUTA_SEL_DW = 5
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [3:0]   CB_douta_sel,
+  input   [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel,
   input           l_k_0,
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
 
@@ -23,16 +24,37 @@ module CB_douta_map #(
 
 //
 /*
-  CB_douta_sel[3:2]
-    11: M
-    10: B
-    01: A
-    00: tranfer
+  CB_douta_sel[4:2]
+    000: IDLE
+    001: A
+    010: B
+    011: M
+    100: CBa_TBa
+    101: CBa_NL
   CB_douta_sel[1:0]
     00: DIR_IDLE
     01: 正向映射
     10：逆向映射
     11：NEW, 新地标初始化步，根据landmark后两位决定映射关系(进NEW步骤就先+1)
+*/
+localparam CBa_IDLE = 3'b000;
+localparam CBa_A = 3'b001;
+localparam CBa_B = 3'b010;
+localparam CBa_M = 3'b011;
+
+localparam CBa_TBa = 3'b100;
+localparam CBa_NL  = 3'b101;
+
+localparam DIR_IDLE = 2'b00;
+localparam DIR_POS  = 2'b01;
+localparam DIR_NEG  = 2'b10;
+localparam DIR_NEW  = 2'b11;
+
+localparam DIR_NEW_0  = 1'b0;
+localparam DIR_NEW_1  = 1'b1;
+
+/*
+  旧地址映射方案
 
   l_num[1:0]  CBa_BANK   PE_BANK
   11          0         0
@@ -46,24 +68,13 @@ module CB_douta_map #(
 
   10          1         0
               0         1
+
+  localparam  DIR_NEW_11  = 2'b11; 
+  localparam  DIR_NEW_00  = 2'b00;
+  localparam  DIR_NEW_01  = 2'b01;
+  localparam  DIR_NEW_10  = 2'b10;
 */
-localparam CBa_TBa = 2'b00;
-localparam CBa_A = 2'b01;
-localparam CBa_B = 2'b10;
-localparam CBa_M = 2'b11;
 
-localparam DIR_IDLE = 2'b00;
-localparam DIR_POS  = 2'b01;
-localparam DIR_NEG  = 2'b10;
-localparam DIR_NEW  = 2'b11;
-
-localparam DIR_NEW_0  = 1'b0;
-localparam DIR_NEW_1  = 1'b1;
-
-// localparam  DIR_NEW_11  = 2'b11; 
-// localparam  DIR_NEW_00  = 2'b00;
-// localparam  DIR_NEW_01  = 2'b01;
-// localparam  DIR_NEW_10  = 2'b10;
 
 /*
   A_CB_douta
@@ -73,7 +84,7 @@ always @(posedge clk) begin
     if(sys_rst)
       A_CB_douta <= 0;
     else begin
-      case(CB_douta_sel[3:2])
+      case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
         CBa_A: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: A_CB_douta <= 0;
@@ -114,7 +125,7 @@ always @(posedge clk) begin
     if(sys_rst)
       B_CB_douta <= 0;
     else begin
-      case(CB_douta_sel[3:2])
+      case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
         CBa_B: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: B_CB_douta <= 0;
@@ -155,7 +166,7 @@ always @(posedge clk) begin
     if(sys_rst)
       M_CB_douta <= 0;
     else begin
-      case(CB_douta_sel[3:2])
+      case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
         CBa_M: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: M_CB_douta <= 0;
@@ -196,7 +207,7 @@ always @(posedge clk) begin
     if(sys_rst)
       TB_dina_CB_douta <= 0;
     else begin
-      case(CB_douta_sel[3:2])
+      case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
         CBa_TBa: begin
           case(CB_douta_sel[1:0])
             DIR_IDLE: TB_dina_CB_douta <= 0;
