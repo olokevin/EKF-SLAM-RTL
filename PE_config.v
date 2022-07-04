@@ -13,6 +13,7 @@ module PE_config #(
   parameter TB_DINB_SEL_DW  = 2,
   parameter TB_DOUTA_SEL_DW = 3,
   parameter TB_DOUTB_SEL_DW = 3,
+  parameter CB_DINA_SEL_DW  = 2,
   parameter CB_DINB_SEL_DW  = 2,
   parameter CB_DOUTA_SEL_DW = 5,  //注意MUX deMUX需手动修改
 
@@ -79,6 +80,7 @@ module PE_config #(
   output  [L*TB_AW-1 : 0]      TB_addra,
   output  [L*TB_AW-1 : 0]      TB_addrb,
 
+  output reg [CB_DINA_SEL_DW-1 : 0]      CB_dina_sel,
   output reg [CB_DINB_SEL_DW-1 : 0]      CB_dinb_sel,
   output reg [CB_DOUTA_SEL_DW-1 : 0]     CB_douta_sel,
 
@@ -91,14 +93,15 @@ module PE_config #(
   output [L*CB_AW-1 : 0]      CB_addra,
   output [L*CB_AW-1 : 0]      CB_addrb,
 
-  output reg [L*RSA_DW-1 : 0]     CB_dina,
-
   output  [Y-1:0]         B_cache_en,
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
 
   output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
   output [2 : 0]            stage_cur_out,
+  output [3:0]              prd_cur_out,
+  output [5:0]              new_cur_out,
+  output [10:0]             upd_cur_out,
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -216,15 +219,17 @@ module PE_config #(
   localparam CB_IDLE = 6'b000000;
   //CB_mode[5:3] dir
 
-  localparam CBa_IDLE = 3'b000;
-  localparam CBa_A = 3'b001;
-  localparam CBa_B = 3'b010;
-  localparam CBa_M = 3'b011;
-  localparam CBa_TBa = 3'b100;
-  localparam CBa_NL  = 3'b111;
+  //CB port-A rd
+    localparam CBa_IDLE = 3'b000;
+    localparam CBa_A = 3'b001;
+    localparam CBa_B = 3'b010;
+    localparam CBa_M = 3'b011;
+    localparam CBa_TBa = 3'b100;
+    localparam CBa_NL  = 3'b111;
 
-  localparam CBb_C  = 2'b01;  
-  localparam CBb_NL = 2'b11;  
+  //CB port-B wr
+    localparam CBb_C  = 2'b01;  
+    localparam CBb_NL = 2'b11;  
 
   //CB_mode[2:0] mode
   localparam CB_cov_NL = 3'b000;
@@ -498,7 +503,9 @@ module PE_config #(
 
   //CB def
     //port A
-    reg [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel_new;
+    reg [CB_DINA_SEL_DW-1 : 0]    CB_dina_sel_new;
+    reg [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel_new;
+    
     reg [1:0]                     CBa_shift_dir; 
 
     reg                           CB_ena_new;
@@ -508,7 +515,7 @@ module PE_config #(
     reg [CB_AW-1 : 0]            CB_addra_base;
 
     //port B
-    reg [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel_new;
+    reg [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel_new;
     reg [1:0]                     CBb_shift_dir;
 
     reg                           CB_enb_new;
@@ -551,6 +558,9 @@ module PE_config #(
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
   assign seq_cnt_out = seq_cnt;       //时序计数器输出
+  assign prd_cur_out = prd_cur;
+  assign new_cur_out = new_cur;
+  assign upd_cur_out = upd_cur;
 
   //******************* M读取状态延迟*************************
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;
@@ -1922,6 +1932,32 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
 /*
   ************* (using) combinational RSA work-mode Config *************
 */
+
+/*
+  temp CB_dina_sel
+*/
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      CB_dina_sel_new <= 0;
+    end
+    else begin
+      case(stage_cur)
+        STAGE_PRD:begin
+                    case(prd_cur)
+                      PRD_NL_RCV: begin
+                        CB_dina_sel_new <= 
+                      end
+                    endcase
+                  end
+        STAGE_NEW:begin
+          
+        end
+        
+      endcase
+    end
+      
+  end
+
   always @(*) begin
     if(sys_rst) begin
       PE_m = 0;
@@ -3574,6 +3610,8 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
         CB_cov_NL    : begin
                     case(stage_cur)
                       STAGE_PRD:begin
+                        case(prd_cur)
+                          PRD_NL_SEND: begin
                                   CB_wea_new <= 1'b0;
                                   case(seq_cnt)
                                     SEQ_0: begin
@@ -3592,6 +3630,31 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                                     end
                                   endcase 
                                 end
+                          PRD_NL_RCV: begin
+                                  CB_wea_new <= 1'b1;
+                                  case(seq_cnt)
+                                    SEQ_0: begin
+                                      CBa_shift_dir <= DIR_POS;
+                                      CB_ena_new <= 1'b1;
+                                      CB_addra_new <= 2'b11;
+                                    end     
+                                    SEQ_1: begin
+                                      CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                                      CB_ena_new <= 1'b0;
+                                      CB_addra_new <= 0;
+                                    end
+                                    default: begin
+                                      CB_ena_new <= 1'b0;
+                                      CB_addra_new <= 0;
+                                    end
+                                  endcase 
+                                end
+                          default: begin
+                                  CB_ena_new <= 1'b0;
+                                  CB_addra_new <= 0;
+                                end
+                        endcase        
+                      end
                       STAGE_NEW:begin
                         
                       end
@@ -4599,14 +4662,6 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
     TB_doutb_sel <= TB_doutb_sel_new;
     CB_dinb_sel <= CB_dinb_sel_new;
     CB_douta_sel <= CB_douta_sel_new;
-  end
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      CB_dina <= 0;
-    end
-    else 
-      CB_dina <= 0;
   end
 
 endmodule

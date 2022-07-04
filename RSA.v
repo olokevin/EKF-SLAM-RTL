@@ -207,6 +207,7 @@ module RSA
   parameter TB_DINB_SEL_DW  = 2;
   parameter TB_DOUTA_SEL_DW = 3;
   parameter TB_DOUTB_SEL_DW = 3;
+  parameter CB_DINA_SEL_DW  = 2;
   parameter CB_DINB_SEL_DW  = 2;
   parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
 
@@ -236,21 +237,20 @@ module RSA
 
   wire [SEQ_CNT_DW-1 : 0] seq_cnt_out;
   wire [2 : 0]            stage_cur_out;
+  wire [3 : 0]            prd_cur_out;
+  wire [5 : 0]            new_cur_out;
+  wire [10 :0]            upd_cur_out;
   //stage
     localparam      IDLE       = 3'b000 ;
     localparam      STAGE_PRD  = 3'b001 ;
     localparam      STAGE_NEW  = 3'b010 ;
     localparam      STAGE_UPD  = 3'b100 ;
 
-//数据寄存
-  reg signed [RSA_DW-1 : 0] xk_r, yk_r,  xita_r;  //机器人坐标
-  reg signed [RSA_DW-1 : 0] lkx_r, lky_r;         //地图坐标
-
 /*
   ********************** 接收非线性发回的数据 *******************
 */
   //预测步接收的非线性数据
-  reg [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat, Fxi_13, Fxi_23;
+  reg signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat, Fxi_13, Fxi_23;
 
   always @(posedge clk) begin
     if(sys_rst) begin
@@ -278,7 +278,6 @@ module RSA
         end
       endcase
     end
-      
   end
 
 /*
@@ -679,6 +678,7 @@ wire signed [L*RSA_DW-1 : 0] TB_douta;
 wire signed [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
+wire [CB_DINA_SEL_DW-1 : 0]    CB_dina_sel;
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
 wire [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel;
 
@@ -1083,6 +1083,7 @@ PE_config
   .TB_DINB_SEL_DW    (TB_DINB_SEL_DW    ),
   .TB_DOUTA_SEL_DW   (TB_DOUTA_SEL_DW   ),
   .TB_DOUTB_SEL_DW   (TB_DOUTB_SEL_DW   ),
+  .CB_DINA_SEL_DW    (CB_DINA_SEL_DW    ),
   .CB_DINB_SEL_DW    (CB_DINB_SEL_DW    ),
   .CB_DOUTA_SEL_DW   (CB_DOUTA_SEL_DW   ),
 
@@ -1124,6 +1125,7 @@ u_PE_config(
   .TB_web               (TB_web            ),
   .TB_addra             (TB_addra          ),
   .TB_addrb             (TB_addrb          ),
+  .CB_dina_sel          (CB_dina_sel       ),
   .CB_dinb_sel          (CB_dinb_sel       ),
   .CB_douta_sel         (CB_douta_sel      ),
   .CB_ena               (CB_ena            ),
@@ -1132,12 +1134,14 @@ u_PE_config(
   .CB_web               (CB_web            ),
   .CB_addra             (CB_addra          ),
   .CB_addrb             (CB_addrb          ),
-  .CB_dina              (CB_dina           ),
   .B_cache_en            (B_cache_en),
   .B_cache_we            (B_cache_we),
   .B_cache_addr          (B_cache_addr),
   .seq_cnt_out          (seq_cnt_out),
   .stage_cur_out        (stage_cur_out),
+  .prd_cur_out          (prd_cur_out),
+  .new_cur_out          (new_cur_out),
+  .upd_cur_out          (upd_cur_out),
   .M_adder_mode         (M_adder_mode      ),
   .PE_mode              (PE_mode           ),
   .new_cal_en           (new_cal_en        ),

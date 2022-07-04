@@ -298,12 +298,12 @@ always @(posedge clk) begin
                         end
                   endcase
                 end
-        default: begin
-                  xk <= 0;
-                  yk <= 0;
-                  xita <= 0;
-                  lkx <= 0;
-                  lky <= 0;
+        default: begin    //缓存，不变化
+                  xk <= xk;
+                  yk <= yk;
+                  xita <= xita;
+                  lkx <= lkx;
+                  lky <= lky;
                 end 
       endcase
   end
