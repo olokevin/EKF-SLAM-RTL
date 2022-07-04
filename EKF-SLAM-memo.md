@@ -1279,3 +1279,14 @@ addrb_new: NEW_2_PE_in+N+3
   * 注意对位宽最高位进行修改
   * 修改实例化
   * 确保传参路径正确
+
+
+
+### 220704
+
+* 写入：要一次把4个BANK的正确值写入（复用shift）
+* TB_dina_map需输入xk,yk,xita
+* RSA先用寄存器寄存xk,yk,xita, 再输出，之后可以通过该寄存器输入TB_dina_map
+  * 什么时间点缓存？
+* 直接输出seq_cnt, 再dout_map内部再进行延迟
+* 非线性接收解码放到RSA里！

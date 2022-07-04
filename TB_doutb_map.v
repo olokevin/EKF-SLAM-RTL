@@ -13,7 +13,7 @@ module TB_doutb_map #(
 
   input   [TB_DOUTB_SEL_DW-1 : 0]   TB_doutb_sel,
   input           l_k_0,
-  input   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel,
+  input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
   input   signed [L*RSA_DW-1 : 0]         TB_doutb,
   output  reg  signed [Y*RSA_DW-1 : 0]    B_TB_doutb,
@@ -48,6 +48,21 @@ localparam B_cache_IDLE = 2'b00;
 localparam B_cache_trnsfer = 2'b01;
 localparam B_cache_transpose = 2'b10;
 localparam B_cache_inv = 2'b11;
+
+//******************* seq_cnt延迟 *************************  
+wire   [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
+  dynamic_shreg 
+  #(
+    .DW    (SEQ_CNT_DW    ),
+    .AW    (2    )
+  )
+  seq_cnt_dout_sel_dynamic_shreg(
+    .clk  (clk  ),
+    .ce   (1'b1   ),
+    .addr (2'b10 ),
+    .din  (seq_cnt_out  ),
+    .dout (seq_cnt_dout_sel )
+  );
 
 /*
    ********************** B_TB_doutb ****************************

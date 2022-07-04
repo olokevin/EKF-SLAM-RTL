@@ -183,11 +183,10 @@ module RSA
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
-    output reg init_predict, init_newlm, init_update,
+    output init_predict, init_newlm, init_update,
   //数据
-    output reg signed [RSA_DW-1 : 0] xk, yk,     //机器人坐标
-    output reg signed [RSA_DW-1 : 0] lkx, lky,   //地图坐标
-    output reg signed [RSA_AW-1 : 0] xita,       //机器人朝向
+    output signed [RSA_DW-1 : 0] xk, yk, xita,     //机器人状态
+    output signed [RSA_DW-1 : 0] lkx, lky,        //地图坐标
   
 /******************NonLinear ->  RSA*********************/
   //完成信号
@@ -212,7 +211,7 @@ module RSA
   parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
 
 /*
-  差分时钟信号转单端
+  ******************* 差分时钟信号转单端 ************************
 */
 `ifdef USE_DIFF_CLK
   wire clk;
@@ -228,6 +227,59 @@ module RSA
   .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
   );
 `endif
+
+/*
+  ************************* 当前状态量 ***********************
+*/
+  wire l_k_0;
+  assign l_k_0 = l_k[0];
+
+  wire [SEQ_CNT_DW-1 : 0] seq_cnt_out;
+  wire [2 : 0]            stage_cur_out;
+  //stage
+    localparam      IDLE       = 3'b000 ;
+    localparam      STAGE_PRD  = 3'b001 ;
+    localparam      STAGE_NEW  = 3'b010 ;
+    localparam      STAGE_UPD  = 3'b100 ;
+
+//数据寄存
+  reg signed [RSA_DW-1 : 0] xk_r, yk_r,  xita_r;  //机器人坐标
+  reg signed [RSA_DW-1 : 0] lkx_r, lky_r;         //地图坐标
+
+/*
+  ********************** 接收非线性发回的数据 *******************
+*/
+  //预测步接收的非线性数据
+  reg [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat, Fxi_13, Fxi_23;
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+          x_hat <= 0;
+          y_hat <= 0;
+          xita_hat <= 0;
+          Fxi_13 <= 0;
+          Fxi_23 <= 0;
+        end
+    else begin
+      case (stage_cur_out)
+        STAGE_PRD: begin
+          x_hat <= xk + result_2;
+          y_hat <= yk + result_3;
+          xita_hat <= xita + result_1;
+          Fxi_13 <= - result_3;
+          Fxi_23 <= result_2;
+        end
+        default: begin
+          x_hat <= 0;
+          y_hat <= 0;
+          xita_hat <= 0;
+          Fxi_13 <= 0;
+          Fxi_23 <= 0;
+        end
+      endcase
+    end
+      
+  end
 
 /*
   (old) PE_array
@@ -600,6 +652,12 @@ generate
   end
 endgenerate
 
+
+
+
+/*
+  ********************** BRAM map ports **********************
+*/
 //TEMP BRAM
 wire [TB_DINA_SEL_DW-1 : 0]    TB_dina_sel;
 wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
@@ -642,10 +700,7 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
 // `ifndef L_k_IN
 //   reg [ROW_LEN-1 : 0] l_k = 3'b100;
 // `endif
-wire l_k_0;
-assign l_k_0 = l_k[0];
 
-wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
 
 //TEMP_BANK data MUX and deMUX
   TB_dina_map 
@@ -654,15 +709,27 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y              (Y              ),
     .L              (L              ),
     .RSA_DW         (RSA_DW         ),
-    .TB_DINA_SEL_DW (TB_DINA_SEL_DW)
+    .SEQ_CNT_DW     (SEQ_CNT_DW     ),
+    .TB_DINA_SEL_DW (TB_DINA_SEL_DW )
   )
   u_TB_dina_map(
   	.clk                (clk                ),
     .sys_rst            (sys_rst            ),
     .TB_dina_sel        (TB_dina_sel        ),
     .l_k_0              (l_k_0              ),
+    .seq_cnt_out        (seq_cnt_out        ),
     .TB_dina_CB_douta   (TB_dina_CB_douta   ),
-    .TB_dina_non_linear (TB_dina_non_linear ),
+    .x_hat              (x_hat            ),
+    .y_hat              (y_hat            ),
+    .xita_hat           (xita_hat         ),
+    .Fxi_13             (Fxi_13           ),
+    .Fxi_23             (Fxi_23           ),
+    .result_0           (result_0         ),
+    .result_1           (result_1         ),
+    .result_2           (result_2         ),
+    .result_3           (result_3         ),
+    .result_4           (result_4         ),
+    .result_5           (result_5         ),
     .TB_dina            (TB_dina            )
   );
   
@@ -716,7 +783,7 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .sys_rst         (sys_rst         ),
     .TB_doutb_sel    (TB_doutb_sel    ),
     .l_k_0       (l_k_0       ),
-    .seq_cnt_dout_sel (seq_cnt_dout_sel),
+    .seq_cnt_out (seq_cnt_out),
     .TB_doutb        (TB_doutb        ),
     .B_TB_doutb      (B_TB_doutb      ),
     .B_cache_TB_doutb (B_cache_TB_doutb )
@@ -736,7 +803,7 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_dinb_sel  (CB_dinb_sel  ),
-    .l_k_0       (l_k_0       ),
+    .l_k_0        (l_k_0        ),
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
   );
@@ -755,12 +822,19 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .sys_rst      (sys_rst      ),
     .CB_douta_sel (CB_douta_sel ),
     .l_k_0       (l_k_0       ),
-    .seq_cnt_dout_sel (seq_cnt_dout_sel),
+    .seq_cnt_out (seq_cnt_out),
     .CB_douta     (CB_douta     ),
-    .TB_dina_CB_douta (TB_dina_CB_douta),
+
     .A_CB_douta   (A_CB_douta   ),
     .B_CB_douta   (B_CB_douta   ),
-    .M_CB_douta   (M_CB_douta   )
+    .M_CB_douta   (M_CB_douta   ),
+
+    .TB_dina_CB_douta (TB_dina_CB_douta ),
+    .xk               (xk               ),
+    .yk               (yk               ),
+    .xita             (xita             ),
+    .lkx              (lkx              ),
+    .lky              (lky              )
   );
 
 `ifdef BRAM_OUT
@@ -1062,7 +1136,8 @@ u_PE_config(
   .B_cache_en            (B_cache_en),
   .B_cache_we            (B_cache_we),
   .B_cache_addr          (B_cache_addr),
-  .seq_cnt_dout_sel      (seq_cnt_dout_sel),
+  .seq_cnt_out          (seq_cnt_out),
+  .stage_cur_out        (stage_cur_out),
   .M_adder_mode         (M_adder_mode      ),
   .PE_mode              (PE_mode           ),
   .new_cal_en           (new_cal_en        ),

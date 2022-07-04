@@ -35,13 +35,22 @@ module PE_config #(
   input   [2:0]   stage_val,
   output  reg [2:0]   stage_rdy,
 
-//handshake of nonlinear calculation start & complete
+/*
+  (OLD) handshake of nonlinear calculation start & complete
   //nonlinear start(3 stages are conbined)
-  output   reg [2:0]   nonlinear_m_rdy,
-  input  [2:0]     nonlinear_s_val,
+    output   reg [2:0]   nonlinear_m_rdy,
+    input  [2:0]     nonlinear_s_val,
   //nonlinear cplt(3 stages are conbined)
-  output   reg [2:0]   nonlinear_m_val,
-  input  [2:0]     nonlinear_s_rdy,
+    output   reg [2:0]   nonlinear_m_val,
+    input  [2:0]     nonlinear_s_rdy,
+*/
+
+// NonLinear init
+  output reg init_predict, init_newlm, init_update,
+
+// NonLinear done
+  input done_predict, done_newlm, done_update,
+  
 
 //sel en we addr are wire connected to the regs of dshift out. actually they are reg output
   output  [A_IN_SEL_DW*X-1 : 0]       A_in_sel,
@@ -88,7 +97,8 @@ module PE_config #(
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
 
-  output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel, 
+  output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
+  output [2 : 0]            stage_cur_out,
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -211,18 +221,20 @@ module PE_config #(
   localparam CBa_B = 3'b010;
   localparam CBa_M = 3'b011;
   localparam CBa_TBa = 3'b100;
-  localparam CBa_NL  = 3'b101;
+  localparam CBa_NL  = 3'b111;
 
-  localparam CBb_C = 2'b01;  
+  localparam CBb_C  = 2'b01;  
+  localparam CBb_NL = 2'b11;  
 
   //CB_mode[2:0] mode
+  localparam CB_cov_NL = 3'b000;
   localparam CB_cov_vv = 3'b001;
   localparam CB_cov_mv = 3'b010;
   localparam CB_cov    = 3'b011;
   localparam CB_cov_lv = 3'b100;
   localparam CB_cov_lm = 3'b101;
   localparam CB_cov_ml = 3'b110;
-  localparam CB_cov_ll = 3'b111;
+  localparam CB_cov_ll = 3'b111;    
 
 /*
   ********************** params of FSMs *************************
@@ -258,15 +270,19 @@ module PE_config #(
     localparam [TB_AW-1 : 0] M_t = 'd12;
   // PREDICTION SERIES
     localparam PRD_IDLE = 'b0000;
-    localparam PRD_NONLINEAR = 'b0001;
-    localparam PRD_1 = 'b0010;       //prd_cur[1]
-    localparam PRD_2 = 'b0100;
-    localparam PRD_3 = 'b1000;
+    localparam PRD_NL_SEND = 'b1001;
+    localparam PRD_NL_WAIT = 'b1010;
+    localparam PRD_NL_RCV  = 'b1100;
+    localparam PRD_1 = 'b0001;       //prd_cur[1]
+    localparam PRD_2 = 'b0010;
+    localparam PRD_3 = 'b0100;
 
     // localparam PRD_1_START = 0;
     // localparam PRD_2_START = 'd18;
     // localparam PRD_3_START = 'd36;
 
+    localparam [SEQ_CNT_DW-1 : 0] PRD_NL_SEND_CNT_MAX = 'd6;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
     localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd17;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_CNT_MAX = 'd5;
@@ -295,13 +311,17 @@ module PE_config #(
     localparam [TB_AW-1 : 0] lv_G_xi           = 'd24;
   // PREDICTION SERIES
     localparam NEW_IDLE      = 'b000000;
-    localparam NEW_NONLINEAR = 'b000001;
-    localparam NEW_1         = 'b000010;       //prd_cur[1]
-    localparam NEW_2         = 'b000100;
-    localparam NEW_3         = 'b001000;
-    localparam NEW_4         = 'b010000;
-    localparam NEW_5         = 'b100000;
+    localparam NEW_NL_SEND   = 'b100001;
+    localparam NEW_NL_WAIT   = 'b100010;
+    localparam NEW_NL_RCV    = 'b100100;
+    localparam NEW_1         = 'b000001;       //prd_cur[1]
+    localparam NEW_2         = 'b000010;
+    localparam NEW_3         = 'b000100;
+    localparam NEW_4         = 'b001000;
+    localparam NEW_5         = 'b010000;
 
+    localparam [SEQ_CNT_DW-1 : 0] NEW_NL_SEND_CNT_MAX = 'd6;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] NEW_1_CNT_MAX     = 'd5;
     localparam [SEQ_CNT_DW-1 : 0] NEW_2_CNT_MAX     = 'd7;
     localparam [SEQ_CNT_DW-1 : 0] NEW_3_CNT_MAX     = 'd7;
@@ -340,7 +360,9 @@ module PE_config #(
     localparam [TB_AW-1 : 0] K_t           = 'd40;
   // PREDICTION SERIES
     localparam UPD_IDLE      = 11'b000_0000_0000;
-    localparam UPD_NONLINEAR = 11'b1;
+    localparam UPD_NL_SEND   = 11'b100_0000_0001;
+    localparam UPD_NL_WAIT   = 11'b100_0000_0010;
+    localparam UPD_NL_RCV    = 11'b100_0000_0100;
     localparam UPD_1         = 11'b10;       
     localparam UPD_2         = 11'b100;
     localparam UPD_3         = 11'b1000;
@@ -352,6 +374,8 @@ module PE_config #(
     localparam UPD_9         = 11'b10_0000_0000;
     localparam UPD_10        = 11'b100_0000_0000;
 
+    localparam [SEQ_CNT_DW-1 : 0] UPD_NL_SEND_CNT_MAX = 'd6;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] UPD_1_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] UPD_2_CNT_MAX     = 'd2;
     localparam [SEQ_CNT_DW-1 : 0] UPD_3_CNT_MAX     = 'd2;
@@ -511,6 +535,8 @@ module PE_config #(
   reg [2:0]      stage_cur ;   
   reg          stage_change_err;  
 
+  assign stage_cur_out = stage_cur;   //输出当前阶段
+
 /*
   **************** variables of Prediction(PRD) *********************
 */
@@ -524,20 +550,7 @@ module PE_config #(
   reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
-  //******************* seq_cnt延迟 *************************
-  // output [SEQ_CNT_DW-1:0]   seq_cnt_dout_sel;      
-    dynamic_shreg 
-    #(
-      .DW    (SEQ_CNT_DW    ),
-      .AW    (2    )
-    )
-    seq_cnt_dout_sel_dynamic_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1   ),
-      .addr (2'b10 ),
-      .din  (seq_cnt  ),
-      .dout (seq_cnt_dout_sel )
-    );
+  assign seq_cnt_out = seq_cnt;       //时序计数器输出
 
   //******************* M读取状态延迟*************************
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;
@@ -703,27 +716,27 @@ module PE_config #(
   end
 
   /*
-    (4) output: nonlinear_val, nonlinear_rdy
+    (4) (old): nonlinear_val, nonlinear_rdy
   */
-  always @(posedge clk) begin
-    if(sys_rst)
-      nonlinear_m_rdy <= 0;
-    else if(prd_cur == PRD_IDLE || new_cur == NEW_IDLE || upd_cur == UPD_IDLE) begin
-      nonlinear_m_rdy <= 1'b1;
-    end
-    else
-      nonlinear_m_rdy <= 0;  
-  end 
+    // always @(posedge clk) begin
+    //   if(sys_rst)
+    //     nonlinear_m_rdy <= 0;
+    //   else if(prd_cur == PRD_IDLE || new_cur == NEW_IDLE || upd_cur == UPD_IDLE) begin
+    //     nonlinear_m_rdy <= 1'b1;
+    //   end
+    //   else
+    //     nonlinear_m_rdy <= 0;  
+    // end 
 
-  always @(posedge clk) begin
-    if(sys_rst)
-      nonlinear_m_val <= 0;
-    else if(prd_cur == PRD_NONLINEAR || new_cur == NEW_NONLINEAR || upd_cur == UPD_NONLINEAR) begin
-      nonlinear_m_val <= 1'b1;
-    end
-    else
-      nonlinear_m_val <= 0;  
-  end 
+    // always @(posedge clk) begin
+    //   if(sys_rst)
+    //     nonlinear_m_val <= 0;
+    //   else if(prd_cur == PRD_NONLINEAR || new_cur == NEW_NONLINEAR || upd_cur == UPD_NONLINEAR) begin
+    //     nonlinear_m_val <= 1'b1;
+    //   end
+    //   else
+    //     nonlinear_m_val <= 0;  
+    // end 
 
   //(5)output: calculate the landmark number
 `ifndef LANDMARK_NUM_IN
@@ -789,6 +802,8 @@ module PE_config #(
     case(stage_cur)
       STAGE_PRD: begin
         case(prd_cur)
+          PRD_NL_SEND: seq_cnt_max = PRD_NL_SEND_CNT_MAX;
+          PRD_NL_RCV:  seq_cnt_max = PRD_NL_RCV_CNT_MAX;
           PRD_1: seq_cnt_max = PRD_1_CNT_MAX;
           PRD_2: seq_cnt_max = PRD_2_CNT_MAX;
           PRD_3: seq_cnt_max = PRD_3_CNT_MAX;
@@ -797,6 +812,8 @@ module PE_config #(
       end
       STAGE_NEW: begin
         case(new_cur)
+          NEW_NL_SEND: seq_cnt_max = NEW_NL_SEND_CNT_MAX;
+          NEW_NL_RCV:  seq_cnt_max = NEW_NL_RCV_CNT_MAX;
           NEW_1: seq_cnt_max = NEW_1_CNT_MAX;
           NEW_2: seq_cnt_max = NEW_2_CNT_MAX;
           NEW_3: seq_cnt_max = NEW_3_CNT_MAX;
@@ -807,6 +824,8 @@ module PE_config #(
       end
       STAGE_UPD: begin
         case(upd_cur)
+          UPD_NL_SEND: seq_cnt_max = UPD_NL_SEND_CNT_MAX;
+          UPD_NL_RCV:  seq_cnt_max = UPD_NL_RCV_CNT_MAX;
           UPD_1: seq_cnt_max = UPD_1_CNT_MAX;
           UPD_2: seq_cnt_max = UPD_2_CNT_MAX;
           UPD_3: seq_cnt_max = UPD_3_CNT_MAX;
@@ -1038,7 +1057,7 @@ module PE_config #(
 /*
   ****************** 2nd FSM sequential stage transfer ***************
 */
-  
+reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
   /*
     ******************** PRD state transfer **************************
   */
@@ -1049,18 +1068,32 @@ module PE_config #(
       else  begin
         case(prd_cur)
           PRD_IDLE: begin
-            if(nonlinear_m_rdy & nonlinear_s_val == STAGE_PRD) begin
-              prd_cur <= PRD_NONLINEAR;
+            if(stage_val & stage_rdy == STAGE_PRD) begin
+              prd_cur <= PRD_NL_SEND;
             end
             else
               prd_cur <= PRD_IDLE;
           end
-          PRD_NONLINEAR: begin
-            if(nonlinear_m_val & nonlinear_s_rdy == STAGE_PRD) begin
+          PRD_NL_SEND: begin
+            if(init_predict == 1'b1) begin
+              prd_cur <= PRD_NL_WAIT;
+            end
+            else
+              prd_cur <= PRD_NL_SEND;
+          end
+          PRD_NL_WAIT: begin
+            if(done_predict == 1'b1) begin
+              prd_cur <= PRD_NL_RCV;
+            end
+            else
+              prd_cur <= PRD_NL_WAIT;
+          end
+          PRD_NL_RCV: begin
+            if(rcv_OK_predict == 1'b1) begin
               prd_cur <= PRD_1;
             end
             else
-              prd_cur <= PRD_NONLINEAR;
+              prd_cur <= PRD_NL_RCV;
           end
           PRD_1: begin
             if(seq_cnt == seq_cnt_max) begin
@@ -1092,6 +1125,27 @@ module PE_config #(
         endcase
       end
     end
+
+    //output: init_predict, rcv_OK_predict
+      always @(posedge clk) begin
+        if(sys_rst) begin
+          init_predict <= 0;
+        end
+        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_SEND && seq_cnt == 'd5)
+          init_predict <= 1'b1;
+        else
+          init_predict <= 0;
+      end
+
+      always @(posedge clk) begin
+        if(sys_rst) begin
+          rcv_OK_predict <= 0;
+        end
+        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_RCV && seq_cnt == 'd5)
+          rcv_OK_predict <= 1'b1;
+        else
+          rcv_OK_predict <= 0;
+      end
   
   /*
     ************************ NEW state transfer **********************
@@ -1103,18 +1157,32 @@ module PE_config #(
       else  begin
         case(new_cur)
           NEW_IDLE: begin
-            if(nonlinear_m_rdy & nonlinear_s_val == STAGE_NEW) begin
-              new_cur <= NEW_NONLINEAR;
+            if(stage_val & stage_rdy == STAGE_NEW) begin
+              prd_cur <= NEW_NL_SEND;
             end
             else
-              new_cur <= NEW_IDLE;
+              prd_cur <= NEW_IDLE;
           end
-          NEW_NONLINEAR: begin
-            if(nonlinear_m_val & nonlinear_s_rdy == STAGE_NEW) begin
-              new_cur <= NEW_1;
+          NEW_NL_SEND: begin
+            if(init_newlm == 1'b1) begin
+              prd_cur <= NEW_NL_WAIT;
             end
             else
-              new_cur <= NEW_NONLINEAR;
+              prd_cur <= NEW_NL_SEND;
+          end
+          NEW_NL_WAIT: begin
+            if(done_newlm == 1'b1) begin
+              prd_cur <= NEW_NL_RCV;
+            end
+            else
+              prd_cur <= NEW_NL_WAIT;
+          end
+          NEW_NL_RCV: begin
+            if(rcv_OK_newlm == 1'b1) begin
+              prd_cur <= NEW_1;
+            end
+            else
+              prd_cur <= NEW_NL_RCV;
           end
           NEW_1: begin
             if(seq_cnt == seq_cnt_max) begin
@@ -1173,18 +1241,32 @@ module PE_config #(
       else  begin
         case(upd_cur)
           UPD_IDLE: begin
-            if(nonlinear_m_rdy & nonlinear_s_val == STAGE_UPD) begin
-              upd_cur <= UPD_NONLINEAR;
+            if(stage_val & stage_rdy == STAGE_UPD) begin
+              prd_cur <= UPD_NL_SEND;
             end
             else
-              upd_cur <= UPD_IDLE;
+              prd_cur <= UPD_IDLE;
           end
-          UPD_NONLINEAR: begin
-            if(nonlinear_m_val & nonlinear_s_rdy == STAGE_UPD) begin
-              upd_cur <= UPD_1;
+          UPD_NL_SEND: begin
+            if(init_update == 1'b1) begin
+              prd_cur <= UPD_NL_WAIT;
             end
             else
-              upd_cur <= UPD_NONLINEAR;
+              prd_cur <= UPD_NL_SEND;
+          end
+          UPD_NL_WAIT: begin
+            if(done_update == 1'b1) begin
+              prd_cur <= UPD_NL_RCV;
+            end
+            else
+              prd_cur <= UPD_NL_WAIT;
+          end
+          UPD_NL_RCV: begin
+            if(rcv_OK_update == 1'b1) begin
+              prd_cur <= UPD_1;
+            end
+            else
+              prd_cur <= UPD_NL_RCV;
           end
           UPD_1: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == l_k_t_cov_l) begin
@@ -1868,6 +1950,15 @@ module PE_config #(
       case(stage_cur)
         STAGE_PRD: begin
                     case (prd_cur)
+                      PRD_NL_SEND:
+                            begin
+                              CBa_mode = {CBa_NL,CB_cov_NL};    
+                            end
+                      PRD_NL_RCV:
+                            begin
+                              TBa_mode = {TBa_nonlinear,DIR_POS};
+                              CBb_mode = {CBb_NL,CB_cov_NL};    
+                            end
                       PRD_1: begin
                               PE_m = PRD_1_M;
                               PE_n = PRD_1_N;
@@ -3480,6 +3571,38 @@ module PE_config #(
     end
     else begin
       case (CBa_mode[2:0])
+        CB_cov_NL    : begin
+                    case(stage_cur)
+                      STAGE_PRD:begin
+                                  CB_wea_new <= 1'b0;
+                                  case(seq_cnt)
+                                    SEQ_0: begin
+                                      CBa_shift_dir <= DIR_POS;
+                                      CB_ena_new <= 1'b1;
+                                      CB_addra_new <= 2'b11;
+                                    end     
+                                    SEQ_1: begin
+                                      CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                                      CB_ena_new <= 1'b1;
+                                      CB_addra_new <= 2'b01;
+                                    end
+                                    default: begin
+                                      CB_ena_new <= 1'b0;
+                                      CB_addra_new <= 0;
+                                    end
+                                  endcase 
+                                end
+                      STAGE_NEW:begin
+                        
+                      end
+                      STAGE_UPD:begin
+                        
+                      end
+                      default: begin
+                        
+                      end
+                    endcase
+                  end
         CB_cov_vv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
