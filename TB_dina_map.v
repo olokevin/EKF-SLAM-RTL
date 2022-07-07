@@ -17,7 +17,11 @@ module TB_dina_map #(
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
   input   signed [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
-  input   signed [RSA_DW - 1 : 0]         x_hat, y_hat, xita_hat, Fxi_13, Fxi_23,
+  input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
+  input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
+  input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
+  input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
+  input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
 
   output  reg  signed [L*RSA_DW-1 : 0]    TB_dina
 );

@@ -3202,10 +3202,10 @@ assign test_stage = stage_val & stage_rdy;
         TB_dina_sel_new[2] <= 0;
       end
       else begin
-        case (TBa_mode_d2[4:2])
+        case (TBa_mode[4:2])
           TBa_cov_lm: begin
             TB_dina_sel_new[2] <= 1'b0;
-            TB_dina_sel_new[1:0] <= TBa_mode_d2[1:0];   //CB -> TB 延迟时序
+            TB_dina_sel_new[1:0] <= TBa_mode[1:0];   //CB -> TB 延迟时序
           end 
           TBa_NL: begin
             TB_dina_sel_new[2] <= 1'b1;

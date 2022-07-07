@@ -249,9 +249,17 @@ module RSA
 /*
   ********************** 接收非线性发回的数据 *******************
 */
-  //预测步接收的非线性数据
-  reg signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat, Fxi_13, Fxi_23;
-
+  //预测步
+  reg signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat;
+  reg signed [RSA_DW - 1 : 0] Fxi_13, Fxi_23;
+  //新地标步
+  reg signed [RSA_DW - 1 : 0] lkx_hat, lky_hat;
+  reg signed [RSA_DW - 1 : 0] Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22;
+  //更新步
+  reg signed [RSA_DW - 1 : 0] Hz_11, Hz_12, Hz_21, Hz_22;
+  reg signed [RSA_DW - 1 : 0] Hxi_11, Hxi_12, Hxi_21, Hxi_22;
+  reg signed [RSA_DW - 1 : 0] vt_1, vt_2;
+  
   always @(posedge clk) begin
     if(sys_rst) begin
           x_hat <= 0;
@@ -259,6 +267,24 @@ module RSA
           xita_hat <= 0;
           Fxi_13 <= 0;
           Fxi_23 <= 0;
+          lkx_hat = 0;
+          lky_hat = 0;
+          Gxi_13 = 0;
+          Gxi_23 = 0;
+          Gz_11 = 0;
+          Gz_12 = 0;
+          Gz_21 = 0;
+          Gz_22 = 0;
+          Hxi_11 = 0;
+          Hxi_12 = 0;
+          Hxi_21 = 0;
+          Hxi_22 = 0;
+          Hz_11 = 0;
+          Hz_12 = 0;
+          Hz_21 = 0;
+          Hz_22 = 0;
+          vt_1 = 0;
+          vt_2 = 0;
         end
     else begin
       case (stage_cur_out)
@@ -269,12 +295,52 @@ module RSA
           Fxi_13 <= - result_3;
           Fxi_23 <= result_2;
         end
+        STAGE_NEW: begin
+          lkx_hat = lkx + result_3;
+          lky_hat = lky + result_2;
+          Gxi_13 = -result_2;
+          Gxi_23 = result_3;
+          Gz_11 = result_0;
+          Gz_12 = -result_2;
+          Gz_21 = result_1;
+          Gz_22 = result_3;
+        end
+        STAGE_UPD: begin
+          Hxi_11 = -result_4;
+          Hxi_12 = -result_5;
+          Hxi_21 = result_2;
+          Hxi_22 = -result_3;
+          Hz_11 = result_4;
+          Hz_12 = result_5;
+          Hz_21 = -result_2;
+          Hz_22 = result_3;
+          vt_1 = result_0;
+          vt_2 = result_1;
+        end 
         default: begin
           x_hat <= 0;
           y_hat <= 0;
           xita_hat <= 0;
           Fxi_13 <= 0;
           Fxi_23 <= 0;
+          lkx_hat = 0;
+          lky_hat = 0;
+          Gxi_13 = 0;
+          Gxi_23 = 0;
+          Gz_11 = 0;
+          Gz_12 = 0;
+          Gz_21 = 0;
+          Gz_22 = 0;
+          Hxi_11 = 0;
+          Hxi_12 = 0;
+          Hxi_21 = 0;
+          Hxi_22 = 0;
+          Hz_11 = 0;
+          Hz_12 = 0;
+          Hz_21 = 0;
+          Hz_22 = 0;
+          vt_1 = 0;
+          vt_2 = 0;
         end
       endcase
     end
@@ -718,12 +784,28 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .TB_dina_sel        (TB_dina_sel        ),
     .l_k_0              (l_k_0              ),
     .seq_cnt_out        (seq_cnt_out        ),
+
     .TB_dina_CB_douta   (TB_dina_CB_douta   ),
-    .x_hat              (x_hat            ),
-    .y_hat              (y_hat            ),
-    .xita_hat           (xita_hat         ),
+
     .Fxi_13             (Fxi_13           ),
     .Fxi_23             (Fxi_23           ),
+    .Gxi_13           (Gxi_13           ),
+    .Gxi_23           (Gxi_23           ),
+    .Gz_11            (Gz_11            ),
+    .Gz_12            (Gz_12            ),
+    .Gz_21            (Gz_21            ),
+    .Gz_22            (Gz_22            ),
+    .Hz_11            (Hz_11            ),
+    .Hz_12            (Hz_12            ),
+    .Hz_21            (Hz_21            ),
+    .Hz_22            (Hz_22            ),
+    .Hxi_11           (Hxi_11           ),
+    .Hxi_12           (Hxi_12           ),
+    .Hxi_21           (Hxi_21           ),
+    .Hxi_22           (Hxi_22           ),
+    .vt_1             (vt_1             ),
+    .vt_2             (vt_2             ),
+
     .TB_dina            (TB_dina            )
   );
   
@@ -790,7 +872,6 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .ROW_LEN (ROW_LEN ),
     .CB_DINB_SEL_DW(CB_DINB_SEL_DW)
   )
   u_CB_dinb_map(
@@ -803,8 +884,8 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .x_hat       (x_hat       ),
     .y_hat       (y_hat       ),
     .xita_hat    (xita_hat    ),
-    .lkx         (lkx         ),
-    .lky         (lky         ),
+    .lkx_hat     (lkx_hat         ),
+    .lky_hat     (lky_hat         ),
 
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )

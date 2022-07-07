@@ -16,7 +16,7 @@ module CB_dinb_map #(
   input [SEQ_CNT_DW-1 : 0]       seq_cnt_out,
 
   input signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat,
-  input signed [RSA_DW - 1 : 0] lkx, lky,
+  input signed [RSA_DW - 1 : 0] lkx_hat, lky_hat,
 
   input   signed [X*RSA_DW-1 : 0]         C_CB_dinb,
   output  reg  signed [L*RSA_DW-1 : 0]    CB_dinb
@@ -100,16 +100,16 @@ integer i_CB_C;
         CBb_lxly: begin
                   case(seq_cnt_out)
                     'd1:begin
-                          CB_dinb[0 +: RSA_DW]        <= l_k_0 ? lkx : 0;
+                          CB_dinb[0 +: RSA_DW]        <= l_k_0 ? lkx_hat : 0;
                           CB_dinb[1*RSA_DW +: RSA_DW] <= 0;
-                          CB_dinb[2*RSA_DW +: RSA_DW] <= l_k_0 ? 0 : lkx;
+                          CB_dinb[2*RSA_DW +: RSA_DW] <= l_k_0 ? 0 : lkx_hat;
                           CB_dinb[3*RSA_DW +: RSA_DW] <= 0;
                       end
                     'd2:begin
                           CB_dinb[0 +: RSA_DW]        <= 0;
-                          CB_dinb[1*RSA_DW +: RSA_DW] <= l_k_0 ? lky : 0;
+                          CB_dinb[1*RSA_DW +: RSA_DW] <= l_k_0 ? lky_hat : 0;
                           CB_dinb[2*RSA_DW +: RSA_DW] <= 0;
-                          CB_dinb[3*RSA_DW +: RSA_DW] <= l_k_0 ? 0 : lky;
+                          CB_dinb[3*RSA_DW +: RSA_DW] <= l_k_0 ? 0 : lky_hat;
                         end
                     default:begin
                           CB_dinb <= 0;

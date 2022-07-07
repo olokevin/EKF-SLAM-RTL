@@ -3,7 +3,7 @@
 
 module tb_RSA;
 
-parameter RST_START = 20;
+parameter RST_START = 10;
 
 // RSA Parameters
 parameter PERIOD           = 10;
@@ -30,7 +30,7 @@ parameter CB_DOUTA_SEL_DW  = 5 ;
 
 // RSA Inputs
 
-reg   clk                                  = 0 ;
+reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
 
 reg   [2:0]  stage_val                     = 0 ;
@@ -71,7 +71,7 @@ end
 
 initial
 begin
-    #(PERIOD*15) sys_rst  =  1;
+    #(PERIOD*7) sys_rst  =  1;
     #(PERIOD*2) sys_rst  =  0;
 end
 
