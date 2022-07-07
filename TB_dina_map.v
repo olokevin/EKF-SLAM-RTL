@@ -25,7 +25,7 @@ module TB_dina_map #(
 /*
   TB_dina_sel[2]
     0: TBa_CBa        从CB读取的数据TB_dina_map   
-    1: TBa_non_linear 非线性单元输入
+    1: TBa_NL         非线性单元输入
   TB_dina_sel[1:0]
     00: DIR_IDLE
     01: POS
@@ -34,7 +34,7 @@ module TB_dina_map #(
 */
 
 localparam TBa_CBa = 1'b0;
-localparam TBa_non_linear = 2'b1;
+localparam TBa_NL  = 2'b1;
 
 localparam DIR_IDLE = 2'b00;
 localparam DIR_POS  = 2'b01;
@@ -81,7 +81,7 @@ integer i_TB_non_linear;
                       TB_dina <= 0;
                   endcase
                 end
-        TBa_non_linear: begin
+        TBa_NL: begin
                   case(seq_cnt_out)     //不用延迟时序
                     'd1:begin
                           TB_dina[0 +: RSA_DW]        <= Fxi_13;

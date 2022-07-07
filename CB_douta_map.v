@@ -290,11 +290,17 @@ always @(posedge clk) begin
                         end
                     'd4:begin
                           yk <= CB_douta[1*RSA_DW +: RSA_DW];
-                          lkx <= l_k_0 ? CB_douta[0 +: RSA_DW] : CB_douta[2*RSA_DW +: RSA_DW];
+                          lkx <= l_k_0 ? CB_douta[0 +: RSA_DW] : lkx;
                         end
                     'd5:begin
                           xita <= CB_douta[2*RSA_DW +: RSA_DW];
                           lky  <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+                        end
+                    'd6:begin
+                          lkx  <= l_k_0 ? lkx : CB_douta[2*RSA_DW +: RSA_DW];
+                        end
+                    'd7:begin
+                          lky  <= l_k_0 ? lky : CB_douta[3*RSA_DW +: RSA_DW];
                         end
                   endcase
                 end

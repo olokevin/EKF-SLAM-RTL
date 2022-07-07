@@ -1296,3 +1296,11 @@ addrb_new: NEW_2_PE_in+N+3
   * nonlinear 输入输出采样（根据状态机）
     * 解决：不采样，CB_douta_map始终保存
   * NL给写入地址（TB CB）
+
+### 220707
+
+* NL读：
+  * 状态机
+  * 在状态机设置CB_douta_map映射模式
+* 改TBa_Mode bit分配？
+* CBb: we en addr分为WR和RD两边

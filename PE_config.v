@@ -14,7 +14,7 @@ module PE_config #(
   parameter TB_DOUTA_SEL_DW = 3,
   parameter TB_DOUTB_SEL_DW = 3,
   parameter CB_DINA_SEL_DW  = 2,
-  parameter CB_DINB_SEL_DW  = 2,
+  parameter CB_DINB_SEL_DW  = 5,
   parameter CB_DOUTA_SEL_DW = 5,  //注意MUX deMUX需手动修改
 
   parameter RSA_DW = 32,
@@ -189,7 +189,7 @@ module PE_config #(
     localparam TBa_AM = 3'b011;
   //TBa WR
     localparam TBa_cov_lm = 3'b100;
-    localparam TBa_nonlinear = 3'b101;
+    localparam TBa_NL     = 3'b101;
 
   //TBb RD
     localparam TBb_IDLE = 3'b000;
@@ -217,9 +217,9 @@ module PE_config #(
   ************************** CB mode config *********************
 */
   localparam CB_IDLE = 6'b000000;
-  //CB_mode[5:3] dir
+  //CB_mode[6:4] dir
 
-  //CB port-A rd
+  //CB port-A map
     localparam CBa_IDLE = 3'b000;
     localparam CBa_A = 3'b001;
     localparam CBa_B = 3'b010;
@@ -227,19 +227,24 @@ module PE_config #(
     localparam CBa_TBa = 3'b100;
     localparam CBa_NL  = 3'b111;
 
-  //CB port-B wr
-    localparam CBb_C  = 2'b01;  
-    localparam CBb_NL = 2'b11;  
+  //CB port-B map 
+    //CB_mode[6] == 0, RSA WR
+    localparam CBb_IDLE = 3'b000;
+    localparam CBb_C    = 3'b001;  
+    //CB_mode[6] == 1, NL WR
+    localparam CBb_xyxita  = 3'b101 ;
+    localparam CBb_lxly    = 3'b110 ;
 
-  //CB_mode[2:0] mode
-  localparam CB_cov_NL = 3'b000;
-  localparam CB_cov_vv = 3'b001;
-  localparam CB_cov_mv = 3'b010;
-  localparam CB_cov    = 3'b011;
-  localparam CB_cov_lv = 3'b100;
-  localparam CB_cov_lm = 3'b101;
-  localparam CB_cov_ml = 3'b110;
-  localparam CB_cov_ll = 3'b111;    
+  //CB_mode[3:0] mode
+    localparam CB_cov_vv = 4'b0001;
+    localparam CB_cov_mv = 4'b0010;
+    localparam CB_cov    = 4'b0011;
+    localparam CB_cov_lv = 4'b0100;
+    localparam CB_cov_lm = 4'b0101;
+    localparam CB_cov_ml = 4'b0110;
+    localparam CB_cov_ll = 4'b0111;    
+    localparam CB_NL_xyxita = 4'b1001;
+    localparam CB_NL_lxly   = 4'b1010;
 
 /*
   ********************** params of FSMs *************************
@@ -274,19 +279,19 @@ module PE_config #(
     localparam [TB_AW-1 : 0] F_cov = 'd9;
     localparam [TB_AW-1 : 0] M_t = 'd12;
   // PREDICTION SERIES
-    localparam PRD_IDLE = 'b0000;
-    localparam PRD_NL_SEND = 'b1001;
-    localparam PRD_NL_WAIT = 'b1010;
-    localparam PRD_NL_RCV  = 'b1100;
-    localparam PRD_1 = 'b0001;       //prd_cur[1]
-    localparam PRD_2 = 'b0010;
-    localparam PRD_3 = 'b0100;
+    localparam PRD_IDLE = 4'b0000;
+    localparam PRD_NL_SEND = 4'b1001;
+    localparam PRD_NL_WAIT = 4'b1010;
+    localparam PRD_NL_RCV  = 4'b1100;
+    localparam PRD_1 = 4'b0001;       //prd_cur[1]
+    localparam PRD_2 = 4'b0010;
+    localparam PRD_3 = 4'b0100;
 
     // localparam PRD_1_START = 0;
     // localparam PRD_2_START = 'd18;
     // localparam PRD_3_START = 'd36;
 
-    localparam [SEQ_CNT_DW-1 : 0] PRD_NL_SEND_CNT_MAX = 'd6;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_NL_SEND_CNT_MAX = 'd7;
     localparam [SEQ_CNT_DW-1 : 0] PRD_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
     localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd17;
@@ -442,8 +447,8 @@ module PE_config #(
 
   reg [4:0] TBa_mode;
   reg [4:0] TBb_mode;
-  reg [4:0] CBa_mode;
-  reg [4:0] CBb_mode;
+  reg [6:0] CBa_mode;
+  reg [6:0] CBb_mode;
 
   reg [TB_AW-1:0] A_TB_base_addr;
   reg [TB_AW-1:0] B_TB_base_addr;
@@ -512,6 +517,7 @@ module PE_config #(
     reg                           CB_wea_new;
     reg [CB_AW-1 : 0]             CB_addra_new;
     
+    wire [CB_AW-1 : 0]           CB_addra_base_raw;
     reg [CB_AW-1 : 0]            CB_addra_base;
 
     //port B
@@ -522,6 +528,7 @@ module PE_config #(
     reg                           CB_web_new;
     reg [CB_AW-1 : 0]             CB_addrb_new;
 
+    wire [CB_AW-1 : 0]            CB_addrb_base_raw;
     reg [CB_AW-1 : 0]             CB_addrb_base;
 
 /*
@@ -530,6 +537,8 @@ module PE_config #(
     reg [ROW_LEN:0]     l_k_row;
     reg [ROW_LEN-1:0]   l_k_group;
     reg [ROW_LEN-1:0]   l_k_t_cov_l;
+  
+    wire [CB_AW-1 : 0]            l_k_base_addr_raw;
     reg [CB_AW-1 : 0]  l_k_base_addr_RD; 
     reg [CB_AW-1 : 0]  l_k_base_addr_WR; 
     wire l_k_0;
@@ -590,7 +599,7 @@ module PE_config #(
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
     wire [ROW_LEN-1 : 0] v_group_cnt_WR;
     wire [4:0]           TBb_mode_WR;
-    wire [4:0]           CBb_mode_WR;
+    wire [6:0]           CBb_mode_WR;
     wire [2:0]           PE_n_WR;
     
     reg [3 : 0]          WR_d_addr;       //具体取多少级延迟
@@ -657,7 +666,7 @@ module PE_config #(
 
     dynamic_shreg 
     #(
-      .DW  (5  ),
+      .DW  (7  ),
       .AW  (4  )
     )
     CBb_mode_shreg(
@@ -724,6 +733,318 @@ module PE_config #(
     else
       stage_rdy <= READY;
   end
+
+/*
+  ****************** 2nd FSM sequential stage transfer ***************
+*/
+reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
+wire [2:0] test_stage;
+assign test_stage = stage_val & stage_rdy;
+  /*
+    ******************** PRD state transfer **************************
+  */
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        prd_cur <= PRD_IDLE;
+      end
+      else  begin
+        case(prd_cur)
+          PRD_IDLE: begin
+            if((stage_val & stage_rdy) == STAGE_PRD) begin
+              prd_cur <= PRD_NL_SEND;
+            end
+            else
+              prd_cur <= PRD_IDLE;
+          end
+          PRD_NL_SEND: begin
+            if(init_predict == 1'b1) begin
+              prd_cur <= PRD_NL_WAIT;
+            end
+            else
+              prd_cur <= PRD_NL_SEND;
+          end
+          PRD_NL_WAIT: begin
+            if(done_predict == 1'b1) begin
+              prd_cur <= PRD_NL_RCV;
+            end
+            else
+              prd_cur <= PRD_NL_WAIT;
+          end
+          PRD_NL_RCV: begin
+            if(rcv_OK_predict == 1'b1) begin
+              prd_cur <= PRD_1;
+            end
+            else
+              prd_cur <= PRD_NL_RCV;
+          end
+          PRD_1: begin
+            if(seq_cnt == seq_cnt_max) begin
+              prd_cur <= PRD_2;
+            end
+            else begin
+              prd_cur <= PRD_1;
+            end
+          end
+          PRD_2: begin
+            if(seq_cnt == seq_cnt_max) begin
+              prd_cur <= PRD_3;
+            end
+            else begin
+              prd_cur <= PRD_2;
+            end
+          end
+          PRD_3: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
+              prd_cur <= PRD_IDLE;
+            end
+            else begin
+              prd_cur <= PRD_3;
+            end
+          end
+          default: begin
+            prd_cur <= PRD_IDLE;
+          end
+        endcase
+      end
+    end
+
+    //output: init_predict, rcv_OK_predict
+      always @(posedge clk) begin
+        if(sys_rst) begin
+          init_predict <= 0;
+        end
+        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_SEND && seq_cnt == 'd5)
+          init_predict <= 1'b1;
+        else
+          init_predict <= 0;
+      end
+
+      always @(posedge clk) begin
+        if(sys_rst) begin
+          rcv_OK_predict <= 0;
+        end
+        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_RCV && seq_cnt == 'd5)
+          rcv_OK_predict <= 1'b1;
+        else
+          rcv_OK_predict <= 0;
+      end
+  
+  /*
+    ************************ NEW state transfer **********************
+  */ 
+    always @(posedge clk) begin
+      if(stage_val & stage_rdy == STAGE_NEW) begin
+        new_cur <= NEW_IDLE;
+      end
+      else  begin
+        case(new_cur)
+          NEW_IDLE: begin
+            if(stage_val & stage_rdy == STAGE_NEW) begin
+              new_cur <= NEW_NL_SEND;
+            end
+            else
+              new_cur <= NEW_IDLE;
+          end
+          NEW_NL_SEND: begin
+            if(init_newlm == 1'b1) begin
+              new_cur <= NEW_NL_WAIT;
+            end
+            else
+              new_cur <= NEW_NL_SEND;
+          end
+          NEW_NL_WAIT: begin
+            if(done_newlm == 1'b1) begin
+              new_cur <= NEW_NL_RCV;
+            end
+            else
+              new_cur <= NEW_NL_WAIT;
+          end
+          NEW_NL_RCV: begin
+            if(rcv_OK_newlm == 1'b1) begin
+              new_cur <= NEW_1;
+            end
+            else
+              new_cur <= NEW_NL_RCV;
+          end
+          NEW_1: begin
+            if(seq_cnt == seq_cnt_max) begin
+              new_cur <= NEW_2;
+            end
+            else begin
+              new_cur <= NEW_1;
+            end
+          end
+          NEW_2: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
+              new_cur <= NEW_3;
+            end
+            else begin
+              new_cur <= NEW_2;
+            end
+          end
+          NEW_3: begin
+            if(seq_cnt == seq_cnt_max) begin
+              new_cur <= NEW_4;
+            end
+            else begin
+              new_cur <= NEW_3;
+            end
+          end
+          NEW_4: begin
+            if(seq_cnt == seq_cnt_max) begin
+              new_cur <= NEW_5;
+            end
+            else begin
+              new_cur <= NEW_4;
+            end
+          end
+          NEW_5: begin
+            if(seq_cnt == seq_cnt_max) begin
+              new_cur <= NEW_IDLE;
+            end
+            else begin
+              new_cur <= NEW_5;
+            end
+          end
+          default: begin
+            new_cur <= NEW_IDLE;
+          end
+        endcase
+      end
+    end
+
+  /*
+    ************************ UPD state transfer **********************
+  */
+    always @(posedge clk) begin
+      if(stage_val & stage_rdy == STAGE_UPD) begin
+        upd_cur <= UPD_IDLE;
+      end
+      else  begin
+        case(upd_cur)
+          UPD_IDLE: begin
+            if(stage_val & stage_rdy == STAGE_UPD) begin
+              upd_cur <= UPD_NL_SEND;
+            end
+            else
+              upd_cur <= UPD_IDLE;
+          end
+          UPD_NL_SEND: begin
+            if(init_update == 1'b1) begin
+              upd_cur <= UPD_NL_WAIT;
+            end
+            else
+              upd_cur <= UPD_NL_SEND;
+          end
+          UPD_NL_WAIT: begin
+            if(done_update == 1'b1) begin
+              upd_cur <= UPD_NL_RCV;
+            end
+            else
+              upd_cur <= UPD_NL_WAIT;
+          end
+          UPD_NL_RCV: begin
+            if(rcv_OK_update == 1'b1) begin
+              upd_cur <= UPD_1;
+            end
+            else
+              upd_cur <= UPD_NL_RCV;
+          end
+          UPD_1: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == l_k_t_cov_l) begin
+              upd_cur <= UPD_2;
+            end
+            else begin
+              upd_cur <= UPD_1;
+            end
+          end
+          UPD_2: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_4;
+            end
+            else begin
+              upd_cur <= UPD_2;
+            end
+          end
+          UPD_3: begin
+            if(seq_cnt == seq_cnt_max) begin
+              if(v_group_cnt <= l_k_t_cov_l)
+                upd_cur <= UPD_4;
+              else
+                upd_cur <= UPD_5;
+            end
+            else begin
+              upd_cur <= UPD_3;
+            end
+          end
+          UPD_4: begin
+            if(seq_cnt == seq_cnt_max) begin
+              if(v_group_cnt == v_group_cnt_max)
+                upd_cur <= UPD_6;
+              else
+                upd_cur <= UPD_3;
+            end
+            else begin
+              upd_cur <= UPD_4;
+            end
+          end
+          UPD_5: begin
+            if(seq_cnt == seq_cnt_max) begin
+              if(v_group_cnt == v_group_cnt_max)
+                upd_cur <= UPD_6;
+              else
+                upd_cur <= UPD_3;
+            end
+            else begin
+              upd_cur <= UPD_5;
+            end
+          end
+          UPD_6: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_7;
+            end
+            else begin
+              upd_cur <= UPD_6;
+            end
+          end
+          UPD_7: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_8;
+            end
+            else begin
+              upd_cur <= UPD_7;
+            end
+          end
+          UPD_8: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_9;
+            end
+            else begin
+              upd_cur <= UPD_8;
+            end
+          end
+          UPD_9: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
+              upd_cur <= UPD_10;
+            end
+            else begin
+              upd_cur <= UPD_9;
+            end
+          end
+          UPD_10: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max) begin
+              upd_cur <= UPD_IDLE;
+            end
+            else begin
+              upd_cur <= UPD_10;
+            end
+          end
+          default: begin
+            upd_cur <= UPD_IDLE;
+          end
+        endcase
+      end
+    end
 
   /*
     (4) (old): nonlinear_val, nonlinear_rdy
@@ -1063,316 +1384,6 @@ module PE_config #(
       endcase
     end
   end
-
-/*
-  ****************** 2nd FSM sequential stage transfer ***************
-*/
-reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
-  /*
-    ******************** PRD state transfer **************************
-  */
-    always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_PRD) begin
-        prd_cur <= PRD_IDLE;
-      end
-      else  begin
-        case(prd_cur)
-          PRD_IDLE: begin
-            if(stage_val & stage_rdy == STAGE_PRD) begin
-              prd_cur <= PRD_NL_SEND;
-            end
-            else
-              prd_cur <= PRD_IDLE;
-          end
-          PRD_NL_SEND: begin
-            if(init_predict == 1'b1) begin
-              prd_cur <= PRD_NL_WAIT;
-            end
-            else
-              prd_cur <= PRD_NL_SEND;
-          end
-          PRD_NL_WAIT: begin
-            if(done_predict == 1'b1) begin
-              prd_cur <= PRD_NL_RCV;
-            end
-            else
-              prd_cur <= PRD_NL_WAIT;
-          end
-          PRD_NL_RCV: begin
-            if(rcv_OK_predict == 1'b1) begin
-              prd_cur <= PRD_1;
-            end
-            else
-              prd_cur <= PRD_NL_RCV;
-          end
-          PRD_1: begin
-            if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_2;
-            end
-            else begin
-              prd_cur <= PRD_1;
-            end
-          end
-          PRD_2: begin
-            if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_3;
-            end
-            else begin
-              prd_cur <= PRD_2;
-            end
-          end
-          PRD_3: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              prd_cur <= PRD_IDLE;
-            end
-            else begin
-              prd_cur <= PRD_3;
-            end
-          end
-          default: begin
-            prd_cur <= PRD_IDLE;
-          end
-        endcase
-      end
-    end
-
-    //output: init_predict, rcv_OK_predict
-      always @(posedge clk) begin
-        if(sys_rst) begin
-          init_predict <= 0;
-        end
-        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_SEND && seq_cnt == 'd5)
-          init_predict <= 1'b1;
-        else
-          init_predict <= 0;
-      end
-
-      always @(posedge clk) begin
-        if(sys_rst) begin
-          rcv_OK_predict <= 0;
-        end
-        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_RCV && seq_cnt == 'd5)
-          rcv_OK_predict <= 1'b1;
-        else
-          rcv_OK_predict <= 0;
-      end
-  
-  /*
-    ************************ NEW state transfer **********************
-  */ 
-    always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_NEW) begin
-        new_cur <= NEW_IDLE;
-      end
-      else  begin
-        case(new_cur)
-          NEW_IDLE: begin
-            if(stage_val & stage_rdy == STAGE_NEW) begin
-              prd_cur <= NEW_NL_SEND;
-            end
-            else
-              prd_cur <= NEW_IDLE;
-          end
-          NEW_NL_SEND: begin
-            if(init_newlm == 1'b1) begin
-              prd_cur <= NEW_NL_WAIT;
-            end
-            else
-              prd_cur <= NEW_NL_SEND;
-          end
-          NEW_NL_WAIT: begin
-            if(done_newlm == 1'b1) begin
-              prd_cur <= NEW_NL_RCV;
-            end
-            else
-              prd_cur <= NEW_NL_WAIT;
-          end
-          NEW_NL_RCV: begin
-            if(rcv_OK_newlm == 1'b1) begin
-              prd_cur <= NEW_1;
-            end
-            else
-              prd_cur <= NEW_NL_RCV;
-          end
-          NEW_1: begin
-            if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_2;
-            end
-            else begin
-              new_cur <= NEW_1;
-            end
-          end
-          NEW_2: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              new_cur <= NEW_3;
-            end
-            else begin
-              new_cur <= NEW_2;
-            end
-          end
-          NEW_3: begin
-            if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_4;
-            end
-            else begin
-              new_cur <= NEW_3;
-            end
-          end
-          NEW_4: begin
-            if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_5;
-            end
-            else begin
-              new_cur <= NEW_4;
-            end
-          end
-          NEW_5: begin
-            if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_IDLE;
-            end
-            else begin
-              new_cur <= NEW_5;
-            end
-          end
-          default: begin
-            new_cur <= NEW_IDLE;
-          end
-        endcase
-      end
-    end
-
-  /*
-    ************************ UPD state transfer **********************
-  */
-    always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_UPD) begin
-        upd_cur <= UPD_IDLE;
-      end
-      else  begin
-        case(upd_cur)
-          UPD_IDLE: begin
-            if(stage_val & stage_rdy == STAGE_UPD) begin
-              prd_cur <= UPD_NL_SEND;
-            end
-            else
-              prd_cur <= UPD_IDLE;
-          end
-          UPD_NL_SEND: begin
-            if(init_update == 1'b1) begin
-              prd_cur <= UPD_NL_WAIT;
-            end
-            else
-              prd_cur <= UPD_NL_SEND;
-          end
-          UPD_NL_WAIT: begin
-            if(done_update == 1'b1) begin
-              prd_cur <= UPD_NL_RCV;
-            end
-            else
-              prd_cur <= UPD_NL_WAIT;
-          end
-          UPD_NL_RCV: begin
-            if(rcv_OK_update == 1'b1) begin
-              prd_cur <= UPD_1;
-            end
-            else
-              prd_cur <= UPD_NL_RCV;
-          end
-          UPD_1: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == l_k_t_cov_l) begin
-              upd_cur <= UPD_2;
-            end
-            else begin
-              upd_cur <= UPD_1;
-            end
-          end
-          UPD_2: begin
-            if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_4;
-            end
-            else begin
-              upd_cur <= UPD_2;
-            end
-          end
-          UPD_3: begin
-            if(seq_cnt == seq_cnt_max) begin
-              if(v_group_cnt <= l_k_t_cov_l)
-                upd_cur <= UPD_4;
-              else
-                upd_cur <= UPD_5;
-            end
-            else begin
-              upd_cur <= UPD_3;
-            end
-          end
-          UPD_4: begin
-            if(seq_cnt == seq_cnt_max) begin
-              if(v_group_cnt == v_group_cnt_max)
-                upd_cur <= UPD_6;
-              else
-                upd_cur <= UPD_3;
-            end
-            else begin
-              upd_cur <= UPD_4;
-            end
-          end
-          UPD_5: begin
-            if(seq_cnt == seq_cnt_max) begin
-              if(v_group_cnt == v_group_cnt_max)
-                upd_cur <= UPD_6;
-              else
-                upd_cur <= UPD_3;
-            end
-            else begin
-              upd_cur <= UPD_5;
-            end
-          end
-          UPD_6: begin
-            if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_7;
-            end
-            else begin
-              upd_cur <= UPD_6;
-            end
-          end
-          UPD_7: begin
-            if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_8;
-            end
-            else begin
-              upd_cur <= UPD_7;
-            end
-          end
-          UPD_8: begin
-            if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_9;
-            end
-            else begin
-              upd_cur <= UPD_8;
-            end
-          end
-          UPD_9: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              upd_cur <= UPD_10;
-            end
-            else begin
-              upd_cur <= UPD_9;
-            end
-          end
-          UPD_10: begin
-            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max) begin
-              upd_cur <= UPD_IDLE;
-            end
-            else begin
-              upd_cur <= UPD_10;
-            end
-          end
-          default: begin
-            upd_cur <= UPD_IDLE;
-          end
-        endcase
-      end
-    end
 
 /*
   **************(disabled) sequential RSA work-mode Config ************************
@@ -1933,31 +1944,6 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
   ************* (using) combinational RSA work-mode Config *************
 */
 
-/*
-  temp CB_dina_sel
-*/
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      CB_dina_sel_new <= 0;
-    end
-    else begin
-      case(stage_cur)
-        STAGE_PRD:begin
-                    case(prd_cur)
-                      PRD_NL_RCV: begin
-                        CB_dina_sel_new <= 
-                      end
-                    endcase
-                  end
-        STAGE_NEW:begin
-          
-        end
-        
-      endcase
-    end
-      
-  end
-
   always @(*) begin
     if(sys_rst) begin
       PE_m = 0;
@@ -1988,12 +1974,12 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                     case (prd_cur)
                       PRD_NL_SEND:
                             begin
-                              CBa_mode = {CBa_NL,CB_cov_NL};    
+                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
                             end
                       PRD_NL_RCV:
                             begin
-                              TBa_mode = {TBa_nonlinear,DIR_POS};
-                              CBb_mode = {CBb_NL,CB_cov_NL};    
+                              TBa_mode = {TBa_NL,DIR_POS};
+                              CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
                             end
                       PRD_1: begin
                               PE_m = PRD_1_M;
@@ -3132,6 +3118,30 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         end
                       endcase
                     end  
+        TBa_NL: begin
+                  case(seq_cnt)
+                    SEQ_0: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= 2'b10;
+                    end
+                    SEQ_1: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= 2'b11;
+                    end
+                    SEQ_2: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= 3'b100;
+                    end
+                    default:begin
+                      TB_ena_new <= 1'b0;
+                      TB_wea_new <= 1'b0;
+                      TB_addra_new <= 0;
+                    end
+                  endcase
+                end
         default:begin
                   TB_ena_new <= 1'b0;
                   TB_wea_new <= 1'b0;
@@ -3193,17 +3203,16 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       end
       else begin
         case (TBa_mode_d2[4:2])
-          TBa_cov_lm:    TB_dina_sel_new[2] <= 1'b0;
-          TBa_nonlinear: TB_dina_sel_new[2] <= 1'b1;
+          TBa_cov_lm: begin
+            TB_dina_sel_new[2] <= 1'b0;
+            TB_dina_sel_new[1:0] <= TBa_mode_d2[1:0];   //CB -> TB 延迟时序
+          end 
+          TBa_NL: begin
+            TB_dina_sel_new[2] <= 1'b1;
+            TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+          end
         endcase
       end
-    end
-    always @(posedge clk) begin
-      if(sys_rst) begin
-        TB_dina_sel_new[1:0] <= 0;
-      end
-      else 
-        TB_dina_sel_new[1:0] <= TBa_mode_d2[1:0];
     end
 
   /*
@@ -3368,9 +3377,9 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
           TB_dinb_sel_new <= DIR_POS;
       end
 
-  /*
-    ***************************** B_cache *****************************
-  */
+/*
+  ***************************** B_cache *****************************
+*/
   always @(posedge clk) begin
     if(sys_rst) begin
       B_cache_en_new <= 0;
@@ -3606,8 +3615,8 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CB_addra_new <= 0;
     end
     else begin
-      case (CBa_mode[2:0])
-        CB_cov_NL    : begin
+      case (CBa_mode[3:0])
+        CB_NL_xyxita: begin
                     case(stage_cur)
                       STAGE_PRD:begin
                         case(prd_cur)
@@ -3620,9 +3629,9 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                                       CB_addra_new <= 2'b11;
                                     end     
                                     SEQ_1: begin
-                                      CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                                      CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
                                       CB_ena_new <= 1'b1;
-                                      CB_addra_new <= 2'b01;
+                                      CB_addra_new <= l_k_base_addr_RD;
                                     end
                                     default: begin
                                       CB_ena_new <= 1'b0;
@@ -3639,7 +3648,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                                       CB_addra_new <= 2'b11;
                                     end     
                                     SEQ_1: begin
-                                      CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                                      CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
                                       CB_ena_new <= 1'b0;
                                       CB_addra_new <= 0;
                                     end
@@ -3675,7 +3684,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         CB_addra_new <= 0;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                        CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= 2'b01;
                       end
@@ -3698,7 +3707,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         CB_addra_new <= CB_addra_base;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new <= {CBa_mode[5:3], DIR_POS};
+                        CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_base + 2'b01;
                       end
@@ -3721,7 +3730,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
+                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
@@ -3780,7 +3789,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         CB_addra_new <= l_k_base_addr_RD;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
+                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b01;
@@ -3808,7 +3817,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
                         CB_addra_new <= CB_addra_base + l_k_row;
                       end     
                       SEQ_1: begin
-                        CB_douta_sel_new[3:2] <= CBa_mode[5:3]; 
+                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
                         CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_new + 1'b1;
@@ -3831,10 +3840,9 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
     end
   end
 
-//CB portB
-  /*
-    *****************************CB-portB write*****************************
-  */
+/*
+  *****************************CB-portB write*****************************
+*/
   always @(posedge clk) begin
     if(sys_rst) begin
       CBb_shift_dir   <= 0;
@@ -3845,156 +3853,206 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CB_addrb_new <= 0;
     end
     else begin
-      case (CBb_mode_WR[2:0])
-        CB_cov_vv : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_POS;
-                      CBb_shift_dir <= DIR_POS;
-                      case(seq_cnt_WR)
-                        SEQ_0: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= 2'b00;
-                        end  
-                        SEQ_1: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                        SEQ_2: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= 2'b01;
-                        end
-                        SEQ_3: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                        SEQ_4: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= 2'b10;
-                        end
-                        default: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                      endcase
-                    end
-        CB_cov_mv : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_POS;
-                      CBb_shift_dir <= DIR_POS;
-                      case(seq_cnt_WR)
-                        SEQ_0: begin
-                          CBb_shift_dir <= DIR_POS;
+      case (CBb_mode[6])  //为0：RSA中的写入，用延迟的mode；为1：NL的写入，直接用mode
+        1'b1: begin
+              case(CBb_mode[3:0])
+                CB_NL_xyxita: begin
+                            CBb_shift_dir <= DIR_POS;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_xyxita;
+                            CB_dinb_sel_new[1:0] <= DIR_POS;
+                            if(seq_cnt == SEQ_0) begin
+                              CB_web_new <= 1'b1;
+                              CB_enb_new <= 1'b1;
+                              CB_addrb_new <= 2'b11;
+                            end
+                            else begin
+                              CB_web_new <= 1'b0;
+                              CB_enb_new <= 1'b0;
+                              CB_addrb_new <= 0;
+                            end
+                          end
+                CB_NL_lxly: begin
+                              CBb_shift_dir <= DIR_NEW;
+                              CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_lxly;
+                              CB_dinb_sel_new[1:0] <= DIR_NEW;
+                              if(seq_cnt == SEQ_0) begin
+                                CB_web_new <= 1'b1;
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= 2'b11;
+                              end
+                              else begin
+                                CB_web_new <= 1'b0;
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            end
+                default:  begin
+                            CB_dinb_sel_new <= 0;
+                            CB_web_new <= 1'b0;
+                            CB_enb_new <= 1'b0;
+                            CB_addrb_new <= 0;
+                          end
+              endcase
+            end 
+        1'b0: begin
+            case (CBb_mode_WR[3:0])
+              CB_cov_vv : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_POS;
+                            CBb_shift_dir <= DIR_POS;
+                            case(seq_cnt_WR)
+                              SEQ_0: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= 2'b00;
+                              end  
+                              SEQ_1: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                              SEQ_2: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= 2'b01;
+                              end
+                              SEQ_3: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                              SEQ_4: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= 2'b10;
+                              end
+                              default: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            endcase
+                          end
+              CB_cov_mv : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_POS;
+                            CBb_shift_dir <= DIR_POS;
+                            case(seq_cnt_WR)
+                              SEQ_0: begin
+                                CBb_shift_dir <= DIR_POS;
 
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base;
-                        end  
-                        SEQ_2: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 2'b01;
-                        end
-                        SEQ_4: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_base + 2'b10;
-                        end
-                        default: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                      endcase
-                    end
-        CB_cov    : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_POS;
-                      CBb_shift_dir <= DIR_POS;
-                      case(seq_cnt_WR[0])
-                        1'b0: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                        1'b1: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
-                        end
-                      endcase     
-                    end
-        CB_cov_lv : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_NEW;
-                      CBb_shift_dir <= DIR_NEW;
-                      case(seq_cnt_WR)
-                        SEQ_0: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR;
-                        end  
-                        SEQ_2: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + 2'b01;
-                        end
-                        SEQ_4: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + 2'b10;
-                        end
-                        default: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                      endcase
-                    end
-        CB_cov_lm : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_NEW;
-                      CBb_shift_dir <= DIR_NEW;
-                      case(seq_cnt_WR)
-                        SEQ_0: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR;
-                        end  
-                        SEQ_2: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + 1'b1;
-                        end
-                        SEQ_4: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + 2'b10;
-                        end
-                        SEQ_6: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + 2'b11;
-                        end
-                        default: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                      endcase
-                    end
-        CB_cov_ll : begin
-                      CB_web_new <= 1'b1;
-                      CB_dinb_sel_new <= DIR_NEW;
-                      CBb_shift_dir <= DIR_NEW;
-                      case(seq_cnt_WR)
-                        SEQ_0: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= l_k_base_addr_WR + l_k_row;
-                        end  
-                        SEQ_2: begin
-                          CB_enb_new <= 1'b1;
-                          CB_addrb_new <= CB_addrb_new + 1'b1;
-                        end
-                        default: begin
-                          CB_enb_new <= 1'b0;
-                          CB_addrb_new <= 0;
-                        end
-                      endcase
-                    end
-        default   : begin
-                      CBb_shift_dir   <= 0;
-                      CB_dinb_sel_new <= 0;
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= CB_addrb_base;
+                              end  
+                              SEQ_2: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= CB_addrb_base + 2'b01;
+                              end
+                              SEQ_4: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= CB_addrb_base + 2'b10;
+                              end
+                              default: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            endcase
+                          end
+              CB_cov    : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_POS;
+                            CBb_shift_dir <= DIR_POS;
+                            case(seq_cnt_WR[0])
+                              1'b0: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                              1'b1: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= CB_addrb_new + 1'b1;
+                              end
+                            endcase     
+                          end
+              CB_cov_lv : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_NEW;
+                            CBb_shift_dir <= DIR_NEW;
+                            case(seq_cnt_WR)
+                              SEQ_0: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR;
+                              end  
+                              SEQ_2: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + 2'b01;
+                              end
+                              SEQ_4: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + 2'b10;
+                              end
+                              default: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            endcase
+                          end
+              CB_cov_lm : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_NEW;
+                            CBb_shift_dir <= DIR_NEW;
+                            case(seq_cnt_WR)
+                              SEQ_0: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR;
+                              end  
+                              SEQ_2: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + 1'b1;
+                              end
+                              SEQ_4: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + 2'b10;
+                              end
+                              SEQ_6: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + 2'b11;
+                              end
+                              default: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            endcase
+                          end
+              CB_cov_ll : begin
+                            CB_web_new <= 1'b1;
+                            CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
+                            CB_dinb_sel_new[1:0] <= DIR_NEW;
+                            CBb_shift_dir <= DIR_NEW;
+                            case(seq_cnt_WR)
+                              SEQ_0: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= l_k_base_addr_WR + l_k_row;
+                              end  
+                              SEQ_2: begin
+                                CB_enb_new <= 1'b1;
+                                CB_addrb_new <= CB_addrb_new + 1'b1;
+                              end
+                              default: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= 0;
+                              end
+                            endcase
+                          end
+              default   : begin
+                            CBb_shift_dir   <= 0;
+                            CB_dinb_sel_new <= 0;
 
-                      CB_enb_new <= 1'b0;
-                      CB_web_new <= 1'b0;
-                      CB_addrb_new <= 0;
+                            CB_enb_new <= 1'b0;
+                            CB_web_new <= 1'b0;
+                            CB_addrb_new <= 0;
 
-                    end
+                          end
+            endcase
+          end
       endcase
     end
   end
@@ -4453,10 +4511,6 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
   reg                           CBb_vm_AGD_en;
   reg                           l_k_AGD_en;
 
-  wire [CB_AW-1 : 0]            CB_addra_base_raw;
-  wire [CB_AW-1 : 0]            CB_addrb_base_raw;
-  wire [CB_AW-1 : 0]            l_k_base_addr_raw;
-
   //*********************** CBa_vm_AGD *************************
 
   //CBa_vm_AGD_en有效时，CB_base_AGD就会不断更新CB_addra_base_raw
@@ -4465,7 +4519,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CBa_vm_AGD_en <= 0;
     end
     else begin
-      case(CBa_mode[2:0])
+      case(CBa_mode[3:0])
         CB_cov_vv: CBa_vm_AGD_en <= 1'b1;
         CB_cov_mv: CBa_vm_AGD_en <= 1'b1;
         CB_cov_ml: CBa_vm_AGD_en <= 1'b1;
@@ -4493,7 +4547,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CB_addra_base <= 0;
     end
     else begin
-      case(CBa_mode[2:0])
+      case(CBa_mode[3:0])
         CB_cov_vv: begin
           if(seq_cnt == seq_cnt_max)
             CB_addra_base <= CB_addra_base_raw;
@@ -4526,7 +4580,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CBb_vm_AGD_en <= 0;
     end
     else begin
-      case(CBb_mode_WR[2:0])
+      case(CBb_mode_WR[3:0])
         CB_cov_vv: CBb_vm_AGD_en <= 1'b1;
         CB_cov_mv: CBb_vm_AGD_en <= 1'b1;
         default:   CBb_vm_AGD_en <= 1'b0;
@@ -4552,7 +4606,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       CB_addrb_base <= 0;
     end
     else begin
-      case(CBb_mode_WR[2:0])
+      case(CBb_mode_WR[3:0])
         CB_cov_vv: begin
           if(seq_cnt_WR == seq_cnt_max)
             CB_addrb_base <= CB_addrb_base_raw;
@@ -4580,6 +4634,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
       end
       else begin
         case(stage_cur)
+          STAGE_UPD: l_k_AGD_en <= 1'b1;
           STAGE_NEW: l_k_AGD_en <= 1'b1;
           STAGE_UPD: l_k_AGD_en <= 1'b1;
           default:   l_k_AGD_en <= 1'b0;
@@ -4609,7 +4664,10 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
         l_k_base_addr_RD <= 0;
       end
       else begin
-        case(CBa_mode[2:0])
+        case(CBa_mode[3:0])
+          CB_NL_xyxita: begin
+            l_k_base_addr_RD <= l_k_base_addr_raw + 2'b11;
+          end
           CB_cov_lv: begin
             if(seq_cnt == seq_cnt_max)
               l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;  //准备好 cov_lm的起始地址
@@ -4634,7 +4692,7 @@ reg rcv_OK_predict, rcv_OK_newlm, rcv_OK_update;
         l_k_base_addr_WR <= 0;
       end
       else begin
-        case(CBb_mode_WR[2:0])
+        case(CBb_mode_WR[3:0])
           CB_cov_lv: begin
             if(seq_cnt_WR == seq_cnt_max)
               l_k_base_addr_WR <= l_k_base_addr_WR + 3'b100;  //准备好 cov_lm的起始地址
