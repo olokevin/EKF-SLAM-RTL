@@ -66,10 +66,10 @@ module PE_config #(
   output  [C_OUT_SEL_DW*X-1 : 0]      C_out_sel, 
   output reg [X-1 : 0]                C_out_en,
 
-  output reg [TB_DINA_SEL_DW-1 : 0]       TB_dina_sel,
-  output reg [TB_DINB_SEL_DW-1 : 0]       TB_dinb_sel,
-  output reg [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel,
-  output reg [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel,
+  output [TB_DINA_SEL_DW-1 : 0]       TB_dina_sel,
+  output [TB_DINB_SEL_DW-1 : 0]       TB_dinb_sel,
+  output [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel,
+  output [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel,
 
   output  [L-1 : 0]         TB_ena,
   output  [L-1 : 0]         TB_enb,
@@ -80,9 +80,9 @@ module PE_config #(
   output  [L*TB_AW-1 : 0]      TB_addra,
   output  [L*TB_AW-1 : 0]      TB_addrb,
 
-  output reg [CB_DINA_SEL_DW-1 : 0]      CB_dina_sel,
-  output reg [CB_DINB_SEL_DW-1 : 0]      CB_dinb_sel,
-  output reg [CB_DOUTA_SEL_DW-1 : 0]     CB_douta_sel,
+  // output [CB_DINA_SEL_DW-1 : 0]      CB_dina_sel,
+  output [CB_DINB_SEL_DW-1 : 0]      CB_dinb_sel,
+  output [CB_DOUTA_SEL_DW-1 : 0]     CB_douta_sel,
 
   output [L-1 : 0]        CB_ena,
   output [L-1 : 0]        CB_enb,
@@ -4713,13 +4713,20 @@ assign test_stage = stage_val & stage_rdy;
   /*
     ******************* sel_new -> sel ********************
   */
-  always @(posedge clk) begin
-    TB_dina_sel <= TB_dina_sel_new;
-    TB_dinb_sel <= TB_dinb_sel_new;
-    TB_douta_sel <= TB_douta_sel_new;
-    TB_doutb_sel <= TB_doutb_sel_new;
-    CB_dinb_sel <= CB_dinb_sel_new;
-    CB_douta_sel <= CB_douta_sel_new;
-  end
+  // always @(posedge clk) begin
+  //   TB_dina_sel <= TB_dina_sel_new;
+  //   TB_dinb_sel <= TB_dinb_sel_new;
+  //   TB_douta_sel <= TB_douta_sel_new;
+  //   TB_doutb_sel <= TB_doutb_sel_new;
+  //   CB_dinb_sel <= CB_dinb_sel_new;
+  //   CB_douta_sel <= CB_douta_sel_new;
+  // end
+
+  assign  TB_dina_sel  = TB_dina_sel_new;
+  assign  TB_dinb_sel  = TB_dinb_sel_new;
+  assign  TB_douta_sel = TB_douta_sel_new;
+  assign  TB_doutb_sel = TB_doutb_sel_new;
+  assign  CB_dinb_sel  = CB_dinb_sel_new;
+  assign  CB_douta_sel = CB_douta_sel_new;
 
 endmodule

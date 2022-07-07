@@ -744,7 +744,7 @@ wire signed [L*RSA_DW-1 : 0] TB_douta;
 wire signed [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
-wire [CB_DINA_SEL_DW-1 : 0]    CB_dina_sel;
+// wire [CB_DINA_SEL_DW-1 : 0]    CB_dina_sel;
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
 wire [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel;
 
@@ -1210,7 +1210,7 @@ u_PE_config(
   .TB_web        (TB_web        ),
   .TB_addra      (TB_addra      ),
   .TB_addrb      (TB_addrb      ),
-  .CB_dina_sel   (CB_dina_sel   ),
+  // .CB_dina_sel   (CB_dina_sel   ),
   .CB_dinb_sel   (CB_dinb_sel   ),
   .CB_douta_sel  (CB_douta_sel  ),
   .CB_ena        (CB_ena        ),
