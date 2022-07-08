@@ -50,7 +50,7 @@ always @(posedge clk) begin
   else begin
     case(TB_douta_sel[2])
       TBa_A: begin
-        case(TB_douta_sel[TB_DOUTA_SEL_DW-1:0])
+        case(TB_douta_sel[1:0])
           DIR_IDLE: A_TB_douta <= 0;
           DIR_POS : A_TB_douta <= TB_douta;
           DIR_NEG :begin

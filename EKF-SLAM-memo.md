@@ -1304,3 +1304,10 @@ addrb_new: NEW_2_PE_in+N+3
   * 在状态机设置CB_douta_map映射模式
 * 改TBa_Mode bit分配？
 * CBb: we en addr分为WR和RD两边
+
+
+
+## 220708
+
+* ![image-20220708091348004](C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220708091348004.png)
+* TB写入时数据比地址晚了一T

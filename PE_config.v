@@ -2934,7 +2934,7 @@ assign test_stage = stage_val & stage_rdy;
       new_cal_en_new <= 0;
     end
     else begin
-      if(seq_cnt_cal_d >= 1'b1 && seq_cnt_cal_d <= PEn_cal_d) begin
+      if(seq_cnt_cal_d >= 0 && seq_cnt_cal_d <= PEn_cal_d) begin
         new_cal_en_new <= 1'b1;
       end
       else
@@ -2947,7 +2947,7 @@ assign test_stage = stage_val & stage_rdy;
       new_cal_done_new <= 0;
     end
     else begin
-      if(seq_cnt_cal_d == PEn_cal_d + 1'b1)
+      if(seq_cnt_cal_d == PEn_cal_d)
         new_cal_done_new <= 1'b1;
       else
         new_cal_done_new <= 1'b0;
@@ -3241,34 +3241,43 @@ assign test_stage = stage_val & stage_rdy;
                 else begin
                   TB_enb_new <= 1'b0;
                   TB_web_new <= 1'b0;
-                  TB_addrb_new <= 0;
+                  TB_addrb_new <= TB_addrb_new;
                 end
               end
         TBb_C:begin
-                case (seq_cnt_WR)
-                  SEQ_0: begin
-                    TB_enb_new <= 1'b1;
-                    TB_web_new <= 1'b1;
-                    if(v_group_cnt == 0)
-                      TB_addrb_new <= C_TB_base_addr_set;
-                    else
-                      TB_addrb_new <= C_TB_base_addr;
-                  end
-                  SEQ_2: begin
-                    TB_enb_new <= 1'b1;
-                    TB_web_new <= 1'b1;
-                    TB_addrb_new <= TB_addrb_new + 1'b1;
-                  end
-                  SEQ_4: begin
-                    TB_enb_new <= 1'b1;
-                    TB_web_new <= 1'b1;
-                    TB_addrb_new <= TB_addrb_new + 1'b1;
-                  end
+                case(TBb_mode_WR[4:2])
+                  TBb_C: begin
+                          case (seq_cnt_WR)
+                            SEQ_0: begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b1;
+                              if(v_group_cnt == 0)
+                                TB_addrb_new <= C_TB_base_addr_set;
+                              else
+                                TB_addrb_new <= C_TB_base_addr;
+                            end
+                            SEQ_2: begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b1;
+                              TB_addrb_new <= TB_addrb_new + 1'b1;
+                            end
+                            SEQ_4: begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b1;
+                              TB_addrb_new <= TB_addrb_new + 1'b1;
+                            end
+                            default: begin
+                              TB_enb_new <= 1'b0;
+                              TB_web_new <= 1'b0;
+                              TB_addrb_new <= TB_addrb_new;
+                            end
+                          endcase
+                        end
                   default: begin
-                    TB_enb_new <= 1'b0;
-                    TB_web_new <= 1'b0;
-                    TB_addrb_new <= 0;
-                  end
+                            TB_enb_new <= 1'b0;
+                            TB_web_new <= 1'b0;
+                            TB_addrb_new <= 0;
+                        end
                 endcase
               end
         TBb_BC: begin
@@ -3304,7 +3313,7 @@ assign test_stage = stage_val & stage_rdy;
                       default: begin
                         TB_enb_new <= 1'b0;
                         TB_web_new <= 1'b0;
-                        TB_addrb_new <= 0;
+                        TB_addrb_new <= TB_addrb_new;
                       end
                     endcase
                   end
@@ -3319,7 +3328,7 @@ assign test_stage = stage_val & stage_rdy;
                       else begin
                             TB_enb_new <= 1'b0;
                             TB_web_new <= 1'b0;
-                            TB_addrb_new <= 0;
+                            TB_addrb_new <= TB_addrb_new;
                           end
                     end
         default: begin
@@ -3962,7 +3971,7 @@ assign test_stage = stage_val & stage_rdy;
                             case(seq_cnt_WR[0])
                               1'b0: begin
                                 CB_enb_new <= 1'b0;
-                                CB_addrb_new <= 0;
+                                CB_addrb_new <= CB_addrb_new;
                               end
                               1'b1: begin
                                 CB_enb_new <= 1'b1;
@@ -4038,7 +4047,7 @@ assign test_stage = stage_val & stage_rdy;
                               end
                               default: begin
                                 CB_enb_new <= 1'b0;
-                                CB_addrb_new <= 0;
+                                CB_addrb_new <= CB_addrb_new;
                               end
                             endcase
                           end
