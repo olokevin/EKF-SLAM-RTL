@@ -285,21 +285,21 @@ always @(posedge clk) begin
     case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
         CBa_NL: begin
                   case(seq_cnt_out)     //不用延迟时序
-                    'd3:begin
+                    'd7:begin
                           xk <= CB_douta[0 +: RSA_DW];
                         end
-                    'd4:begin
+                    'd8:begin
                           yk <= CB_douta[1*RSA_DW +: RSA_DW];
                           lkx <= l_k_0 ? CB_douta[0 +: RSA_DW] : lkx;
                         end
-                    'd5:begin
+                    'd9:begin
                           xita <= CB_douta[2*RSA_DW +: RSA_DW];
                           lky  <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
                         end
-                    'd6:begin
+                    'd10:begin
                           lkx  <= l_k_0 ? lkx : CB_douta[2*RSA_DW +: RSA_DW];
                         end
-                    'd7:begin
+                    'd11:begin
                           lky  <= l_k_0 ? lky : CB_douta[3*RSA_DW +: RSA_DW];
                         end
                   endcase

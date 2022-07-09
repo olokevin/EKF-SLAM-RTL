@@ -58,7 +58,7 @@ integer i_TB_non_linear;
     if(sys_rst)
       TB_dina <= 0;
     else begin
-      case(TB_dina_sel[TB_DINA_SEL_DW-1])
+      case(TB_dina_sel[TB_DINA_SEL_DW-1 : 2])
         TBa_CBa: begin
                   case(TB_dina_sel[1:0])
                     DIR_POS: begin
