@@ -68,8 +68,8 @@ module PE_config #(
 
   output [TB_DINA_SEL_DW-1 : 0]       TB_dina_sel,
   output [TB_DINB_SEL_DW-1 : 0]       TB_dinb_sel,
-  output [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel,
-  output [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel,
+  output reg [TB_DOUTA_SEL_DW-1 : 0]      TB_douta_sel,
+  output reg [TB_DOUTB_SEL_DW-1 : 0]      TB_doutb_sel,
 
   output  [L-1 : 0]         TB_ena,
   output  [L-1 : 0]         TB_enb,
@@ -82,7 +82,7 @@ module PE_config #(
 
   // output [CB_DINA_SEL_DW-1 : 0]      CB_dina_sel,
   output [CB_DINB_SEL_DW-1 : 0]      CB_dinb_sel,
-  output [CB_DOUTA_SEL_DW-1 : 0]     CB_douta_sel,
+  output reg [CB_DOUTA_SEL_DW-1 : 0]     CB_douta_sel,
 
   output [L-1 : 0]        CB_ena,
   output [L-1 : 0]        CB_enb,
@@ -1104,6 +1104,7 @@ assign test_stage = stage_val & stage_rdy;
       end
       else begin
         case (stage_cur)
+          STAGE_PRD: l_k_group <= (l_k + 1'b1) >> 1;
           STAGE_NEW: l_k_group <= (l_k + 1'b1) >> 1;
           STAGE_UPD: l_k_group <= (l_k + 1'b1) >> 1;
           default: l_k_group <= 0;
@@ -3062,10 +3063,16 @@ assign test_stage = stage_val & stage_rdy;
                   end
                   //M[1]
                   else if(seq_cnt == PE_n + 1'b1) begin
-                    TB_douta_sel_new[2] <= 1'b1;
+                    // TB_douta_sel_new[2] <= 1'b1;
                     TB_ena_new <= 1'b1;
                     TB_wea_new <= 1'b0;
                     TB_addra_new <= M_TB_base_addr_set;
+                  end
+                  else if(seq_cnt == PE_n + 2'b10) begin
+                    TB_douta_sel_new[2] <= 1'b1;
+                    TB_ena_new <= 1'b0;
+                    TB_wea_new <= 1'b0;
+                    TB_addra_new <= 0;
                   end
                   //M[2]
                   else if(seq_cnt == PE_n + 2'b11) begin
@@ -4546,8 +4553,8 @@ assign test_stage = stage_val & stage_rdy;
     CB_addra_base_AGD(
     	.clk          (clk          ),
       .sys_rst      (sys_rst      ),
-      .en           (CBa_vm_AGD_en           ),
-      .group_cnt    (v_group_cnt    ),
+      .en           (CBa_vm_AGD_en),
+      .group_cnt    (v_group_cnt  ),
       .CB_base_addr (CB_addra_base_raw )
     );
   
@@ -4564,21 +4571,22 @@ assign test_stage = stage_val & stage_rdy;
             CB_addra_base <= 1'b1;
         end
         CB_cov_mv:begin
+                    if(seq_cnt)
                     if(seq_cnt == seq_cnt_max)
                       CB_addra_base <= CB_addra_base_raw;
                     else
                       CB_addra_base <= CB_addra_base;
                   end
-        CB_cov_ml:begin
-                    CB_addra_base <= CB_addra_base;
-                  end
+        // CB_cov_ml:begin
+        //             CB_addra_base <= CB_addra_base;
+        //           end
         CB_cov_ll:begin
                     if(seq_cnt == seq_cnt_max)
                       CB_addra_base <= CB_addra_base_raw;
                     else
                       CB_addra_base <= CB_addra_base;
                   end
-        default:   CB_addra_base <= 0;
+        default:   CB_addra_base <= CB_addra_base;    //CB_addra_base 会进行采样,不用归0
       endcase
     end
   end
@@ -4722,20 +4730,15 @@ assign test_stage = stage_val & stage_rdy;
   /*
     ******************* sel_new -> sel ********************
   */
-  // always @(posedge clk) begin
-  //   TB_dina_sel <= TB_dina_sel_new;
-  //   TB_dinb_sel <= TB_dinb_sel_new;
-  //   TB_douta_sel <= TB_douta_sel_new;
-  //   TB_doutb_sel <= TB_doutb_sel_new;
-  //   CB_dinb_sel <= CB_dinb_sel_new;
-  //   CB_douta_sel <= CB_douta_sel_new;
-  // end
-
-  assign  TB_dina_sel  = TB_dina_sel_new;
-  assign  TB_dinb_sel  = TB_dinb_sel_new;
-  assign  TB_douta_sel = TB_douta_sel_new;
-  assign  TB_doutb_sel = TB_doutb_sel_new;
-  assign  CB_dinb_sel  = CB_dinb_sel_new;
-  assign  CB_douta_sel = CB_douta_sel_new;
+  //dout, 需多延迟1T
+    always @(posedge clk) begin
+      TB_douta_sel <= TB_douta_sel_new;
+      TB_doutb_sel <= TB_doutb_sel_new;
+      CB_douta_sel <= CB_douta_sel_new;
+    end
+  //din 不延迟
+    assign  TB_dina_sel  = TB_dina_sel_new;
+    assign  TB_dinb_sel  = TB_dinb_sel_new;
+    assign  CB_dinb_sel  = CB_dinb_sel_new;
 
 endmodule

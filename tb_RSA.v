@@ -35,7 +35,7 @@ reg   sys_rst                              = 0 ;
 
 reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 6 ;
-reg   [ROW_LEN-1 : 0]  l_k                 = 4 ;
+reg   [ROW_LEN-1 : 0]  l_k                 = 5 ;
 reg   done_predict                         = 0 ;
 reg   done_newlm                           = 0 ;
 reg   done_update                          = 0 ;
