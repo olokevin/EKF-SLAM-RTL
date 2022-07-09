@@ -9,7 +9,7 @@ module PE_config #(
   parameter M_IN_SEL_DW = 2,
   parameter C_OUT_SEL_DW = 2,
 
-  parameter TB_DINA_SEL_DW  = 3,
+  parameter TB_DINA_SEL_DW  = 5,
   parameter TB_DINB_SEL_DW  = 2,
   parameter TB_DOUTA_SEL_DW = 3,
   parameter TB_DOUTB_SEL_DW = 3,
@@ -188,8 +188,10 @@ module PE_config #(
     localparam TBa_M = 3'b010;
     localparam TBa_AM = 3'b011;
   //TBa WR
-    localparam TBa_cov_lm = 3'b100;
-    localparam TBa_NL     = 3'b101;
+    localparam TBa_CBa     = 3'b100;
+    localparam TBa_NL_PRD  = 3'b101;
+    localparam TBa_NL_NEW  = 3'b110;
+    localparam TBa_NL_UPD  = 3'b111;
 
   //TBb RD
     localparam TBb_IDLE = 3'b000;
@@ -366,6 +368,7 @@ module PE_config #(
     localparam [TB_AW-1 : 0] S_t           = 'd31;
     localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
     localparam [TB_AW-1 : 0] cov_HT        = 'd38;
+    localparam [TB_AW-1 : 0] v_t        = 'd38;
     localparam [TB_AW-1 : 0] t_cov_l       = 'd40;
     localparam [TB_AW-1 : 0] K_t           = 'd40;
   // PREDICTION SERIES
@@ -1979,7 +1982,7 @@ assign test_stage = stage_val & stage_rdy;
                             end
                       PRD_NL_RCV:
                             begin
-                              TBa_mode = {TBa_NL,DIR_POS};
+                              TBa_mode = {TBa_NL_PRD,DIR_POS};
                               CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
                             end
                       PRD_1: begin
@@ -2078,6 +2081,15 @@ assign test_stage = stage_val & stage_rdy;
                   end
         STAGE_NEW: begin
                     case(new_cur)
+                      NEW_NL_SEND:
+                            begin
+                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                            end
+                      NEW_NL_RCV:
+                            begin
+                              TBa_mode = {TBa_NL_NEW,DIR_POS};
+                              CBb_mode = {CBb_lxly,CB_NL_lxly};    
+                            end
                       NEW_1: begin
                             /*
                               G_xi * t_cov = cov_lm
@@ -2282,7 +2294,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_out_mode = C_CBb;
                               M_adder_mode_set = NONE;
 
-                              TBa_mode = {TBa_cov_lm,DIR_POS};
+                              TBa_mode = {TBa_CBa,DIR_POS};
                               TBb_mode = {TBb_B_cache,B_cache_trnsfer};
                               CBa_mode = {CBa_TBa, CB_cov_lm};
                               CBb_mode = CB_IDLE;
@@ -3100,7 +3112,7 @@ assign test_stage = stage_val & stage_rdy;
                       TB_addra_new <= 0;
                   end
                 end
-        TBa_cov_lm: begin
+        TBa_CBa: begin
                       case(seq_cnt)
                         SEQ_3: begin
                           TB_ena_new <= 1'b1;
@@ -3125,7 +3137,7 @@ assign test_stage = stage_val & stage_rdy;
                         end
                       endcase
                     end  
-        TBa_NL: begin
+        TBa_NL_PRD: begin
                   case(seq_cnt)
                     SEQ_0: begin
                       TB_ena_new <= 1'b1;
@@ -3141,6 +3153,69 @@ assign test_stage = stage_val & stage_rdy;
                       TB_ena_new <= 1'b1;
                       TB_wea_new <= 1'b1;
                       TB_addra_new <= 3'b100;
+                    end
+                    default:begin
+                      TB_ena_new <= 1'b0;
+                      TB_wea_new <= 1'b0;
+                      TB_addra_new <= 0;
+                    end
+                  endcase
+                end
+        TBa_NL_NEW: begin
+                  case(seq_cnt)
+                    SEQ_0: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= G_xi + 2'b10;
+                    end
+                    SEQ_1: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= G_z;
+                    end
+                    SEQ_2: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= G_z + 1'b1;
+                    end
+                    default:begin
+                      TB_ena_new <= 1'b0;
+                      TB_wea_new <= 1'b0;
+                      TB_addra_new <= 0;
+                    end
+                  endcase
+                end
+        TBa_NL_UPD: begin
+                  case(seq_cnt)
+                    SEQ_0: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= H_xi;
+                    end
+                    SEQ_1: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= H_xi + 1'b1;
+                    end
+                    SEQ_2: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= H_z;
+                    end
+                    SEQ_3: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= H_z + 1'b1;
+                    end
+                    SEQ_4: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= v_t;
+                    end
+                    SEQ_5: begin
+                      TB_ena_new <= 1'b1;
+                      TB_wea_new <= 1'b1;
+                      TB_addra_new <= H_z + 1'b1;
                     end
                     default:begin
                       TB_ena_new <= 1'b0;
@@ -3210,13 +3285,24 @@ assign test_stage = stage_val & stage_rdy;
       end
       else begin
         case (TBa_mode[4:2])
-          TBa_cov_lm: begin
-            TB_dina_sel_new[2] <= 1'b0;
+          TBa_CBa: begin
+            TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_CBa;
             TB_dina_sel_new[1:0] <= TBa_mode[1:0];   //CB -> TB 延迟时序
           end 
-          TBa_NL: begin
-            TB_dina_sel_new[2] <= 1'b1;
+          TBa_NL_PRD: begin
+            TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_PRD;
             TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+          end
+          TBa_NL_NEW: begin
+            TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_NEW;
+            TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+          end
+          TBa_NL_UPD: begin
+            TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_UPD;
+            TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+          end
+          default: begin
+            TB_dina_sel_new <= TB_IDLE;
           end
         endcase
       end
@@ -3633,63 +3719,23 @@ assign test_stage = stage_val & stage_rdy;
     else begin
       case (CBa_mode[3:0])
         CB_NL_xyxita: begin
-                    case(stage_cur)
-                      STAGE_PRD:begin
-                        case(prd_cur)
-                          PRD_NL_SEND: begin
-                                  CB_wea_new <= 1'b0;
-                                  case(seq_cnt)
-                                    SEQ_0: begin
-                                      CBa_shift_dir <= DIR_POS;
-                                      CB_ena_new <= 1'b1;
-                                      CB_addra_new <= 2'b11;
-                                    end     
-                                    SEQ_1: begin
-                                      CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
-                                      CB_ena_new <= 1'b1;
-                                      CB_addra_new <= l_k_base_addr_RD;
-                                    end
-                                    default: begin
-                                      CB_ena_new <= 1'b0;
-                                      CB_addra_new <= 0;
-                                    end
-                                  endcase 
-                                end
-                          PRD_NL_RCV: begin
-                                  CB_wea_new <= 1'b1;
-                                  case(seq_cnt)
-                                    SEQ_0: begin
-                                      CBa_shift_dir <= DIR_POS;
-                                      CB_ena_new <= 1'b1;
-                                      CB_addra_new <= 2'b11;
-                                    end     
-                                    SEQ_1: begin
-                                      CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
-                                      CB_ena_new <= 1'b0;
-                                      CB_addra_new <= 0;
-                                    end
-                                    default: begin
-                                      CB_ena_new <= 1'b0;
-                                      CB_addra_new <= 0;
-                                    end
-                                  endcase 
-                                end
-                          default: begin
-                                  CB_ena_new <= 1'b0;
-                                  CB_addra_new <= 0;
-                                end
-                        endcase        
-                      end
-                      STAGE_NEW:begin
-                        
-                      end
-                      STAGE_UPD:begin
-                        
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      SEQ_0: begin
+                        CBa_shift_dir <= DIR_POS;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= 2'b11;
+                      end     
+                      SEQ_1: begin
+                        CB_douta_sel_new <= {CBa_mode[6:4], DIR_POS};
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= l_k_base_addr_RD;
                       end
                       default: begin
-                        
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
                       end
-                    endcase
+                    endcase 
                   end
         CB_cov_vv: begin
                     CB_wea_new <= 1'b0;

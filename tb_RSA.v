@@ -75,23 +75,52 @@ begin
     #(PERIOD*2) sys_rst  =  0;
 end
 
-initial begin
-    #(PERIOD*RST_START)
-    stage_val = STAGE_PRD;
-    
-    #(PERIOD * 2)
-    stage_val = 0;
-end
+//Prediction
+  // initial begin
+  //     #(PERIOD*RST_START)
+  //     stage_val = STAGE_PRD;
+      
+  //     #(PERIOD * 2)
+  //     stage_val = 0;
+  // end
+  // initial begin
+  //   #(PERIOD*RST_START*3)
+  //   done_predict = 1;
+  //   result_1 = 1;
+  //   result_2 = 2;
+  //   result_3 = 3;
+  //   #(PERIOD)
+  //   done_predict = 0;
+  // end
 
-initial begin
+//New Landmark Initialization
+  initial begin
+      #(PERIOD*RST_START)
+      stage_val = STAGE_NEW;
+      
+      #(PERIOD * 2)
+      stage_val = 0;
+  end
+
+  initial begin
     #(PERIOD*RST_START*3)
-    done_predict = 1;
+    done_newlm = 1;
     result_1 = 1;
     result_2 = 2;
     result_3 = 3;
     #(PERIOD)
-    done_predict = 0;
+    done_newlm = 0;
 end
+
+//Update
+  // initial begin
+  //     #(PERIOD*RST_START)
+  //     stage_val = STAGE_UPD;
+      
+  //     #(PERIOD * 2)
+  //     stage_val = 0;
+  // end
+
 
 RSA #(
     .X               ( X               ),

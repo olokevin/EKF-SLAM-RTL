@@ -203,7 +203,7 @@ module RSA
   parameter C_OUT_SEL_DW = 2;
 
 //BRAM map 控制信号数据位宽
-  parameter TB_DINA_SEL_DW  = 3;
+  parameter TB_DINA_SEL_DW  = 5;
   parameter TB_DINB_SEL_DW  = 2;
   parameter TB_DOUTA_SEL_DW = 3;
   parameter TB_DOUTB_SEL_DW = 3;
