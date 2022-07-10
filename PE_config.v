@@ -3607,7 +3607,7 @@ assign test_stage = stage_val & stage_rdy;
               TB_doutb_sel_new[1:0] = DIR_POS;
               TBb_shift_dir <= DIR_POS;
             end
-          DIR_NEG: begin
+            DIR_NEG: begin
               TB_doutb_sel_new[1:0] = DIR_NEG;
               TBb_shift_dir <= DIR_NEG;
             end

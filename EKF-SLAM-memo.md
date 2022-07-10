@@ -1323,4 +1323,5 @@ addrb_new: NEW_2_PE_in+N+3
 * in_en out_en 也应时序移位
 * <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220710155018806.png" alt="image-20220710155018806" style="zoom:50%;" />
   * 需拆分A_en M_en C_en
-  * to be solved
+  * to be solved:
+    * 每一位对应译码后en的移位
