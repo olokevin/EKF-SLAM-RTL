@@ -34,8 +34,8 @@ reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
 
 reg   [2:0]  stage_val                     = 0 ;
-reg   [ROW_LEN-1 : 0]  landmark_num        = 6 ;
-reg   [ROW_LEN-1 : 0]  l_k                 = 4 ;
+reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
+reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
 reg   done_predict                         = 0 ;
 reg   done_newlm                           = 0 ;
 reg   done_update                          = 0 ;
@@ -94,46 +94,46 @@ end
   // end
 
 //New Landmark Initialization
-  initial begin
-    #(PERIOD*RST_START)
-      stage_val = STAGE_NEW;
-    
-    #(PERIOD * 2)
-      stage_val = 0;
-  end
-
-  initial begin
-    #(PERIOD*RST_START*3)
-      done_newlm = 1;
-      result_0 = -1;
-      result_1 = 1;
-      result_2 = 2;
-      result_3 = 3;
-    #(PERIOD)
-      done_newlm = 0;
-  end
-
-//Update
   // initial begin
-  //     #(PERIOD*RST_START)
-  //     stage_val = STAGE_UPD;
-      
-  //     #(PERIOD * 2)
+  //   #(PERIOD*RST_START)
+  //     stage_val = STAGE_NEW;
+    
+  //   #(PERIOD * 2)
   //     stage_val = 0;
   // end
 
   // initial begin
   //   #(PERIOD*RST_START*3)
-  //   done_update = 1;
-  //   result_0 = -1;
-  //   result_1 = 1;
-  //   result_2 = 2;
-  //   result_3 = 3;
-  //   result_4 = 4;
-  //   result_5 = 5;
+  //     done_newlm = 1;
+  //     result_0 = -1;
+  //     result_1 = 1;
+  //     result_2 = 2;
+  //     result_3 = 3;
   //   #(PERIOD)
-  //   done_update = 0;
+  //     done_newlm = 0;
   // end
+
+//Update
+  initial begin
+      #(PERIOD*RST_START)
+      stage_val = STAGE_UPD;
+      
+      #(PERIOD * 2)
+      stage_val = 0;
+  end
+
+  initial begin
+    #(PERIOD*RST_START*3)
+    done_update = 1;
+    result_0 = -1;
+    result_1 = 1;
+    result_2 = 2;
+    result_3 = 3;
+    result_4 = 4;
+    result_5 = 5;
+    #(PERIOD)
+    done_update = 0;
+  end
 
 
 RSA #(

@@ -1320,3 +1320,7 @@ addrb_new: NEW_2_PE_in+N+3
 
 * NEW_5 M晚了一个T -> Min_sel晚了一T
 * Min_sel也与n有关
+* in_en out_en 也应时序移位
+* <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220710155018806.png" alt="image-20220710155018806" style="zoom:50%;" />
+  * 需拆分A_en M_en C_en
+  * to be solved
