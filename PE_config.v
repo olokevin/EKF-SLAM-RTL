@@ -119,7 +119,8 @@ module PE_config #(
   localparam AB_IN_SEL_D = 2'd3;
   localparam CAL_EN_D = 2'd3;
   localparam PE_MODE_D = 3'd4;
-  localparam M_IN_SEL_D = 3'd7;
+  // localparam M_IN_SEL_D = 3'd7;
+  localparam M_IN_SEL_D  = 3'd6;    //Min_sel也与n有关
   localparam C_OUT_SEL_D = 4'd8;
   localparam WR_SEL_D = 4'd9;
 
@@ -336,9 +337,9 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] NEW_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] NEW_1_CNT_MAX     = 'd5;
     localparam [SEQ_CNT_DW-1 : 0] NEW_2_CNT_MAX     = 'd7;
-    localparam [SEQ_CNT_DW-1 : 0] NEW_3_CNT_MAX     = 'd7;
-    localparam [SEQ_CNT_DW-1 : 0] NEW_4_CNT_MAX     = 'd11;
-    localparam [SEQ_CNT_DW-1 : 0] NEW_5_CNT_MAX     = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_3_CNT_MAX     = 'd14;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_4_CNT_MAX     = 'd12;
+    localparam [SEQ_CNT_DW-1 : 0] NEW_5_CNT_MAX     = 'd12;
 
     localparam NEW_1_M       = 3'b010;
     localparam NEW_2_M       = 3'b010;
@@ -574,111 +575,7 @@ module PE_config #(
   assign new_cur_out = new_cur;
   assign upd_cur_out = upd_cur;
 
-  //******************* M读取状态延迟*************************
-    wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;
-    reg  [2:0]              M_RD_d_addr;
-    always @(posedge clk) begin
-      if(sys_rst) begin
-        M_RD_d_addr <= 0;
-      end
-      else begin
-        M_RD_d_addr <= PE_n + 1'b1;
-      end 
-    end
-    
-    dynamic_shreg 
-    #(
-      .DW    (SEQ_CNT_DW    ),
-      .AW    (3    )
-    )
-    u_dynamic_shreg(
-    	.clk  (clk  ),
-      .ce   (1'b1   ),
-      .addr (M_RD_d_addr ),
-      .din  (seq_cnt  ),
-      .dout (seq_cnt_M )
-    );
-  //******************* 写入状态延迟 *************************
-    wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
-    wire [ROW_LEN-1 : 0] v_group_cnt_WR;
-    wire [4:0]           TBb_mode_WR;
-    wire [6:0]           CBb_mode_WR;
-    wire [2:0]           PE_n_WR;
-    
-    reg [3 : 0]          WR_d_addr;       //具体取多少级延迟
-    always @(posedge clk) begin
-      if(sys_rst) begin
-        WR_d_addr <= RD_2_WR_D;
-      end
-      else begin
-        WR_d_addr <= RD_2_WR_D + PE_n;
-      end 
-    end
-    
-    dynamic_shreg 
-    #(
-      .DW    (3    ),
-      .AW    (4    )
-    )
-    PE_n_dynamic_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1   ),
-      .addr (WR_d_addr ),
-      .din  (PE_n  ),
-      .dout (PE_n_WR )
-    );
-
-    dynamic_shreg 
-    #(
-      .DW  (SEQ_CNT_DW  ),
-      .AW  (4  )
-    )
-    seq_cnt_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1  ),
-      .addr (WR_d_addr ),
-      .din  (seq_cnt  ),
-      .dout (seq_cnt_WR )
-    );
-
-    dynamic_shreg 
-    #(
-      .DW  (ROW_LEN  ),
-      .AW  (4  )
-    )
-    group_cnt_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1  ),
-      .addr (WR_d_addr ),
-      .din  (v_group_cnt  ),
-      .dout (v_group_cnt_WR )
-    );
-
-    dynamic_shreg 
-    #(
-      .DW  (5  ),
-      .AW  (4  )
-    )
-    TBb_mode_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1  ),
-      .addr (WR_d_addr ),
-      .din  (TBb_mode  ),
-      .dout (TBb_mode_WR )
-    );
-
-    dynamic_shreg 
-    #(
-      .DW  (7  ),
-      .AW  (4  )
-    )
-    CBb_mode_shreg(
-      .clk  (clk  ),
-      .ce   (1'b1  ),
-      .addr (WR_d_addr ),
-      .din  (CBb_mode  ),
-      .dout (CBb_mode_WR )
-    );
+  
 
 /*
   ****************** FSM of STAGE(IDLE PRD NEW UPD) *******************
@@ -2234,8 +2131,8 @@ assign test_stage = stage_val & stage_rdy;
                               Cout: CB-B
                             */
                               PE_m = NEW_5_M;
-                              PE_n = NEW_5_M;
-                              PE_k = NEW_5_M;
+                              PE_n = NEW_5_N;
+                              PE_k = NEW_5_K;
 
                               CAL_mode = N_W;
 
@@ -2250,9 +2147,9 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = CB_IDLE;
                               CBb_mode = {CBb_C,CB_cov_ll};
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
+                              A_TB_base_addr_set = G_z_Q;
+                              B_TB_base_addr_set = G_z;
+                              M_TB_base_addr_set = lv_G_xi;
                               C_TB_base_addr_set = 0;
                             end
                       default: begin
@@ -3007,6 +2904,128 @@ assign test_stage = stage_val & stage_rdy;
       .dout  (new_cal_done  )
     );
 
+//******************* M读取状态延迟*************************
+    wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;
+    reg  [2:0]              M_RD_d_addr;
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        M_RD_d_addr <= 0;
+      end
+      else begin
+        M_RD_d_addr <= PE_n + 1'b1;
+      end 
+    end
+    
+    dynamic_shreg 
+    #(
+      .DW    (SEQ_CNT_DW    ),
+      .AW    (3    )
+    )
+    u_dynamic_shreg(
+    	.clk  (clk  ),
+      .ce   (1'b1   ),
+      .addr (M_RD_d_addr ),
+      .din  (seq_cnt  ),
+      .dout (seq_cnt_M )
+    );
+  //******************* 写入状态延迟 *************************
+    wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
+    wire [ROW_LEN-1 : 0] v_group_cnt_WR;
+    wire [4:0]           TBb_mode_WR;
+    wire [6:0]           CBb_mode_WR;
+    wire [2:0]           PE_n_WR;
+    wire [2:0]           PE_k_WR;
+    
+    reg [2 : 0]          PE_n_d_addr = RD_2_WR_D;     //PE_n延迟级数，固定值
+    reg [3 : 0]          WR_d_addr;       //读出部分取多少级延迟
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        WR_d_addr <= RD_2_WR_D;
+      end
+      else begin
+        WR_d_addr <= RD_2_WR_D + PE_n_WR;
+      end 
+    end
+    
+    //PE_n_WR只延迟RD_2_WR_D，保证WR_d_addr采样到的还是上一次的PE_n
+    dynamic_shreg 
+    #(
+      .DW    (3    ),
+      .AW    (3    )
+    )
+    PE_n_dynamic_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1   ),
+      .addr (PE_n_d_addr ),
+      .din  (PE_n  ),
+      .dout (PE_n_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW    (3    ),
+      .AW    (3    )
+    )
+    PE_k_dynamic_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1   ),
+      .addr (WR_d_addr ),
+      .din  (PE_k  ),
+      .dout (PE_k_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (SEQ_CNT_DW  ),
+      .AW  (4  )
+    )
+    seq_cnt_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (seq_cnt  ),
+      .dout (seq_cnt_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (ROW_LEN  ),
+      .AW  (4  )
+    )
+    group_cnt_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (v_group_cnt  ),
+      .dout (v_group_cnt_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (5  ),
+      .AW  (4  )
+    )
+    TBb_mode_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (TBb_mode  ),
+      .dout (TBb_mode_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (7  ),
+      .AW  (4  )
+    )
+    CBb_mode_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (CBb_mode  ),
+      .dout (CBb_mode_WR )
+    );
+
 /*
   ********************** address generate config *********************
 */
@@ -3354,7 +3373,7 @@ assign test_stage = stage_val & stage_rdy;
                             SEQ_0: begin
                               TB_enb_new <= 1'b1;
                               TB_web_new <= 1'b1;
-                              if(v_group_cnt == 0)
+                              if(v_group_cnt_WR == 0)
                                 TB_addrb_new <= C_TB_base_addr_set;
                               else
                                 TB_addrb_new <= C_TB_base_addr;
@@ -3365,9 +3384,16 @@ assign test_stage = stage_val & stage_rdy;
                               TB_addrb_new <= TB_addrb_new + 1'b1;
                             end
                             SEQ_4: begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b1;
-                              TB_addrb_new <= TB_addrb_new + 1'b1;
+                              if(PE_k_WR == 3'b011) begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b1;
+                                TB_addrb_new <= TB_addrb_new + 1'b1;
+                              end
+                              else begin
+                                TB_enb_new <= 1'b0;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= TB_addrb_new;
+                              end
                             end
                             default: begin
                               TB_enb_new <= 1'b0;
@@ -3400,7 +3426,7 @@ assign test_stage = stage_val & stage_rdy;
                           SEQ_0: begin
                             TB_enb_new <= 1'b1;
                             TB_web_new <= 1'b1;
-                            if(v_group_cnt == 0)
+                            if(v_group_cnt_WR == 0)
                               TB_addrb_new <= C_TB_base_addr_set;
                             else
                               TB_addrb_new <= C_TB_base_addr;
@@ -3411,9 +3437,16 @@ assign test_stage = stage_val & stage_rdy;
                             TB_addrb_new <= TB_addrb_new + 1'b1;
                           end
                           SEQ_4: begin
-                            TB_enb_new <= 1'b1;
-                            TB_web_new <= 1'b1;
-                            TB_addrb_new <= TB_addrb_new + 1'b1;
+                            if(PE_k_WR == 3'b011) begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b1;
+                              TB_addrb_new <= TB_addrb_new + 1'b1;
+                            end
+                            else begin
+                              TB_enb_new <= 1'b0;
+                              TB_web_new <= 1'b0;
+                              TB_addrb_new <= TB_addrb_new;
+                            end
                           end
                           default: begin
                             TB_enb_new <= 1'b0;
@@ -3425,7 +3458,7 @@ assign test_stage = stage_val & stage_rdy;
                       default: begin
                         TB_enb_new <= 1'b0;
                         TB_web_new <= 1'b0;
-                        TB_addrb_new <= TB_addrb_new;
+                        TB_addrb_new <= 0;
                       end
                     endcase
                   end

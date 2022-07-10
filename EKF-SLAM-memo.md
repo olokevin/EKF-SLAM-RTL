@@ -1309,5 +1309,14 @@ addrb_new: NEW_2_PE_in+N+3
 
 ## 220708
 
-* ![image-20220708091348004](C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220708091348004.png)
-* TB写入时数据比地址晚了一T
+* dout/din 每个bank需要根据对应的sel决定移位目标
+* dir: 不可直接改变
+* 只有TB-A，需要中途换向
+* 需拆成每个bank
+
+
+
+### 220710
+
+* NEW_5 M晚了一个T -> Min_sel晚了一T
+* Min_sel也与n有关

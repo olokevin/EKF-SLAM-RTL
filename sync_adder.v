@@ -6,10 +6,10 @@ module sync_adder #(
 
     input [1:0] mode,
 
-    input [RSA_DW-1:0]    adder_M,
-    input [RSA_DW-1:0]    adder_C,
+    input signed [RSA_DW-1:0]    adder_M,
+    input signed [RSA_DW-1:0]    adder_C,
 
-    output  reg [RSA_DW-1:0]  sum
+    output reg signed [RSA_DW-1:0]  sum
 );
 localparam NONE = 2'b00;
 localparam ADD = 2'b01;
