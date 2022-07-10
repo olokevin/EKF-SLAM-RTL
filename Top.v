@@ -44,7 +44,7 @@ module Top #(
   //数据
     wire signed [RSA_DW-1 : 0] xk, yk;     //机器人坐标
     wire signed [RSA_DW-1 : 0] lkx, lky;   //地图坐标
-    wire signed [RSA_AW-1 : 0] xita;       //机器人朝向
+    wire signed [RSA_DW-1 : 0] xita;       //机器人朝向
   
 /******************NonLinear ->  RSA*********************/
   //完成信号
@@ -114,7 +114,7 @@ u_NonLinear(
   .xk           (xk           ),
   .yk           (yk           ),
   .alpha        (alpha        ),
-  .xita         (xita         ),
+  .xita         (xita[RSA_AW-1 : 0]         ),
   .phi          (phi          ),
   .done_predict (done_predict ),
   .done_newlm   (done_newlm   ),

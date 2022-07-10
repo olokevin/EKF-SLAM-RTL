@@ -1330,3 +1330,7 @@ addrb_new: NEW_2_PE_in+N+3
 * seq_cnt_WR延迟出现问题
 * 改：CBb->TBb
 * 改：TBa->B_cache
+  * TB a b 地址译码
+  * RSA 外部接线
+* cal_en 多了一个T
+* 重点：TBb读写冲突
