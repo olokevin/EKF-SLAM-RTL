@@ -12,7 +12,7 @@ module PE_config #(
   parameter TB_DINA_SEL_DW  = 5,
   parameter TB_DINB_SEL_DW  = 2,
   parameter TB_DOUTA_SEL_DW = 3,
-  parameter TB_DOUTB_SEL_DW = 3,
+  parameter TB_DOUTB_SEL_DW = 5,
   parameter CB_DINA_SEL_DW  = 2,
   parameter CB_DINB_SEL_DW  = 5,
   parameter CB_DOUTA_SEL_DW = 5,  //注意MUX deMUX需手动修改
@@ -197,7 +197,11 @@ module PE_config #(
   //TBb RD
     localparam TBb_IDLE = 3'b000;
     localparam TBb_B = 3'b001;
-    localparam TBb_B_cache = 3'b100;
+    // localparam TBb_B_cache = 3'b100;
+    localparam TBb_B_cache_IDLE = 3'b100;
+    localparam TBb_B_cache_trnsfer = 3'b101;
+    localparam TBb_B_cache_transpose = 3'b110;
+    localparam TBb_B_cache_inv = 3'b111;
 
   //TBb WR
     localparam TBb_C = 3'b010;
@@ -211,10 +215,7 @@ module PE_config #(
     // localparam DIR_NEW_1  = 2'b11;
 
   //B_cache模式下对应的TBb_mode[1:0]
-      localparam B_cache_IDLE = 2'b00;
-      localparam B_cache_trnsfer = 2'b01;
-      localparam B_cache_transpose = 2'b10;
-      localparam B_cache_inv = 2'b11;
+
 
 /*
   ************************** CB mode config *********************
@@ -273,6 +274,7 @@ module PE_config #(
   localparam [SEQ_CNT_DW-1 : 0] SEQ_5 = 'd5;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_6 = 'd6;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_7 = 'd7;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 'd8;
 /*
   ******************* params of Prediction stage *****************
 */
@@ -396,11 +398,12 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_3_CNT_MAX     = 'd2;
     localparam [SEQ_CNT_DW-1 : 0] UPD_4_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd8;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd13;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd9;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
+
 
     localparam UPD_1_M       = 3'b000;
     localparam UPD_2_M       = 3'b011;
@@ -2212,7 +2215,7 @@ assign test_stage = stage_val & stage_rdy;
                               M_adder_mode_set = NONE;
 
                               TBa_mode = {TBa_CBa,DIR_POS};
-                              TBb_mode = {TBb_B_cache,B_cache_trnsfer};
+                              TBb_mode = {TBb_B_cache_trnsfer,DIR_POS};
                               CBa_mode = {CBa_TBa, CB_cov_lm};
                               CBb_mode = CB_IDLE;
 
@@ -2368,7 +2371,7 @@ assign test_stage = stage_val & stage_rdy;
                               M_adder_mode_set = NONE;
 
                               TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_B_cache,B_cache_transpose};
+                              TBb_mode = {TBb_B_cache_transpose,DIR_POS};
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
@@ -2429,7 +2432,7 @@ assign test_stage = stage_val & stage_rdy;
                               M_adder_mode_set = NONE;
 
                               TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_B_cache,B_cache_inv};
+                              TBb_mode = {TBb_B_cache_inv,DIR_POS};
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
@@ -2941,7 +2944,7 @@ assign test_stage = stage_val & stage_rdy;
       new_cal_en_new <= 0;
     end
     else begin
-      if(seq_cnt_cal_d >= 0 && seq_cnt_cal_d <= PEn_cal_d) begin
+      if(seq_cnt_cal_d >= 0 && seq_cnt_cal_d < PEn_cal_d) begin
         new_cal_en_new <= 1'b1;
       end
       else
@@ -3016,8 +3019,15 @@ assign test_stage = stage_val & stage_rdy;
       .dout (seq_cnt_M )
     );
   //******************* 写入状态延迟 *************************
+    wire [2:0]   stage_cur_WR;
+    wire [3:0]   prd_cur_WR;
+    wire [5:0]   new_cur_WR;
+    wire [10:0]  upd_cur_WR;
+    
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
+    wire [SEQ_CNT_DW-1 : 0] seq_cnt_max_WR;
     wire [ROW_LEN-1 : 0] v_group_cnt_WR;
+    wire [ROW_LEN-1 : 0] v_group_cnt_max_WR;
     wire [4:0]           TBb_mode_WR;
     wire [6:0]           CBb_mode_WR;
     wire [2:0]           PE_n_WR;
@@ -3079,15 +3089,93 @@ assign test_stage = stage_val & stage_rdy;
 
     dynamic_shreg 
     #(
+      .DW  (SEQ_CNT_DW  ),
+      .AW  (4  )
+    )
+    seq_cnt_max_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (seq_cnt_max  ),
+      .dout (seq_cnt_max_WR )
+    );
+
+    dynamic_shreg 
+    #(
       .DW  (ROW_LEN  ),
       .AW  (4  )
     )
-    group_cnt_shreg(
+    v_group_cnt_shreg(
       .clk  (clk  ),
       .ce   (1'b1  ),
       .addr (WR_d_addr ),
       .din  (v_group_cnt  ),
       .dout (v_group_cnt_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (ROW_LEN  ),
+      .AW  (4  )
+    )
+    v_group_cnt_max_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (v_group_cnt_max  ),
+      .dout (v_group_cnt_max_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (3  ),
+      .AW  (4  )
+    )
+    stage_cur_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (stage_cur  ),
+      .dout (stage_cur_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (4  ),
+      .AW  (4  )
+    )
+    prd_cur_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (prd_cur  ),
+      .dout (prd_cur_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (6  ),
+      .AW  (4  )
+    )
+    new_cur_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (new_cur  ),
+      .dout (new_cur_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (11  ),
+      .AW  (4  )
+    )
+    upd_cur_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (upd_cur  ),
+      .dout (upd_cur_WR )
     );
 
     dynamic_shreg 
@@ -3522,7 +3610,7 @@ assign test_stage = stage_val & stage_rdy;
         default: begin
           case(TBb_mode[4:2])
               TBb_B:begin
-                      TB_doutb_sel_new[2] <= 1'b0;
+                      TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B;
                       if(seq_cnt < PE_n) begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b0;
@@ -3537,8 +3625,19 @@ assign test_stage = stage_val & stage_rdy;
                         TB_addrb_new <= TB_addrb_new;
                       end
                     end
-              TBb_B_cache: begin
-                            TB_doutb_sel_new[2] <= 1'b1;
+              TBb_BC: begin
+                        TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B;
+                        if(seq_cnt < PE_n) begin
+                          TB_enb_new <= 1'b1;
+                          TB_web_new <= 1'b0;
+                          if(v_group_cnt == 0)
+                            TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                          else
+                            TB_addrb_new <= B_TB_base_addr + seq_cnt;
+                        end
+                      end
+              TBb_B_cache_trnsfer: begin
+                            TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_trnsfer;
                             if(v_group_cnt == 0 && seq_cnt < PE_n) begin
                               TB_enb_new <= 1'b1;
                               TB_web_new <= 1'b0;
@@ -3550,17 +3649,49 @@ assign test_stage = stage_val & stage_rdy;
                                   TB_addrb_new <= TB_addrb_new;
                                 end
                           end
-              TBb_BC: begin
-                        TB_doutb_sel_new[2] <= 1'b0;
-                        if(seq_cnt < PE_n) begin
-                          TB_enb_new <= 1'b1;
-                          TB_web_new <= 1'b0;
-                          if(v_group_cnt == 0)
-                            TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
-                          else
-                            TB_addrb_new <= B_TB_base_addr + seq_cnt;
-                        end
-                      end
+              TBb_B_cache_transpose: begin
+                            TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_transpose;
+                            case (seq_cnt)
+                              SEQ_1: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= cov_HT;
+                              end 
+                              SEQ_2: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= TB_addrb_new + 1'b1;
+                              end
+                              SEQ_3: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= (l_k_group << 2) + cov_HT;
+                              end
+                              SEQ_4: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= TB_addrb_new + 1'b1;
+                              end
+                              default: begin
+                                TB_enb_new <= 1'b0;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= TB_addrb_new;
+                              end
+                            endcase 
+                          end
+              TBb_B_cache_inv: begin
+                            TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_inv;
+                            if(seq_cnt < PE_n) begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b0;
+                              TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                            end
+                            else begin
+                              TB_enb_new <= 1'b0;
+                              TB_web_new <= 1'b0;
+                              TB_addrb_new <= TB_addrb_new;
+                            end
+                          end
               default: begin
                 TB_enb_new <= 1'b0;
                 TB_web_new <= 1'b0;
@@ -3571,7 +3702,7 @@ assign test_stage = stage_val & stage_rdy;
       endcase
     end
   end
-    
+  //old
     // else begin
     //   case(TBb_mode[4:2])
     //     TBb_B:begin
@@ -3723,51 +3854,35 @@ assign test_stage = stage_val & stage_rdy;
       always @(posedge clk) begin
         if(sys_rst) begin
           TB_doutb_sel_new[1:0] = DIR_IDLE;
+          TBb_shift_dir <= DIR_IDLE;
         end
         else begin
           TB_doutb_sel_new[1:0] <= TBb_mode_d[1:0];
-        end
-          
-      end
-      always @(posedge clk) begin
-        if(sys_rst) begin
-          TBb_shift_dir <= 0;
-        end
-        else begin
-          if(TBb_mode[4:2] == TBb_B_cache) begin
-            case(TBb_mode[1:0])
-              B_cache_IDLE: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-              B_cache_trnsfer: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-              B_cache_transpose: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-              B_cache_inv: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-            endcase
-          end
-          else  begin
-            case(TBb_mode[1:0])
-              DIR_IDLE: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-              DIR_POS: begin
-                TBb_shift_dir <= DIR_POS;
-              end
-              DIR_NEG: begin
-                TBb_shift_dir <= DIR_NEG;
-              end
-              DIR_NEW: begin
-                TBb_shift_dir <= DIR_NEW;
-              end
-            endcase
-          end
+          TBb_shift_dir <= TBb_mode[1:0];
         end
       end
+
+      // always @(posedge clk) begin
+      //   if(sys_rst) begin
+      //     TBb_shift_dir <= 0;
+      //   end
+      //   else begin
+      //     case(TBb_mode[1:0])
+      //       DIR_IDLE: begin
+      //         TBb_shift_dir <= DIR_POS;
+      //       end
+      //       DIR_POS: begin
+      //         TBb_shift_dir <= DIR_POS;
+      //       end
+      //       DIR_NEG: begin
+      //         TBb_shift_dir <= DIR_NEG;
+      //       end
+      //       DIR_NEW: begin
+      //         TBb_shift_dir <= DIR_NEW;
+      //       end
+      //     endcase
+      //   end
+      // end
 
       always @(posedge clk) begin
         if(sys_rst) begin
@@ -3909,27 +4024,27 @@ assign test_stage = stage_val & stage_rdy;
                   end
             UPD_6:begin
                     case(seq_cnt)
-                      SEQ_2:begin
+                      SEQ_3:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b000;
                         end
-                      SEQ_3:begin
+                      SEQ_4:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b001;
                         end
-                      SEQ_4:begin
+                      SEQ_5:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b010;
                         end
-                      SEQ_6:begin
+                      SEQ_7:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b011;
                         end
-                      SEQ_7:begin
+                      SEQ_8:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b100;
@@ -4841,13 +4956,19 @@ assign test_stage = stage_val & stage_rdy;
       C_TB_base_addr <= 0;
     end
     else begin
-      case(stage_cur)
+      case(stage_cur_WR)
         STAGE_PRD: C_TB_base_addr <= C_TB_base_addr_set;
         STAGE_NEW: C_TB_base_addr <= C_TB_base_addr_set;
         STAGE_UPD: begin
-          case(upd_cur)
+          case(upd_cur_WR)
+            UPD_2: begin
+              if(seq_cnt_WR == seq_cnt_max_WR)
+                C_TB_base_addr <= C_TB_base_addr + 3'b100;
+              else
+                C_TB_base_addr <= C_TB_base_addr;
+            end
             UPD_3: begin
-              if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
+              if(seq_cnt_WR == seq_cnt_max_WR && v_group_cnt_WR < v_group_cnt_max_WR) begin
                 C_TB_base_addr <= C_TB_base_addr + 3'b100;
               end
               else
@@ -4863,7 +4984,7 @@ assign test_stage = stage_val & stage_rdy;
               if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
                 C_TB_base_addr <= C_TB_base_addr_set;
               end
-              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
+              else if(seq_cnt_WR == seq_cnt_max_WR && v_group_cnt_WR < v_group_cnt_max_WR) begin
                 C_TB_base_addr <= C_TB_base_addr + 3'b100;
               end
               else

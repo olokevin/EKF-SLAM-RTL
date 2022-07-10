@@ -20,12 +20,12 @@ parameter SEQ_CNT_DW  = 5 ;
 reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
 reg   [2:0]  stage_val                     = 0 ;
-reg   [ROW_LEN-1 : 0]  landmark_num        = 8 ;
-reg   [ROW_LEN-1 : 0]  l_k                 = 6 ;
-reg   [RSA_DW - 1 : 0]  vlr                = 0 ;
-reg   [RSA_AW - 1 : 0]  alpha              = 0 ;
-reg   [RSA_DW - 1 : 0]  rk                 = 0 ;
-reg   [RSA_AW - 1 : 0]  phi                = 0 ;
+reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
+reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
+reg   [RSA_DW - 1 : 0]  vlr                = 2 ;
+reg   [RSA_AW - 1 : 0]  alpha              = 3 ;
+reg   [RSA_DW - 1 : 0]  rk                 = 4 ;
+reg   [RSA_AW - 1 : 0]  phi                = 5 ;
 
 // Top Outputs
 wire  [2:0]  stage_rdy                     ;

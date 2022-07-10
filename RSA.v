@@ -206,7 +206,7 @@ module RSA
   parameter TB_DINA_SEL_DW  = 5;
   parameter TB_DINB_SEL_DW  = 2;
   parameter TB_DOUTA_SEL_DW = 3;
-  parameter TB_DOUTB_SEL_DW = 3;
+  parameter TB_DOUTB_SEL_DW = 5;
   parameter CB_DINA_SEL_DW  = 2;
   parameter CB_DINB_SEL_DW  = 5;
   parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
