@@ -1325,3 +1325,8 @@ addrb_new: NEW_2_PE_in+N+3
   * 需拆分A_en M_en C_en
   * to be solved:
     * 每一位对应译码后en的移位
+  * **临时保证en正确：**
+    * **localparam UPD_6_M    = 3'b100;**
+* seq_cnt_WR延迟出现问题
+* 改：CBb->TBb
+* 改：TBa->B_cache

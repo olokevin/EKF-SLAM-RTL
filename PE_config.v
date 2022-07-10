@@ -407,7 +407,7 @@ module PE_config #(
     localparam UPD_3_M       = 3'b100;
     localparam UPD_4_M       = 3'b100;
     localparam UPD_5_M       = 3'b100;
-    localparam UPD_6_M       = 3'b000;
+    localparam UPD_6_M       = 3'b100;    //保持en
     localparam UPD_7_M       = 3'b010;
     localparam UPD_8_M       = 3'b000;
     localparam UPD_9_M       = 3'b100;
@@ -415,7 +415,7 @@ module PE_config #(
     
     localparam UPD_1_N       = 3'b101;
     localparam UPD_2_N       = 3'b011;
-    localparam UPD_3_N       = 3'b011;
+    localparam UPD_3_N       = 3'b011;    //在UPD_2 UPD_3读出，保持延迟时序
     localparam UPD_4_N       = 3'b010;
     localparam UPD_5_N       = 3'b010;
     localparam UPD_6_N       = 3'b101;
@@ -2314,7 +2314,7 @@ assign test_stage = stage_val & stage_rdy;
                               A_TB_base_addr_set = t_cov_l;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = cov_HT;  //保持一致
                             end
                       UPD_5: begin
                             /*
@@ -2345,7 +2345,7 @@ assign test_stage = stage_val & stage_rdy;
                               A_TB_base_addr_set = t_cov_l;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = cov_HT;
                             end
                       UPD_6: begin
                             /*
@@ -3030,10 +3030,13 @@ assign test_stage = stage_val & stage_rdy;
         WR_d_addr <= RD_2_WR_D;
       end
       else begin
-        WR_d_addr <= RD_2_WR_D + PE_n_WR;
+        if((upd_cur == UPD_2) || (upd_cur == UPD_3) || (upd_cur == UPD_4) || (upd_cur == UPD_5) || (upd_cur == UPD_6))
+          WR_d_addr <= RD_2_WR_D + 3'b101;
+        else
+          WR_d_addr <= RD_2_WR_D + PE_n_WR;
       end 
     end
-    
+
     //PE_n_WR只延迟RD_2_WR_D，保证WR_d_addr采样到的还是上一次的PE_n
     dynamic_shreg 
     #(
@@ -3445,141 +3448,266 @@ assign test_stage = stage_val & stage_rdy;
       TB_addrb_new <= 0;
     end
     else begin
-      case(TBb_mode[4:2])
-        TBb_B:begin
-                TB_doutb_sel_new[2] <= 1'b0;
-                if(seq_cnt < PE_n) begin
-                  TB_enb_new <= 1'b1;
-                  TB_web_new <= 1'b0;
-                  if(v_group_cnt == 0)
-                    TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
-                  else
-                    TB_addrb_new <= B_TB_base_addr + seq_cnt;
-                end
-                else begin
-                  TB_enb_new <= 1'b0;
-                  TB_web_new <= 1'b0;
-                  TB_addrb_new <= TB_addrb_new;
-                end
-              end
-        TBb_C:begin
-                case(TBb_mode_WR[4:2])
-                  TBb_C: begin
-                          case (seq_cnt_WR)
-                            SEQ_0: begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b1;
-                              if(v_group_cnt_WR == 0)
-                                TB_addrb_new <= C_TB_base_addr_set;
-                              else
-                                TB_addrb_new <= C_TB_base_addr;
-                            end
-                            SEQ_2: begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b1;
-                              TB_addrb_new <= TB_addrb_new + 1'b1;
-                            end
-                            SEQ_4: begin
-                              if(PE_k_WR == 3'b011) begin
-                                TB_enb_new <= 1'b1;
-                                TB_web_new <= 1'b1;
-                                TB_addrb_new <= TB_addrb_new + 1'b1;
-                              end
-                              else begin
-                                TB_enb_new <= 1'b0;
-                                TB_web_new <= 1'b0;
-                                TB_addrb_new <= TB_addrb_new;
-                              end
-                            end
-                            default: begin
-                              TB_enb_new <= 1'b0;
-                              TB_web_new <= 1'b0;
-                              TB_addrb_new <= TB_addrb_new;
-                            end
-                          endcase
-                        end
+      //延迟时序，判断是否处于写状态
+      case(TBb_mode_WR[4:2])
+        TBb_C: begin
+                case(seq_cnt_WR)
+                  SEQ_0: begin
+                    TB_enb_new <= 1'b1;
+                    TB_web_new <= 1'b1;
+                    if(v_group_cnt_WR == 0)
+                      TB_addrb_new <= C_TB_base_addr_set;
+                    else
+                      TB_addrb_new <= C_TB_base_addr;
+                  end
+                  SEQ_2: begin
+                    TB_enb_new <= 1'b1;
+                    TB_web_new <= 1'b1;
+                    TB_addrb_new <= TB_addrb_new + 1'b1;
+                  end
+                  SEQ_4: begin
+                    if(PE_k_WR == 3'b011) begin
+                      TB_enb_new <= 1'b1;
+                      TB_web_new <= 1'b1;
+                      TB_addrb_new <= TB_addrb_new + 1'b1;
+                    end
+                    else begin
+                      TB_enb_new <= 1'b0;
+                      TB_web_new <= 1'b0;
+                      TB_addrb_new <= TB_addrb_new;
+                    end
+                  end
                   default: begin
-                            TB_enb_new <= 1'b0;
-                            TB_web_new <= 1'b0;
-                            TB_addrb_new <= 0;
-                        end
+                    TB_enb_new <= 1'b0;
+                    TB_web_new <= 1'b0;
+                    TB_addrb_new <= TB_addrb_new;
+                  end
                 endcase
               end
         TBb_BC: begin
-                  TB_doutb_sel_new[2] <= 1'b0;
-                  if(seq_cnt < PE_n) begin
+                case (seq_cnt_WR)
+                  SEQ_0: begin
                     TB_enb_new <= 1'b1;
-                    TB_web_new <= 1'b0;
-                    if(v_group_cnt == 0)
-                      TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                    TB_web_new <= 1'b1;
+                    if(v_group_cnt_WR == 0)
+                      TB_addrb_new <= C_TB_base_addr_set;
                     else
-                      TB_addrb_new <= B_TB_base_addr + seq_cnt;
+                      TB_addrb_new <= C_TB_base_addr;
                   end
-                  else begin
-                    case(TBb_mode_WR[4:2])
-                      TBb_BC: begin
-                        case (seq_cnt_WR)
-                          SEQ_0: begin
-                            TB_enb_new <= 1'b1;
-                            TB_web_new <= 1'b1;
-                            if(v_group_cnt_WR == 0)
-                              TB_addrb_new <= C_TB_base_addr_set;
-                            else
-                              TB_addrb_new <= C_TB_base_addr;
-                          end
-                          SEQ_2: begin
-                            TB_enb_new <= 1'b1;
-                            TB_web_new <= 1'b1;
-                            TB_addrb_new <= TB_addrb_new + 1'b1;
-                          end
-                          SEQ_4: begin
-                            if(PE_k_WR == 3'b011) begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b1;
-                              TB_addrb_new <= TB_addrb_new + 1'b1;
-                            end
-                            else begin
-                              TB_enb_new <= 1'b0;
-                              TB_web_new <= 1'b0;
-                              TB_addrb_new <= TB_addrb_new;
-                            end
-                          end
-                          default: begin
-                            TB_enb_new <= 1'b0;
-                            TB_web_new <= 1'b0;
-                            TB_addrb_new <= TB_addrb_new;
-                          end
-                        endcase
-                      end
-                      default: begin
-                        TB_enb_new <= 1'b0;
-                        TB_web_new <= 1'b0;
-                        TB_addrb_new <= 0;
-                      end
-                    endcase
+                  SEQ_2: begin
+                    TB_enb_new <= 1'b1;
+                    TB_web_new <= 1'b1;
+                    TB_addrb_new <= TB_addrb_new + 1'b1;
                   end
-                end
-        TBb_B_cache: begin
-                      TB_doutb_sel_new[2] <= 1'b1;
-                      if(v_group_cnt == 0 && seq_cnt < PE_n) begin
+                  SEQ_4: begin
+                    if(PE_k_WR == 3'b011) begin
+                      TB_enb_new <= 1'b1;
+                      TB_web_new <= 1'b1;
+                      TB_addrb_new <= TB_addrb_new + 1'b1;
+                    end
+                    else begin
+                      TB_enb_new <= 1'b0;
+                      TB_web_new <= 1'b0;
+                      TB_addrb_new <= TB_addrb_new;
+                    end
+                  end
+                  default: begin
+                    TB_enb_new <= 1'b0;
+                    TB_web_new <= 1'b0;
+                    TB_addrb_new <= TB_addrb_new;
+                  end
+                endcase
+              end  
+        //非写时序，判断是否为读时序
+        default: begin
+          case(TBb_mode[4:2])
+              TBb_B:begin
+                      TB_doutb_sel_new[2] <= 1'b0;
+                      if(seq_cnt < PE_n) begin
                         TB_enb_new <= 1'b1;
                         TB_web_new <= 1'b0;
-                        TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                        if(v_group_cnt == 0)
+                          TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                        else
+                          TB_addrb_new <= B_TB_base_addr + seq_cnt;
                       end
                       else begin
-                            TB_enb_new <= 1'b0;
-                            TB_web_new <= 1'b0;
-                            TB_addrb_new <= TB_addrb_new;
-                          end
+                        TB_enb_new <= 1'b0;
+                        TB_web_new <= 1'b0;
+                        TB_addrb_new <= TB_addrb_new;
+                      end
                     end
-        default: begin
-          TB_enb_new <= 1'b0;
-          TB_web_new <= 1'b0;
-          TB_addrb_new <= 0;
+              TBb_B_cache: begin
+                            TB_doutb_sel_new[2] <= 1'b1;
+                            if(v_group_cnt == 0 && seq_cnt < PE_n) begin
+                              TB_enb_new <= 1'b1;
+                              TB_web_new <= 1'b0;
+                              TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                            end
+                            else begin
+                                  TB_enb_new <= 1'b0;
+                                  TB_web_new <= 1'b0;
+                                  TB_addrb_new <= TB_addrb_new;
+                                end
+                          end
+              TBb_BC: begin
+                        TB_doutb_sel_new[2] <= 1'b0;
+                        if(seq_cnt < PE_n) begin
+                          TB_enb_new <= 1'b1;
+                          TB_web_new <= 1'b0;
+                          if(v_group_cnt == 0)
+                            TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+                          else
+                            TB_addrb_new <= B_TB_base_addr + seq_cnt;
+                        end
+                      end
+              default: begin
+                TB_enb_new <= 1'b0;
+                TB_web_new <= 1'b0;
+                TB_addrb_new <= 0;
+              end
+          endcase
         end
       endcase
-    end 
+    end
   end
+    
+    // else begin
+    //   case(TBb_mode[4:2])
+    //     TBb_B:begin
+    //             TB_doutb_sel_new[2] <= 1'b0;
+    //             if(seq_cnt < PE_n) begin
+    //               TB_enb_new <= 1'b1;
+    //               TB_web_new <= 1'b0;
+    //               if(v_group_cnt == 0)
+    //                 TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+    //               else
+    //                 TB_addrb_new <= B_TB_base_addr + seq_cnt;
+    //             end
+    //             else begin
+    //               TB_enb_new <= 1'b0;
+    //               TB_web_new <= 1'b0;
+    //               TB_addrb_new <= TB_addrb_new;
+    //             end
+    //           end
+    //     TBb_C:begin
+    //             case(TBb_mode_WR[4:2])
+    //               TBb_C: begin
+    //                       case (seq_cnt_WR)
+    //                         SEQ_0: begin
+    //                           TB_enb_new <= 1'b1;
+    //                           TB_web_new <= 1'b1;
+    //                           if(v_group_cnt_WR == 0)
+    //                             TB_addrb_new <= C_TB_base_addr_set;
+    //                           else
+    //                             TB_addrb_new <= C_TB_base_addr;
+    //                         end
+    //                         SEQ_2: begin
+    //                           TB_enb_new <= 1'b1;
+    //                           TB_web_new <= 1'b1;
+    //                           TB_addrb_new <= TB_addrb_new + 1'b1;
+    //                         end
+    //                         SEQ_4: begin
+    //                           if(PE_k_WR == 3'b011) begin
+    //                             TB_enb_new <= 1'b1;
+    //                             TB_web_new <= 1'b1;
+    //                             TB_addrb_new <= TB_addrb_new + 1'b1;
+    //                           end
+    //                           else begin
+    //                             TB_enb_new <= 1'b0;
+    //                             TB_web_new <= 1'b0;
+    //                             TB_addrb_new <= TB_addrb_new;
+    //                           end
+    //                         end
+    //                         default: begin
+    //                           TB_enb_new <= 1'b0;
+    //                           TB_web_new <= 1'b0;
+    //                           TB_addrb_new <= TB_addrb_new;
+    //                         end
+    //                       endcase
+    //                     end
+    //               default: begin
+    //                         TB_enb_new <= 1'b0;
+    //                         TB_web_new <= 1'b0;
+    //                         TB_addrb_new <= 0;
+    //                     end
+    //             endcase
+    //           end
+    //     TBb_BC: begin
+    //               TB_doutb_sel_new[2] <= 1'b0;
+    //               if(seq_cnt < PE_n) begin
+    //                 TB_enb_new <= 1'b1;
+    //                 TB_web_new <= 1'b0;
+    //                 if(v_group_cnt == 0)
+    //                   TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+    //                 else
+    //                   TB_addrb_new <= B_TB_base_addr + seq_cnt;
+    //               end
+    //               else begin
+    //                 case(TBb_mode_WR[4:2])
+    //                   TBb_BC: begin
+    //                     case (seq_cnt_WR)
+    //                       SEQ_0: begin
+    //                         TB_enb_new <= 1'b1;
+    //                         TB_web_new <= 1'b1;
+    //                         if(v_group_cnt_WR == 0)
+    //                           TB_addrb_new <= C_TB_base_addr_set;
+    //                         else
+    //                           TB_addrb_new <= C_TB_base_addr;
+    //                       end
+    //                       SEQ_2: begin
+    //                         TB_enb_new <= 1'b1;
+    //                         TB_web_new <= 1'b1;
+    //                         TB_addrb_new <= TB_addrb_new + 1'b1;
+    //                       end
+    //                       SEQ_4: begin
+    //                         if(PE_k_WR == 3'b011) begin
+    //                           TB_enb_new <= 1'b1;
+    //                           TB_web_new <= 1'b1;
+    //                           TB_addrb_new <= TB_addrb_new + 1'b1;
+    //                         end
+    //                         else begin
+    //                           TB_enb_new <= 1'b0;
+    //                           TB_web_new <= 1'b0;
+    //                           TB_addrb_new <= TB_addrb_new;
+    //                         end
+    //                       end
+    //                       default: begin
+    //                         TB_enb_new <= 1'b0;
+    //                         TB_web_new <= 1'b0;
+    //                         TB_addrb_new <= TB_addrb_new;
+    //                       end
+    //                     endcase
+    //                   end
+    //                   default: begin
+    //                     TB_enb_new <= 1'b0;
+    //                     TB_web_new <= 1'b0;
+    //                     TB_addrb_new <= 0;
+    //                   end
+    //                 endcase
+    //               end
+    //             end
+    //     TBb_B_cache: begin
+    //                   TB_doutb_sel_new[2] <= 1'b1;
+    //                   if(v_group_cnt == 0 && seq_cnt < PE_n) begin
+    //                     TB_enb_new <= 1'b1;
+    //                     TB_web_new <= 1'b0;
+    //                     TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+    //                   end
+    //                   else begin
+    //                         TB_enb_new <= 1'b0;
+    //                         TB_web_new <= 1'b0;
+    //                         TB_addrb_new <= TB_addrb_new;
+    //                       end
+    //                 end
+    //     default: begin
+    //       TB_enb_new <= 1'b0;
+    //       TB_web_new <= 1'b0;
+    //       TB_addrb_new <= 0;
+    //     end
+    //   endcase
+    // end 
+  // end
     /*
       ******************* TB_doutb_sel_new, TBb_shift_dir *****************
     */
@@ -3595,27 +3723,49 @@ assign test_stage = stage_val & stage_rdy;
       always @(posedge clk) begin
         if(sys_rst) begin
           TB_doutb_sel_new[1:0] = DIR_IDLE;
+        end
+        else begin
+          TB_doutb_sel_new[1:0] <= TBb_mode_d[1:0];
+        end
+          
+      end
+      always @(posedge clk) begin
+        if(sys_rst) begin
           TBb_shift_dir <= 0;
         end
         else begin
-          case(TBb_mode_d[1:0])
-            DIR_IDLE: begin
-              TB_doutb_sel_new[1:0] = DIR_IDLE;
-              TBb_shift_dir <= DIR_POS;
-            end
-            DIR_POS: begin
-              TB_doutb_sel_new[1:0] = DIR_POS;
-              TBb_shift_dir <= DIR_POS;
-            end
-            DIR_NEG: begin
-              TB_doutb_sel_new[1:0] = DIR_NEG;
-              TBb_shift_dir <= DIR_NEG;
-            end
-            DIR_NEW: begin
-              TB_doutb_sel_new[1:0] = DIR_NEW;
-              TBb_shift_dir <= DIR_NEW;
-            end
-          endcase
+          if(TBb_mode[4:2] == TBb_B_cache) begin
+            case(TBb_mode[1:0])
+              B_cache_IDLE: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+              B_cache_trnsfer: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+              B_cache_transpose: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+              B_cache_inv: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+            endcase
+          end
+          else  begin
+            case(TBb_mode[1:0])
+              DIR_IDLE: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+              DIR_POS: begin
+                TBb_shift_dir <= DIR_POS;
+              end
+              DIR_NEG: begin
+                TBb_shift_dir <= DIR_NEG;
+              end
+              DIR_NEW: begin
+                TBb_shift_dir <= DIR_NEW;
+              end
+            endcase
+          end
         end
       end
 
@@ -4697,10 +4847,7 @@ assign test_stage = stage_val & stage_rdy;
         STAGE_UPD: begin
           case(upd_cur)
             UPD_3: begin
-              if(seq_cnt_WR == 1 && v_group_cnt_WR == 0) begin
-                C_TB_base_addr <= C_TB_base_addr_set;
-              end
-              else if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
+              if(seq_cnt_WR == seq_cnt_max && v_group_cnt_WR < v_group_cnt_max) begin
                 C_TB_base_addr <= C_TB_base_addr + 3'b100;
               end
               else
