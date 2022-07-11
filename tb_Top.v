@@ -2,7 +2,7 @@
 `include "macro.v"
 module tb_Top;
 
-parameter RST_START = 20;
+parameter RST_START = 10;
 
 // Top Parameters
 parameter PERIOD      = 10;
@@ -53,7 +53,7 @@ end
     ************* PRD *****************
 */
 initial begin
-    #(PERIOD*RST_START)
+    #(PERIOD*RST_START*2)
     stage_val = STAGE_PRD;
     #(PERIOD * 2)
     stage_val = 0;
