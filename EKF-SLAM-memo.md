@@ -1269,3 +1269,68 @@ addrb_new: NEW_2_PE_in+N+3
 
 * dynamic_shreg 不能直接用parameter作为addr! 得用reg
 * B_cache: 读出要加一级buffer（与CB TB读出匹配）
+
+
+
+### 220702
+
+* 将位宽作为参数传入
+  * 修改.v文件
+  * 注意对位宽最高位进行修改
+  * 修改实例化
+  * 确保传参路径正确
+
+
+
+### 220704
+
+* idea
+  * 写入：要一次把4个BANK的正确值写入（复用shift）
+  * TB_dina_map需输入xk,yk,xita
+  * RSA先用寄存器寄存xk,yk,xita, 再输出，之后可以通过该寄存器输入TB_dina_map
+  * 什么时间点缓存？
+  * 直接输出seq_cnt, 再dout_map内部再进行延迟
+  * 非线性接收解码放到RSA里！
+* ToDo
+  * 非线性接收解码放到RSA里！
+  * nonlinear 输入输出采样（根据状态机）
+    * 解决：不采样，CB_douta_map始终保存
+  * NL给写入地址（TB CB）
+
+### 220707
+
+* NL读：
+  * 状态机
+  * 在状态机设置CB_douta_map映射模式
+* 改TBa_Mode bit分配？
+* CBb: we en addr分为WR和RD两边
+
+
+
+## 220708
+
+* dout/din 每个bank需要根据对应的sel决定移位目标
+* dir: 不可直接改变
+* 只有TB-A，需要中途换向
+* 需拆成每个bank
+
+
+
+### 220710
+
+* NEW_5 M晚了一个T -> Min_sel晚了一T
+* Min_sel也与n有关
+* in_en out_en 也应时序移位
+* <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220710155018806.png" alt="image-20220710155018806" style="zoom:50%;" />
+  * 需拆分A_en M_en C_en
+  * to be solved:
+    * 每一位对应译码后en的移位
+  * **临时保证en正确：**
+    * **localparam UPD_6_M    = 3'b100;**
+* seq_cnt_WR延迟出现问题
+* 改：CBb->TBb
+* 改：TBa->B_cache
+  * TB a b 地址译码
+  * RSA 外部接线
+* cal_en 多了一个T
+* 重点：TBb读写冲突

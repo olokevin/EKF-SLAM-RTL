@@ -3,13 +3,14 @@ module TB_dinb_map #(
   parameter Y = 4,
   parameter L = 4,
 
-  parameter RSA_DW = 16
+  parameter RSA_DW = 32,
+  parameter TB_DINB_SEL_DW  = 2
 ) 
 (
   input   clk,
   input   sys_rst,
 
-  input   [1:0]   TB_dinb_sel,
+  input   [TB_DINB_SEL_DW-1 : 0]   TB_dinb_sel,
   input           l_k_0,
 
   input   signed [X*RSA_DW-1 : 0]         C_TB_dinb,

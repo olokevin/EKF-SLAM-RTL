@@ -4,7 +4,7 @@ module PE_array
   parameter Y = 4,
   parameter L = 4,
 
-  parameter RSA_DW = 16
+  parameter RSA_DW = 32
 )
 (
   input   clk,

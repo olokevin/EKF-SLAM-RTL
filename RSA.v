@@ -5,12 +5,8 @@ module RSA
   parameter Y = 4,
   parameter L = 4,
 
-  parameter A_IN_SEL_DW = 2,
-  parameter B_IN_SEL_DW = 2,
-  parameter M_IN_SEL_DW = 2,
-  parameter C_OUT_SEL_DW = 2,
-
   parameter RSA_DW = 32,
+  parameter RSA_AW = 17,
   parameter TB_AW = 11,
   parameter CB_AW = 17,
   parameter SEQ_CNT_DW = 5,
@@ -170,36 +166,53 @@ module RSA
       // input   signed [L*RSA_DW-1 : 0]   CB_doutb,
 `endif
 
-//landmark numbers
-  `ifdef LANDMARK_NUM_IN
-    input   [ROW_LEN-1 : 0]  landmark_num,
-  `endif
-  // `ifdef L_k_IN
-    input   [ROW_LEN-1 : 0]  l_k,
-  // `endif
-
+/****************** PS -> RSA **************************/
   //handshake of stage change
-  input   [2:0]   stage_val,
-  output  [2:0]   stage_rdy,
+    input   [2:0]   stage_val,
+    output  [2:0]   stage_rdy,
+  //landmark numbers, 当前地图总坐标点数目
+    `ifdef LANDMARK_NUM_IN
+      input   [ROW_LEN-1 : 0]  landmark_num,    
+    `endif
+  //当前地标编号
+    input   [ROW_LEN-1 : 0]  l_k,  
 
-//handshake of nonlinear calculation start & complete
-  //nonlinear start(3 stages are conbined)
-  output   [2:0]   nonlinear_m_rdy,
-  input  [2:0]   nonlinear_s_val,
-  //nonlinear cplt(3 stages are conbined)
-  output   [2:0]   nonlinear_m_val,
-  input  [2:0]   nonlinear_s_rdy
+/****************** PS -> RSA **************************/
+  //输出S矩阵
+    output signed [RSA_DW - 1 : 0] S_data,
+
+/******************RSA ->  NonLinear*********************/
+  //开始信号
+    output init_predict, init_newlm, init_update,
+  //数据
+    output signed [RSA_DW-1 : 0] xk, yk, xita,     //机器人状态
+    output signed [RSA_DW-1 : 0] lkx, lky,        //地图坐标
+  
+/******************NonLinear ->  RSA*********************/
+  //完成信号
+    input done_predict, done_newlm, done_update,
+  //数据
+    input signed [RSA_DW - 1 : 0] result_0, result_1, result_2, result_3, result_4, result_5
+
 );
 
-  parameter TB_DINA_SEL_DW  = 3;
+//PE MUX deMUX数据位宽
+  parameter A_IN_SEL_DW = 2;
+  parameter B_IN_SEL_DW = 2;
+  parameter M_IN_SEL_DW = 2;
+  parameter C_OUT_SEL_DW = 2;
+
+//BRAM map 控制信号数据位宽
+  parameter TB_DINA_SEL_DW  = 5;
   parameter TB_DINB_SEL_DW  = 2;
   parameter TB_DOUTA_SEL_DW = 3;
-  parameter TB_DOUTB_SEL_DW = 3;
-  parameter CB_DINB_SEL_DW  = 2;
-  parameter CB_DOUTA_SEL_DW = 4;  //注意MUX deMUX需手动修改
+  parameter TB_DOUTB_SEL_DW = 5;
+  parameter CB_DINA_SEL_DW  = 2;
+  parameter CB_DINB_SEL_DW  = 5;
+  parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
 
 /*
-  差分时钟信号转单端
+  ******************* 差分时钟信号转单端 ************************
 */
 `ifdef USE_DIFF_CLK
   wire clk;
@@ -215,6 +228,123 @@ module RSA
   .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
   );
 `endif
+
+/*
+  ************************* 当前状态量 ***********************
+*/
+  wire l_k_0;
+  assign l_k_0 = l_k[0];
+
+  wire [SEQ_CNT_DW-1 : 0] seq_cnt_out;
+  wire [2 : 0]            stage_cur_out;
+  wire [3 : 0]            prd_cur_out;
+  wire [5 : 0]            new_cur_out;
+  wire [10 :0]            upd_cur_out;
+  //stage
+    localparam      IDLE       = 3'b000 ;
+    localparam      STAGE_PRD  = 3'b001 ;
+    localparam      STAGE_NEW  = 3'b010 ;
+    localparam      STAGE_UPD  = 3'b100 ;
+
+/*
+  ********************** 接收非线性发回的数据 *******************
+*/
+  //预测步
+  reg signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat;
+  reg signed [RSA_DW - 1 : 0] Fxi_13, Fxi_23;
+  //新地标步
+  reg signed [RSA_DW - 1 : 0] lkx_hat, lky_hat;
+  reg signed [RSA_DW - 1 : 0] Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22;
+  //更新步
+  reg signed [RSA_DW - 1 : 0] Hz_11, Hz_12, Hz_21, Hz_22;
+  reg signed [RSA_DW - 1 : 0] Hxi_11, Hxi_12, Hxi_21, Hxi_22;
+  reg signed [RSA_DW - 1 : 0] vt_1, vt_2;
+  
+  always @(posedge clk) begin
+    if(sys_rst) begin
+          x_hat <= 0;
+          y_hat <= 0;
+          xita_hat <= 0;
+          Fxi_13 <= 0;
+          Fxi_23 <= 0;
+          lkx_hat = 0;
+          lky_hat = 0;
+          Gxi_13 = 0;
+          Gxi_23 = 0;
+          Gz_11 = 0;
+          Gz_12 = 0;
+          Gz_21 = 0;
+          Gz_22 = 0;
+          Hxi_11 = 0;
+          Hxi_12 = 0;
+          Hxi_21 = 0;
+          Hxi_22 = 0;
+          Hz_11 = 0;
+          Hz_12 = 0;
+          Hz_21 = 0;
+          Hz_22 = 0;
+          vt_1 = 0;
+          vt_2 = 0;
+        end
+    else begin
+      case (stage_cur_out)
+        STAGE_PRD: begin
+          x_hat <= xk + result_2;
+          y_hat <= yk + result_3;
+          xita_hat <= xita + result_1;
+          Fxi_13 <= - result_3;
+          Fxi_23 <= result_2;
+        end
+        STAGE_NEW: begin
+          lkx_hat = lkx + result_3;
+          lky_hat = lky + result_2;
+          Gxi_13 = -result_2;
+          Gxi_23 = result_3;
+          Gz_11 = result_0;
+          Gz_12 = -result_2;
+          Gz_21 = result_1;
+          Gz_22 = result_3;
+        end
+        STAGE_UPD: begin
+          Hxi_11 = -result_4;
+          Hxi_12 = -result_5;
+          Hxi_21 = result_2;
+          Hxi_22 = -result_3;
+          Hz_11 = result_4;
+          Hz_12 = result_5;
+          Hz_21 = -result_2;
+          Hz_22 = result_3;
+          vt_1 = result_0;
+          vt_2 = result_1;
+        end 
+        default: begin
+          x_hat <= 0;
+          y_hat <= 0;
+          xita_hat <= 0;
+          Fxi_13 <= 0;
+          Fxi_23 <= 0;
+          lkx_hat = 0;
+          lky_hat = 0;
+          Gxi_13 = 0;
+          Gxi_23 = 0;
+          Gz_11 = 0;
+          Gz_12 = 0;
+          Gz_21 = 0;
+          Gz_22 = 0;
+          Hxi_11 = 0;
+          Hxi_12 = 0;
+          Hxi_21 = 0;
+          Hxi_22 = 0;
+          Hz_11 = 0;
+          Hz_12 = 0;
+          Hz_21 = 0;
+          Hz_22 = 0;
+          vt_1 = 0;
+          vt_2 = 0;
+        end
+      endcase
+    end
+  end
 
 /*
   (old) PE_array
@@ -587,6 +717,12 @@ generate
   end
 endgenerate
 
+
+
+
+/*
+  ********************** BRAM map ports **********************
+*/
 //TEMP BRAM
 wire [TB_DINA_SEL_DW-1 : 0]    TB_dina_sel;
 wire [TB_DINB_SEL_DW-1 : 0]    TB_dinb_sel;
@@ -608,6 +744,7 @@ wire signed [L*RSA_DW-1 : 0] TB_douta;
 wire signed [L*RSA_DW-1 : 0] TB_doutb;
 
 //COV BRAM
+// wire [CB_DINA_SEL_DW-1 : 0]    CB_dina_sel;
 wire [CB_DINB_SEL_DW-1 : 0]    CB_dinb_sel;
 wire [CB_DOUTA_SEL_DW-1 : 0]   CB_douta_sel;
 
@@ -629,10 +766,7 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
 // `ifndef L_k_IN
 //   reg [ROW_LEN-1 : 0] l_k = 3'b100;
 // `endif
-wire l_k_0;
-assign l_k_0 = l_k[0];
 
-wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
 
 //TEMP_BANK data MUX and deMUX
   TB_dina_map 
@@ -640,15 +774,38 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X              (X              ),
     .Y              (Y              ),
     .L              (L              ),
-    .RSA_DW         (RSA_DW         )
+    .RSA_DW         (RSA_DW         ),
+    .SEQ_CNT_DW     (SEQ_CNT_DW     ),
+    .TB_DINA_SEL_DW (TB_DINA_SEL_DW )
   )
   u_TB_dina_map(
   	.clk                (clk                ),
     .sys_rst            (sys_rst            ),
     .TB_dina_sel        (TB_dina_sel        ),
     .l_k_0              (l_k_0              ),
+    .seq_cnt_out        (seq_cnt_out        ),
+
     .TB_dina_CB_douta   (TB_dina_CB_douta   ),
-    .TB_dina_non_linear (TB_dina_non_linear ),
+
+    .Fxi_13             (Fxi_13           ),
+    .Fxi_23             (Fxi_23           ),
+    .Gxi_13           (Gxi_13           ),
+    .Gxi_23           (Gxi_23           ),
+    .Gz_11            (Gz_11            ),
+    .Gz_12            (Gz_12            ),
+    .Gz_21            (Gz_21            ),
+    .Gz_22            (Gz_22            ),
+    .Hz_11            (Hz_11            ),
+    .Hz_12            (Hz_12            ),
+    .Hz_21            (Hz_21            ),
+    .Hz_22            (Hz_22            ),
+    .Hxi_11           (Hxi_11           ),
+    .Hxi_12           (Hxi_12           ),
+    .Hxi_21           (Hxi_21           ),
+    .Hxi_22           (Hxi_22           ),
+    .vt_1             (vt_1             ),
+    .vt_2             (vt_2             ),
+
     .TB_dina            (TB_dina            )
   );
   
@@ -658,7 +815,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X      (X      ),
     .Y      (Y      ),
     .L      (L      ),
-    .RSA_DW (RSA_DW )
+    .RSA_DW (RSA_DW ),
+    .TB_DINB_SEL_DW(TB_DINB_SEL_DW)
   )
   u_TB_dinb_map(
   	.clk         (clk         ),
@@ -674,7 +832,8 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .X      (X      ),
     .Y      (Y      ),
     .L      (L      ),
-    .RSA_DW (RSA_DW )
+    .RSA_DW (RSA_DW ),
+    .TB_DOUTA_SEL_DW (TB_DOUTA_SEL_DW)
   )
   u_TB_douta_map(
   	.clk          (clk          ),
@@ -692,14 +851,15 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y         (Y         ),
     .L         (L         ),
     .RSA_DW    (RSA_DW    ),
-    .SEQ_CNT_DW (SEQ_CNT_DW)
+    .SEQ_CNT_DW (SEQ_CNT_DW),
+    .TB_DOUTB_SEL_DW (TB_DOUTB_SEL_DW)
   )
   u_TB_doutb_map(
   	.clk             (clk             ),
     .sys_rst         (sys_rst         ),
     .TB_doutb_sel    (TB_doutb_sel    ),
     .l_k_0       (l_k_0       ),
-    .seq_cnt_dout_sel (seq_cnt_dout_sel),
+    .seq_cnt_out (seq_cnt_out),
     .TB_doutb        (TB_doutb        ),
     .B_TB_doutb      (B_TB_doutb      ),
     .B_cache_TB_doutb (B_cache_TB_doutb )
@@ -712,13 +872,21 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .ROW_LEN (ROW_LEN )
+    .CB_DINB_SEL_DW(CB_DINB_SEL_DW)
   )
   u_CB_dinb_map(
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_dinb_sel  (CB_dinb_sel  ),
-    .l_k_0       (l_k_0       ),
+    .l_k_0        (l_k_0        ),
+    .seq_cnt_out  (seq_cnt_out  ),
+
+    .x_hat       (x_hat       ),
+    .y_hat       (y_hat       ),
+    .xita_hat    (xita_hat    ),
+    .lkx_hat     (lkx_hat         ),
+    .lky_hat     (lky_hat         ),
+
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
   );
@@ -729,19 +897,27 @@ wire [SEQ_CNT_DW-1 : 0] seq_cnt_dout_sel;
     .Y       (Y       ),
     .L       (L       ),
     .RSA_DW  (RSA_DW  ),
-    .SEQ_CNT_DW (SEQ_CNT_DW )
+    .SEQ_CNT_DW (SEQ_CNT_DW ),
+    .CB_DOUTA_SEL_DW (CB_DOUTA_SEL_DW)
   )
   u_CB_douta_map(
   	.clk          (clk          ),
     .sys_rst      (sys_rst      ),
     .CB_douta_sel (CB_douta_sel ),
     .l_k_0       (l_k_0       ),
-    .seq_cnt_dout_sel (seq_cnt_dout_sel),
+    .seq_cnt_out (seq_cnt_out),
     .CB_douta     (CB_douta     ),
-    .TB_dina_CB_douta (TB_dina_CB_douta),
+
     .A_CB_douta   (A_CB_douta   ),
     .B_CB_douta   (B_CB_douta   ),
-    .M_CB_douta   (M_CB_douta   )
+    .M_CB_douta   (M_CB_douta   ),
+
+    .TB_dina_CB_douta (TB_dina_CB_douta ),
+    .xk               (xk               ),
+    .yk               (yk               ),
+    .xita             (xita             ),
+    .lkx              (lkx              ),
+    .lky              (lky              )
   );
 
 `ifdef BRAM_OUT
@@ -981,9 +1157,23 @@ PE_config
   .X             (X     ),
   .Y             (Y     ),
   .L             (L     ),
+
+  .A_IN_SEL_DW       (A_IN_SEL_DW       ),
+  .B_IN_SEL_DW       (B_IN_SEL_DW       ),
+  .M_IN_SEL_DW       (M_IN_SEL_DW       ),
+  .C_OUT_SEL_DW      (C_OUT_SEL_DW      ),
+  .TB_DINA_SEL_DW    (TB_DINA_SEL_DW    ),
+  .TB_DINB_SEL_DW    (TB_DINB_SEL_DW    ),
+  .TB_DOUTA_SEL_DW   (TB_DOUTA_SEL_DW   ),
+  .TB_DOUTB_SEL_DW   (TB_DOUTB_SEL_DW   ),
+  .CB_DINA_SEL_DW    (CB_DINA_SEL_DW    ),
+  .CB_DINB_SEL_DW    (CB_DINB_SEL_DW    ),
+  .CB_DOUTA_SEL_DW   (CB_DOUTA_SEL_DW   ),
+
   .RSA_DW        (RSA_DW  ),
   .TB_AW         (TB_AW   ),
   .CB_AW         (CB_AW   ),
+
   .SEQ_CNT_DW  (SEQ_CNT_DW  ),
   .ROW_LEN       (ROW_LEN   )
 )
@@ -993,50 +1183,54 @@ u_PE_config(
   `ifdef LANDMARK_NUM_IN
   .landmark_num         (landmark_num      ),
   `endif
-  // `ifdef L_K_IN
-  .l_k                  (l_k               ),
-  // `endif
-  .stage_val            (stage_val         ),
-  .stage_rdy            (stage_rdy         ),
-  .nonlinear_m_rdy      (nonlinear_m_rdy   ),
-  .nonlinear_s_val      (nonlinear_s_val   ),
-  .nonlinear_m_val      (nonlinear_m_val   ),
-  .nonlinear_s_rdy      (nonlinear_s_rdy   ),
-  .A_in_sel             (A_in_sel          ),
-  .A_in_en              (A_in_en           ),
-  .B_in_sel             (B_in_sel          ),
-  .B_in_en              (B_in_en           ),
-  .M_in_sel             (M_in_sel          ),
-  .M_in_en              (M_in_en           ),
-  .C_out_sel            (C_out_sel         ),
-  .C_out_en             (C_out_en          ),
-  .TB_dina_sel          (TB_dina_sel       ),
-  .TB_dinb_sel          (TB_dinb_sel       ),
-  .TB_douta_sel         (TB_douta_sel      ),
-  .TB_doutb_sel         (TB_doutb_sel      ),
-  .TB_ena               (TB_ena            ),
-  .TB_enb               (TB_enb            ),
-  .TB_wea               (TB_wea            ),
-  .TB_web               (TB_web            ),
-  .TB_addra             (TB_addra          ),
-  .TB_addrb             (TB_addrb          ),
-  .CB_dinb_sel          (CB_dinb_sel       ),
-  .CB_douta_sel         (CB_douta_sel      ),
-  .CB_ena               (CB_ena            ),
-  .CB_enb               (CB_enb            ),
-  .CB_wea               (CB_wea            ),
-  .CB_web               (CB_web            ),
-  .CB_addra             (CB_addra          ),
-  .CB_addrb             (CB_addrb          ),
-  .CB_dina              (CB_dina           ),
-  .B_cache_en            (B_cache_en),
-  .B_cache_we            (B_cache_we),
-  .B_cache_addr          (B_cache_addr),
-  .seq_cnt_dout_sel      (seq_cnt_dout_sel),
-  .M_adder_mode         (M_adder_mode      ),
-  .PE_mode              (PE_mode           ),
-  .new_cal_en           (new_cal_en        ),
-  .new_cal_done         (new_cal_done      )
+  .l_k           (l_k           ),
+  .stage_val     (stage_val     ),
+  .stage_rdy     (stage_rdy     ),
+  .init_predict  (init_predict  ),
+  .init_newlm    (init_newlm    ),
+  .init_update   (init_update   ),
+  .done_predict  (done_predict  ),
+  .done_newlm    (done_newlm    ),
+  .done_update   (done_update   ),
+  .A_in_sel      (A_in_sel      ),
+  .A_in_en       (A_in_en       ),
+  .B_in_sel      (B_in_sel      ),
+  .B_in_en       (B_in_en       ),
+  .M_in_sel      (M_in_sel      ),
+  .M_in_en       (M_in_en       ),
+  .C_out_sel     (C_out_sel     ),
+  .C_out_en      (C_out_en      ),
+  .TB_dina_sel   (TB_dina_sel   ),
+  .TB_dinb_sel   (TB_dinb_sel   ),
+  .TB_douta_sel  (TB_douta_sel  ),
+  .TB_doutb_sel  (TB_doutb_sel  ),
+  .TB_ena        (TB_ena        ),
+  .TB_enb        (TB_enb        ),
+  .TB_wea        (TB_wea        ),
+  .TB_web        (TB_web        ),
+  .TB_addra      (TB_addra      ),
+  .TB_addrb      (TB_addrb      ),
+  // .CB_dina_sel   (CB_dina_sel   ),
+  .CB_dinb_sel   (CB_dinb_sel   ),
+  .CB_douta_sel  (CB_douta_sel  ),
+  .CB_ena        (CB_ena        ),
+  .CB_enb        (CB_enb        ),
+  .CB_wea        (CB_wea        ),
+  .CB_web        (CB_web        ),
+  .CB_addra      (CB_addra      ),
+  .CB_addrb      (CB_addrb      ),
+  .B_cache_en    (B_cache_en    ),
+  .B_cache_we    (B_cache_we    ),
+  .B_cache_addr  (B_cache_addr  ),
+  .seq_cnt_out   (seq_cnt_out   ),
+  .stage_cur_out (stage_cur_out ),
+  .prd_cur_out   (prd_cur_out   ),
+  .new_cur_out   (new_cur_out   ),
+  .upd_cur_out   (upd_cur_out   ),
+  .M_adder_mode  (M_adder_mode  ),
+  .PE_mode       (PE_mode       ),
+  .new_cal_en    (new_cal_en    ),
+  .new_cal_done  (new_cal_done  )
 );
 
 endmodule
