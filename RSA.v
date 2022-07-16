@@ -590,7 +590,6 @@ wire [X-1 : 0]          A_in_en;
 
 //B in
 wire signed [Y*RSA_DW-1 : 0]   B_TB_doutb; 
-wire signed [Y*RSA_DW-1 : 0]   B_cache_TB_doutb;
 wire signed [Y*RSA_DW-1 : 0]   B_CB_douta;
 wire [B_IN_SEL_DW*Y-1 : 0]        B_in_sel;     //B_in有三个来源
 wire [Y-1 : 0]          B_in_en;   
@@ -670,9 +669,13 @@ endgenerate
 wire [Y-1:0] B_cache_en;
 wire [Y-1:0] B_cache_we;
 wire [Y*3-1:0] B_cache_addr;
-wire signed [Y*RSA_DW-1:0] B_cache_dout; 
-reg  signed [Y*RSA_DW-1:0] B_cache_dout_d;    //B_cache需加一级缓冲
 
+wire signed [Y*RSA_DW-1:0] B_cache_din; 
+wire signed [Y*RSA_DW-1:0] B_cache_TB_doutb; //TB_doutb -> B_cache
+wire signed [Y*RSA_DW-1:0] B_cache_dout; 
+reg  signed [Y*RSA_DW-1:0] B_cache_dout_d;    //B_cache需加一级缓冲(比TB CB少一个map)
+
+wire [2:0]   B_cache_in_sel;  //in_map
 always @(posedge clk) begin
   if(sys_rst) begin
     B_cache_dout_d <= 0;
@@ -695,7 +698,7 @@ generate
       .en      (B_cache_en[i_Y]      ),
       .we      (B_cache_we[i_Y]      ),
       .addr    (B_cache_addr[3*i_Y +: 3]    ),
-      .din     (B_cache_TB_doutb[RSA_DW*i_Y +: RSA_DW]     ),
+      .din     (B_cache_din[RSA_DW*i_Y +: RSA_DW]     ),
       .dout    (B_cache_dout[RSA_DW*i_Y +: RSA_DW]    )
     );
     
@@ -717,7 +720,43 @@ generate
   end
 endgenerate
 
+/*
+  ********************** cache map ports **********************
+*/
 
+
+B_cache_din_map 
+#(
+  .X          (X          ),
+  .Y          (Y          ),
+  .L          (L          ),
+  .RSA_DW     (RSA_DW     ),
+  .SEQ_CNT_DW (SEQ_CNT_DW )
+)
+u_B_cache_din_map(
+  .clk            (clk            ),
+  .sys_rst        (sys_rst        ),
+  .B_cache_in_sel (B_cache_in_sel ),
+  .seq_cnt_out    (seq_cnt_out    ),
+  .B_cache_TB_doutb (B_cache_TB_doutb),
+  .Fxi_13         (Fxi_13         ),
+  .Fxi_23         (Fxi_23         ),
+  .Gxi_13         (Gxi_13         ),
+  .Gxi_23         (Gxi_23         ),
+  .Gz_11          (Gz_11          ),
+  .Gz_12          (Gz_12          ),
+  .Gz_21          (Gz_21          ),
+  .Gz_22          (Gz_22          ),
+  .Hz_11          (Hz_11          ),
+  .Hz_12          (Hz_12          ),
+  .Hz_21          (Hz_21          ),
+  .Hz_22          (Hz_22          ),
+  .Hxi_11         (Hxi_11         ),
+  .Hxi_12         (Hxi_12         ),
+  .Hxi_21         (Hxi_21         ),
+  .Hxi_22         (Hxi_22         ),
+  .B_cache_din    (B_cache_din    )
+);
 
 
 /*
@@ -787,24 +826,24 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
 
     .TB_dina_CB_douta   (TB_dina_CB_douta   ),
 
-    .Fxi_13             (Fxi_13           ),
-    .Fxi_23             (Fxi_23           ),
-    .Gxi_13           (Gxi_13           ),
-    .Gxi_23           (Gxi_23           ),
-    .Gz_11            (Gz_11            ),
-    .Gz_12            (Gz_12            ),
-    .Gz_21            (Gz_21            ),
-    .Gz_22            (Gz_22            ),
-    .Hz_11            (Hz_11            ),
-    .Hz_12            (Hz_12            ),
-    .Hz_21            (Hz_21            ),
-    .Hz_22            (Hz_22            ),
-    .Hxi_11           (Hxi_11           ),
-    .Hxi_12           (Hxi_12           ),
-    .Hxi_21           (Hxi_21           ),
-    .Hxi_22           (Hxi_22           ),
-    .vt_1             (vt_1             ),
-    .vt_2             (vt_2             ),
+    // .Fxi_13             (Fxi_13           ),
+    // .Fxi_23             (Fxi_23           ),
+    // .Gxi_13           (Gxi_13           ),
+    // .Gxi_23           (Gxi_23           ),
+    // .Gz_11            (Gz_11            ),
+    // .Gz_12            (Gz_12            ),
+    // .Gz_21            (Gz_21            ),
+    // .Gz_22            (Gz_22            ),
+    // .Hz_11            (Hz_11            ),
+    // .Hz_12            (Hz_12            ),
+    // .Hz_21            (Hz_21            ),
+    // .Hz_22            (Hz_22            ),
+    // .Hxi_11           (Hxi_11           ),
+    // .Hxi_12           (Hxi_12           ),
+    // .Hxi_21           (Hxi_21           ),
+    // .Hxi_22           (Hxi_22           ),
+    // .vt_1             (vt_1             ),
+    // .vt_2             (vt_2             ),
 
     .TB_dina            (TB_dina            )
   );
