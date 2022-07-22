@@ -17,11 +17,11 @@ module TB_dina_map #(
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
   input   signed [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
-  // input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
-  // input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
-  // input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
-  // input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
-  // input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
+  input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
+  input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
+  input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
+  input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
+  input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
 
   output  reg  signed [L*RSA_DW-1 : 0]    TB_dina
 );
@@ -89,124 +89,124 @@ integer i_TB_non_linear;
                       TB_dina <= 0;
                   endcase
                 end
-        // TBa_NL_PRD: begin
-        //           case(seq_cnt_out)     //不用延迟时序
-        //             'd1:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Fxi_13;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd2:begin
-        //                   TB_dina[0 +: RSA_DW]        <= 1;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= Fxi_23;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd3:begin
-        //                   TB_dina[0 +: RSA_DW]        <= 0;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 1;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd4:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 1;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_13;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //             'd5:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_23;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //             default:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //           endcase
-        //         end
-        // TBa_NL_NEW: begin
-        //           TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //           TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //           case(seq_cnt_out)     //不用延迟时序
-        //             'd1:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Gxi_13;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd2:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Gz_11;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= Gxi_23;
-        //                 end
-        //             'd3:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Gz_12;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= Gz_21;
-        //                 end
-        //             'd4:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= Gz_22;
-        //               end
-        //             default:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //           endcase
-        //         end
-        // TBa_NL_UPD: begin
-        //           case(seq_cnt_out)     //不用延迟时序
-        //             'd1:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Hxi_11;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd2:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Hxi_12;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= Hxi_21;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd3:begin
-        //                   TB_dina[0 +: RSA_DW]        <= Hz_11;
-        //                   TB_dina[1*RSA_DW +: RSA_DW] <= Hxi_22;
-        //                   TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                   TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //                 end
-        //             'd4:begin
-        //                 TB_dina[0 +: RSA_DW]        <= Hz_12;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= Hz_21;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //             'd5:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= Hz_22;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_23;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //             'd8:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= vt_1;
-        //               end
-        //             'd9:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= vt_2;
-        //               end
-        //             default:begin
-        //                 TB_dina[0 +: RSA_DW]        <= 0;
-        //                 TB_dina[1*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[2*RSA_DW +: RSA_DW] <= 0;
-        //                 TB_dina[3*RSA_DW +: RSA_DW] <= 0;
-        //               end
-        //           endcase
-        //         end
+        TBa_NL_PRD: begin
+                  case(seq_cnt_out)     //不用延迟时序
+                    'd1:begin
+                          TB_dina[0 +: RSA_DW]        <= Fxi_13;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd2:begin
+                          TB_dina[0 +: RSA_DW]        <= 1;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= Fxi_23;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd3:begin
+                          TB_dina[0 +: RSA_DW]        <= 0;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 1;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd4:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 1;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_13;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                    'd5:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_23;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                    default:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                  endcase
+                end
+        TBa_NL_NEW: begin
+                  TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                  TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                  case(seq_cnt_out)     //不用延迟时序
+                    'd1:begin
+                          TB_dina[0 +: RSA_DW]        <= Gxi_13;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd2:begin
+                          TB_dina[0 +: RSA_DW]        <= Gz_11;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= Gxi_23;
+                        end
+                    'd3:begin
+                          TB_dina[0 +: RSA_DW]        <= Gz_12;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= Gz_21;
+                        end
+                    'd4:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= Gz_22;
+                      end
+                    default:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                      end
+                  endcase
+                end
+        TBa_NL_UPD: begin
+                  case(seq_cnt_out)     //不用延迟时序
+                    'd1:begin
+                          TB_dina[0 +: RSA_DW]        <= Hxi_11;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd2:begin
+                          TB_dina[0 +: RSA_DW]        <= Hxi_12;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= Hxi_21;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd3:begin
+                          TB_dina[0 +: RSA_DW]        <= Hz_11;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= Hxi_22;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd4:begin
+                        TB_dina[0 +: RSA_DW]        <= Hz_12;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= Hz_21;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                    'd5:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= Hz_22;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= Fxi_23;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                    'd8:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= vt_1;
+                      end
+                    'd9:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= vt_2;
+                      end
+                    default:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
+                  endcase
+                end
         default:
             TB_dina <= 0;
       endcase
