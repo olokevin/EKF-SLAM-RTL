@@ -125,10 +125,12 @@ localparam DIR_NEW_1  = 1'b1;
 //   end     
 // end
 
+//不拆移位方向
 /*
   delay of TB_douta_sel, to every bank
 */
-  reg [3 : 1] TB_douta_sel_des_d; 
+
+  reg [3:1] TB_douta_sel_des_d;
   always @(posedge clk) begin
     if(sys_rst) begin
       TB_douta_sel_des_d <= 0;
@@ -138,6 +140,7 @@ localparam DIR_NEW_1  = 1'b1;
       TB_douta_sel_des_d[2] <= TB_douta_sel_des_d[1];
       TB_douta_sel_des_d[3] <= TB_douta_sel_des_d[2];
     end
+      
   end
 
 /*
@@ -225,4 +228,45 @@ always @(posedge clk) begin
         endcase
   end   
 end
+
+
+//拆分每一列
+  // reg [TB_DOUTA_SEL_DW-1 : 0]   TB_douta_sel_d1, TB_douta_sel_d2, TB_douta_sel_d3;
+
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //     TB_douta_sel_d1 <= 0;
+  //     TB_douta_sel_d2 <= 0;
+  //     TB_douta_sel_d3 <= 0;
+  //   end
+  //   else begin
+  //     TB_douta_sel_d1 <= TB_douta_sel;
+  //     TB_douta_sel_d2 <= TB_douta_sel_d1;
+  //     TB_douta_sel_d3 <= TB_douta_sel_d2;
+  //   end
+  // end
+
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //      <= 0;
+  //   end
+  //   else 
+  //     case(TB_douta_sel[1:0])
+  //       DIR_IDLE: begin     
+  //       end
+  //       DIR_POS : begin
+  //         TBa_A: A_TB_douta[0 +: RSA_DW]        <= TB_douta[0 +: RSA_DW];
+  //         TBa_M: M_TB_douta[0 +: RSA_DW]        <= TB_douta[0 +: RSA_DW];
+  //       end
+  //       DIR_NEG :begin
+  //       end
+  //       DIR_NEW : begin
+  //         case (l_k_0)
+  //           DIR_NEW_1: begin
+  //           end
+  //           DIR_NEW_0: begin
+  //           end
+  //     endcase
+  // end
+
 endmodule

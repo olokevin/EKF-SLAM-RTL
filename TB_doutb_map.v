@@ -218,7 +218,7 @@ always @(posedge clk) begin
 
               /*temporary for test*/
               'd7:begin
-                    B_cache_TB_doutb[0 +: RSA_DW] <= 2;
+                    B_cache_TB_doutb[0 +: RSA_DW] <= 2'b10;
                     B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
                   end  
               'd8:begin
