@@ -405,8 +405,8 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd12;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_910_CNT_MAX  = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_910_CNT_MAX  = 'd8;
 
 
     localparam UPD_1_M       = 3'b000;
