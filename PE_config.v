@@ -382,14 +382,16 @@ module PE_config #(
     localparam UPD_NL_RCV    = 11'b100_0000_0100;
     localparam UPD_1         = 11'b1;       
     localparam UPD_2         = 11'b10;
-    localparam UPD_3         = 11'b100;
-    localparam UPD_4         = 11'b1000;
-    localparam UPD_5         = 11'b1_0000;
-    localparam UPD_6         = 11'b10_0000;
-    localparam UPD_7         = 11'b100_0000;
-    localparam UPD_8         = 11'b1000_0000;
-    localparam UPD_9         = 11'b1_0000_0000;
-    localparam UPD_10        = 11'b10_0000_0000;
+    localparam UPD_3         = 11'b11;
+    localparam UPD_4         = 11'b100;
+    localparam UPD_5         = 11'b101;
+    localparam UPD_6         = 11'b110;
+    localparam UPD_7         = 11'b111;
+    localparam UPD_8         = 11'b1000;
+    localparam UPD_9         = 11'b1001;
+    localparam UPD_10        = 11'b1010;
+    localparam UPD_HALT_78   = 11'b1110;
+    localparam UPD_HALT_910  = 11'b1111;
 
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_RCV_CNT_MAX  = 'd10;
@@ -399,10 +401,12 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_4_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd9;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd12;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_910_CNT_MAX  = 'd7;
 
 
     localparam UPD_1_M       = 3'b000;
@@ -912,10 +916,19 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_8;
+              // upd_cur <= UPD_8;    //220722 加入halt
+              upd_cur <= UPD_HALT_78;
             end
             else begin
               upd_cur <= UPD_7;
+            end
+          end
+          UPD_HALT_78: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_8;
+            end
+            else begin
+              upd_cur <= UPD_HALT_78;
             end
           end
           UPD_8: begin
@@ -928,10 +941,19 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_9: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              upd_cur <= UPD_10;
+              // upd_cur <= UPD_10;  //220722 加入halt
+              upd_cur <= UPD_HALT_910;
             end
             else begin
               upd_cur <= UPD_9;
+            end
+          end
+          UPD_HALT_910: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_10;
+            end
+            else begin
+              upd_cur <= UPD_HALT_910;
             end
           end
           UPD_10: begin
@@ -1082,6 +1104,8 @@ assign test_stage = stage_val & stage_rdy;
           UPD_8: seq_cnt_max = UPD_8_CNT_MAX;
           UPD_9: seq_cnt_max = UPD_9_CNT_MAX;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
+          UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
+          UPD_HALT_910: seq_cnt_max = UPD_HALT_910_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
       end

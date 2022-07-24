@@ -1379,4 +1379,17 @@ addrb_new: NEW_2_PE_in+N+3
 
 先不改动数据寄存位置
 
-把S转置移到TB_
+#### 转置冲突
+
+把S转置移到TB_dinb，直接存入已转置的S
+
+UPD_8只是读出到B_cache
+
+### UPD_9 UPD_10冲突
+
+
+
+### 延迟
+
+* PE_n_WR, seq_cnt_WR都只延迟7T
+* 写时序中，等计数到PE_n_WR再开始写
