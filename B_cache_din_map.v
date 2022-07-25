@@ -10,11 +10,12 @@ module B_cache_din_map #(
   input   clk,
   input   sys_rst,
 
-  input   [2 : 0]   B_cache_in_sel,
+  input   [3 : 0]   B_cache_in_sel,
 
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
   input   signed [Y*RSA_DW-1:0] B_cache_TB_doutb,
+  input   signed [X*RSA_DW-1:0] C_B_cache_din,
 
   input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
   input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
@@ -24,21 +25,28 @@ module B_cache_din_map #(
   output  reg  signed [L*RSA_DW-1 : 0]    B_cache_din
 );
 
-localparam Bca_IDLE    = 3'b000;
-localparam Bca_TBb     = 3'b001;
-localparam Bca_NL_PRD  = 3'b101;
-localparam Bca_NL_NEW  = 3'b110;
-localparam Bca_NL_UPD  = 3'b111;
+localparam Bca_IDLE       = 4'b0000;
+
+localparam Bca_WR_transpose     = 4'b1001;
+localparam Bca_WR_inv     = 4'b1010;
+localparam Bca_WR_NL_PRD  = 4'b1101;
+localparam Bca_WR_NL_NEW  = 4'b1110;
+localparam Bca_WR_NL_UPD  = 4'b1111; 
+
+//inverse
+  reg signed [RSA_DW-1 : 0] S_11;
+  reg signed [RSA_DW-1 : 0] S_12;
+  reg signed [RSA_DW-1 : 0] S_22;
+  reg signed [RSA_DW-1 : 0] S_11_S_22;
+  reg signed [RSA_DW-1 : 0] S_12_S_21;
+  reg signed [RSA_DW-1 : 0] S_det;
 
   always @(posedge clk) begin
     if(sys_rst)
       B_cache_din <= 0;
     else begin
       case(B_cache_in_sel)
-        Bca_TBb: begin
-          B_cache_din <= B_cache_TB_doutb;
-        end
-        Bca_NL_PRD: begin
+        Bca_WR_NL_PRD: begin
                   case(seq_cnt_out)     //不用延迟时序
                     'd1:begin
                           B_cache_din[0 +: RSA_DW]        <= 1;
@@ -66,7 +74,7 @@ localparam Bca_NL_UPD  = 3'b111;
                       end
                   endcase
                 end
-        Bca_NL_NEW: begin
+        Bca_WR_NL_NEW: begin
                   B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
                   B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                   case(seq_cnt_out)     //不用延迟时序
@@ -100,7 +108,7 @@ localparam Bca_NL_UPD  = 3'b111;
                       end
                   endcase
                 end
-        Bca_NL_UPD: begin
+        Bca_WR_NL_UPD: begin
                   B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
                   B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                   case(seq_cnt_out)     //不用延迟时序
@@ -130,6 +138,59 @@ localparam Bca_NL_UPD  = 3'b111;
                       end
                   endcase
                 end
+        Bca_WR_transpose: begin
+          B_cache_din <= B_cache_TB_doutb;
+        end
+        Bca_WR_inv: begin
+            B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
+            B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
+            case(seq_cnt_out)
+              'd3:begin
+                    S_11 <= C_B_cache_din[0 +: RSA_DW];
+                  end
+              'd4:begin
+                    S_12 <= C_B_cache_din[0 +: RSA_DW];
+                    S_12_S_21 <= C_B_cache_din[0 +: RSA_DW] * C_B_cache_din[1*RSA_DW +: RSA_DW];
+                  end
+              'd5:begin
+                    S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW];
+                    S_11_S_22 <= S_11 * C_B_cache_din[1*RSA_DW +: RSA_DW];
+                  end
+              'd6:begin
+                    S_det <= S_11_S_22 - S_12_S_21;
+                  end
+              // 'd7:begin
+              //       B_cache_din[0 +: RSA_DW] <= S_11 / S_det;
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+              //     end  
+              // 'd8:begin
+              //       B_cache_din[0 +: RSA_DW] <= S_12 / S_det;
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= S_12 / S_det;
+              //     end
+              // 'd9:begin
+              //       B_cache_din[0 +: RSA_DW] <= 0;
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= S_22 / S_det;
+              //     end
+
+              /*temporary for test*/
+              'd7:begin
+                    B_cache_din[0 +: RSA_DW] <= 2'b10;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+                  end  
+              'd8:begin
+                    B_cache_din[0 +: RSA_DW] <= 2'b11;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= 2'b11;
+                  end
+              'd9:begin
+                    B_cache_din[0 +: RSA_DW] <= 0;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= 1'b1;
+                  end
+              default: begin
+                    B_cache_din[0 +: RSA_DW] <= 0;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+                  end
+            endcase
+        end
         default:
             B_cache_din <= 0;
       endcase

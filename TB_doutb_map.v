@@ -117,12 +117,12 @@ end
   reg signed [RSA_DW-1 : 0] cov_HT_13;
   reg signed [RSA_DW-1 : 0] cov_HT_14;
 //inverse
-  reg signed [RSA_DW-1 : 0] S_11;
-  reg signed [RSA_DW-1 : 0] S_12;
-  reg signed [RSA_DW-1 : 0] S_22;
-  reg signed [RSA_DW-1 : 0] S_11_S_22;
-  reg signed [RSA_DW-1 : 0] S_12_S_21;
-  reg signed [RSA_DW-1 : 0] S_det;
+  // reg signed [RSA_DW-1 : 0] S_11;
+  // reg signed [RSA_DW-1 : 0] S_12;
+  // reg signed [RSA_DW-1 : 0] S_22;
+  // reg signed [RSA_DW-1 : 0] S_11_S_22;
+  // reg signed [RSA_DW-1 : 0] S_12_S_21;
+  // reg signed [RSA_DW-1 : 0] S_det;
 
 integer i_TB_B_cache;
 always @(posedge clk) begin
@@ -131,12 +131,12 @@ always @(posedge clk) begin
   else begin
     case(TB_doutb_sel[TB_DOUTB_SEL_DW-1 : 2])
           TBb_B_cache_IDLE: B_cache_TB_doutb <= 0;
-          TBb_B_cache_trnsfer:begin
-            B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[0 +: RSA_DW];
-            B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[1*RSA_DW +: RSA_DW];
-            B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
-            B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;   
-          end
+          // TBb_B_cache_trnsfer:begin
+          //   B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[0 +: RSA_DW];
+          //   B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[1*RSA_DW +: RSA_DW];
+          //   B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+          //   B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;   
+          // end
           TBb_B_cache_transpose : begin
             B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
             B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
@@ -185,56 +185,57 @@ always @(posedge clk) begin
                   end
             endcase
           end
-          TBb_B_cache_inv :begin
-            B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
-            B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
-            case(seq_cnt_out)
-              'd3:begin
-                    S_11 <= TB_doutb[0 +: RSA_DW];
-                  end
-              'd4:begin
-                    S_12 <= TB_doutb[0 +: RSA_DW];
-                    S_12_S_21 <= TB_doutb[0 +: RSA_DW] * TB_doutb[1*RSA_DW +: RSA_DW];
-                  end
-              'd5:begin
-                    S_22 <= TB_doutb[1*RSA_DW +: RSA_DW];
-                    S_11_S_22 <= S_11 * TB_doutb[1*RSA_DW +: RSA_DW];
-                  end
-              'd6:begin
-                    S_det <= S_11_S_22 - S_12_S_21;
-                  end
-              // 'd7:begin
-              //       B_cache_TB_doutb[0 +: RSA_DW] <= S_11 / S_det;
-              //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
-              //     end  
-              // 'd8:begin
-              //       B_cache_TB_doutb[0 +: RSA_DW] <= S_12 / S_det;
-              //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= S_12 / S_det;
-              //     end
-              // 'd9:begin
-              //       B_cache_TB_doutb[0 +: RSA_DW] <= 0;
-              //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= S_22 / S_det;
-              //     end
+          // TBb_B_cache_inv :begin
+          //   B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+          //   B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
+          //   case(seq_cnt_out)
+          //     'd3:begin
+          //           S_11 <= TB_doutb[0 +: RSA_DW];
+          //         end
+          //     'd4:begin
+          //           S_12 <= TB_doutb[0 +: RSA_DW];
+          //           S_12_S_21 <= TB_doutb[0 +: RSA_DW] * TB_doutb[1*RSA_DW +: RSA_DW];
+          //         end
+          //     'd5:begin
+          //           S_22 <= TB_doutb[1*RSA_DW +: RSA_DW];
+          //           S_11_S_22 <= S_11 * TB_doutb[1*RSA_DW +: RSA_DW];
+          //         end
+          //     'd6:begin
+          //           S_det <= S_11_S_22 - S_12_S_21;
+          //         end
+          //     // 'd7:begin
+          //     //       B_cache_TB_doutb[0 +: RSA_DW] <= S_11 / S_det;
+          //     //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
+          //     //     end  
+          //     // 'd8:begin
+          //     //       B_cache_TB_doutb[0 +: RSA_DW] <= S_12 / S_det;
+          //     //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= S_12 / S_det;
+          //     //     end
+          //     // 'd9:begin
+          //     //       B_cache_TB_doutb[0 +: RSA_DW] <= 0;
+          //     //       B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= S_22 / S_det;
+          //     //     end
 
-              /*temporary for test*/
-              'd7:begin
-                    B_cache_TB_doutb[0 +: RSA_DW] <= 2'b10;
-                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
-                  end  
-              'd8:begin
-                    B_cache_TB_doutb[0 +: RSA_DW] <= 2'b11;
-                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 2'b11;
-                  end
-              'd9:begin
-                    B_cache_TB_doutb[0 +: RSA_DW] <= 0;
-                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 1'b1;
-                  end
-              default: begin
-                    B_cache_TB_doutb[0 +: RSA_DW] <= 0;
-                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
-                  end
-            endcase
-          end
+          //     /*temporary for test*/
+          //     'd7:begin
+          //           B_cache_TB_doutb[0 +: RSA_DW] <= 2'b10;
+          //           B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
+          //         end  
+          //     'd8:begin
+          //           B_cache_TB_doutb[0 +: RSA_DW] <= 2'b11;
+          //           B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 2'b11;
+          //         end
+          //     'd9:begin
+          //           B_cache_TB_doutb[0 +: RSA_DW] <= 0;
+          //           B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 1'b1;
+          //         end
+          //     default: begin
+          //           B_cache_TB_doutb[0 +: RSA_DW] <= 0;
+          //           B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
+          //         end
+          //   endcase
+          // end
+        default: B_cache_TB_doutb <= 0;
         endcase
   end     
 end

@@ -603,6 +603,7 @@ wire [X-1 : 0]          M_in_en;
 //C out
 wire signed [X*RSA_DW-1 : 0]   C_TB_dinb; 
 wire signed [X*RSA_DW-1 : 0]   C_CB_dinb;
+wire signed [X*RSA_DW-1 : 0]   C_B_cache_din;
 wire [C_OUT_SEL_DW*X-1 : 0]        C_out_sel; 
 wire [X-1 : 0]          C_out_en; 
 
@@ -622,7 +623,7 @@ generate
         .en      (A_in_en[i_X]      ),
         .sel     (A_in_sel[2*i_X +: 2]     ),
         .din_00  (A_TB_douta[RSA_DW*i_X +: RSA_DW]  ),
-        .din_01  (0  ),
+        .din_01  (B_cache_dout_A[RSA_DW*i_X +: RSA_DW] ),
         .din_10  (A_CB_douta[RSA_DW*i_X +: RSA_DW]  ),
         .din_11  (0  ),
         .dout    (A_data[RSA_DW*i_X +: RSA_DW]    )
@@ -655,7 +656,7 @@ generate
         .sel     (C_out_sel[2*i_X +: 2]     ),
         .din     (C_data[RSA_DW*i_X +: RSA_DW]     ),
         .dout_00 (C_TB_dinb[RSA_DW*i_X +: RSA_DW] ),
-        .dout_01 ( ),
+        .dout_01 (C_B_cache_din[RSA_DW*i_X +: RSA_DW] ),
         .dout_10 (C_CB_dinb[RSA_DW*i_X +: RSA_DW] ),
         .dout_11 ( )
       );
@@ -672,17 +673,24 @@ wire [Y*3-1:0] B_cache_addr;
 
 wire signed [Y*RSA_DW-1:0] B_cache_din; 
 wire signed [Y*RSA_DW-1:0] B_cache_TB_doutb; //TB_doutb -> B_cache
-wire signed [Y*RSA_DW-1:0] B_cache_dout; 
-reg  signed [Y*RSA_DW-1:0] B_cache_dout_d;    //B_cache需加一级缓冲(比TB CB少一个map)
 
-wire [2:0]   B_cache_in_sel;  //in_map
-always @(posedge clk) begin
-  if(sys_rst) begin
-    B_cache_dout_d <= 0;
-  end
-  else 
-    B_cache_dout_d <= B_cache_dout;
-end
+wire signed [Y*RSA_DW-1:0] B_cache_dout; 
+wire signed [X*RSA_DW-1 : 0]    B_cache_dout_A;
+wire signed [Y*RSA_DW-1 : 0]    B_cache_dout_B;
+
+
+wire [3:0]   B_cache_in_sel;   //in_map
+wire [3:0]   B_cache_out_sel;  //out_map
+
+/*有out_map多buffer一级，无需手动延迟*/
+// reg  signed [Y*RSA_DW-1:0] B_cache_dout_d;    //B_cache需加一级缓冲(比TB CB少一个map)
+// always @(posedge clk) begin
+//   if(sys_rst) begin
+//     B_cache_dout_d <= 0;
+//   end
+//   else 
+//     B_cache_dout_d <= B_cache_dout;
+// end
 
 generate
   genvar i_Y;
@@ -712,7 +720,7 @@ generate
       .en      (B_in_en[i_Y]  ),
       .sel     (B_in_sel[2*i_Y +: 2]   ),
       .din_00  (B_TB_doutb[RSA_DW*i_Y +: RSA_DW]  ),
-      .din_01  (B_cache_dout_d[RSA_DW*i_Y +: RSA_DW]  ),
+      .din_01  (B_cache_dout_B[RSA_DW*i_Y +: RSA_DW]  ),
       .din_10  (B_CB_douta[RSA_DW*i_Y +: RSA_DW]  ),
       .din_11  (0   ),
       .dout    (B_data[RSA_DW*i_Y +: RSA_DW]  )
@@ -739,6 +747,7 @@ u_B_cache_din_map(
   .B_cache_in_sel (B_cache_in_sel ),
   .seq_cnt_out    (seq_cnt_out    ),
   .B_cache_TB_doutb (B_cache_TB_doutb),
+  .C_B_cache_din  (C_B_cache_din  ),
   .Fxi_13         (Fxi_13         ),
   .Fxi_23         (Fxi_23         ),
   .Gxi_13         (Gxi_13         ),
@@ -757,6 +766,24 @@ u_B_cache_din_map(
   .Hxi_22         (Hxi_22         ),
   .B_cache_din    (B_cache_din    )
 );
+
+B_cache_dout_map 
+#(
+  .X          (X          ),
+  .Y          (Y          ),
+  .L          (L          ),
+  .RSA_DW     (RSA_DW     ),
+  .SEQ_CNT_DW (SEQ_CNT_DW )
+)
+u_B_cache_dout_map(
+  .clk             (clk             ),
+  .sys_rst         (sys_rst         ),
+  .B_cache_out_sel (B_cache_out_sel ),
+  .B_cache_dout    (B_cache_dout    ),
+  .B_cache_dout_A  (B_cache_dout_A  ),
+  .B_cache_dout_B  (B_cache_dout_B  )
+);
+
 
 
 /*
