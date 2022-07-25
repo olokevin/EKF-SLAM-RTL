@@ -382,14 +382,16 @@ module PE_config #(
     localparam UPD_NL_RCV    = 11'b100_0000_0100;
     localparam UPD_1         = 11'b1;       
     localparam UPD_2         = 11'b10;
-    localparam UPD_3         = 11'b100;
-    localparam UPD_4         = 11'b1000;
-    localparam UPD_5         = 11'b1_0000;
-    localparam UPD_6         = 11'b10_0000;
-    localparam UPD_7         = 11'b100_0000;
-    localparam UPD_8         = 11'b1000_0000;
-    localparam UPD_9         = 11'b1_0000_0000;
-    localparam UPD_10        = 11'b10_0000_0000;
+    localparam UPD_3         = 11'b11;
+    localparam UPD_4         = 11'b100;
+    localparam UPD_5         = 11'b101;
+    localparam UPD_6         = 11'b110;
+    localparam UPD_7         = 11'b111;
+    localparam UPD_8         = 11'b1000;
+    localparam UPD_9         = 11'b1001;
+    localparam UPD_10        = 11'b1010;
+    localparam UPD_HALT_78   = 11'b1110;
+    localparam UPD_HALT_910  = 11'b1111;
 
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_RCV_CNT_MAX  = 'd10;
@@ -399,10 +401,12 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_4_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd9;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd9;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_910_CNT_MAX  = 'd8;
 
 
     localparam UPD_1_M       = 3'b000;
@@ -912,10 +916,19 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_8;
+              // upd_cur <= UPD_8;    //220722 加入halt
+              upd_cur <= UPD_HALT_78;
             end
             else begin
               upd_cur <= UPD_7;
+            end
+          end
+          UPD_HALT_78: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_8;
+            end
+            else begin
+              upd_cur <= UPD_HALT_78;
             end
           end
           UPD_8: begin
@@ -928,10 +941,19 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_9: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              upd_cur <= UPD_10;
+              // upd_cur <= UPD_10;  //220722 加入halt
+              upd_cur <= UPD_HALT_910;
             end
             else begin
               upd_cur <= UPD_9;
+            end
+          end
+          UPD_HALT_910: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_10;
+            end
+            else begin
+              upd_cur <= UPD_HALT_910;
             end
           end
           UPD_10: begin
@@ -1082,6 +1104,8 @@ assign test_stage = stage_val & stage_rdy;
           UPD_8: seq_cnt_max = UPD_8_CNT_MAX;
           UPD_9: seq_cnt_max = UPD_9_CNT_MAX;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
+          UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
+          UPD_HALT_910: seq_cnt_max = UPD_HALT_910_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
       end
@@ -2371,7 +2395,7 @@ assign test_stage = stage_val & stage_rdy;
                               M_adder_mode_set = NONE;
 
                               TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_B_cache_transpose,DIR_POS};
+                              TBb_mode = {TBb_B_cache_transpose,DIR_POS}; //不依赖于N
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
@@ -2411,6 +2435,29 @@ assign test_stage = stage_val & stage_rdy;
                               M_TB_base_addr_set = Q;
                               C_TB_base_addr_set = S_t;
                             end
+                      UPD_HALT_78: begin
+                              PE_m = UPD_7_M;
+                              PE_n = UPD_7_N;
+                              PE_k = UPD_7_K;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_TBb;
+                              M_adder_mode_set = ADD;
+
+                              TBa_mode = TBa_IDLE;
+                              TBb_mode = {TBb_IDLE, DIR_POS};
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
+                             end
                       UPD_8: begin
                             /*
                               S_t inverse
@@ -2472,6 +2519,29 @@ assign test_stage = stage_val & stage_rdy;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = K_t;
                             end
+                      UPD_HALT_910: begin
+                                PE_m = UPD_9_M;
+                                PE_n = UPD_9_N;
+                                PE_k = UPD_9_K;
+
+                                CAL_mode = N_W;
+
+                                A_in_mode = A_NONE;   
+                                B_in_mode = B_NONE;
+                                M_in_mode = M_NONE;
+                                C_out_mode = C_TBb;
+                                M_adder_mode_set = NONE;
+
+                                TBa_mode = {TBa_IDLE,DIR_POS};
+                                TBb_mode = {TBb_IDLE,DIR_POS};
+                                CBa_mode = CB_IDLE;
+                                CBb_mode = CB_IDLE;
+
+                                A_TB_base_addr_set = 0;
+                                B_TB_base_addr_set = 0;
+                                M_TB_base_addr_set = 0;
+                                C_TB_base_addr_set = 0;
+                              end
                       UPD_10: begin
                             /*
                               K_t * cov_HT = cov
@@ -2490,7 +2560,7 @@ assign test_stage = stage_val & stage_rdy;
                               A_in_mode = A_TBa;   
                               B_in_mode = B_TBb;
                               M_in_mode = M_CBa;
-                              C_out_mode = C_TBb;
+                              C_out_mode = C_CBb;
                               M_adder_mode_set = M_MINUS_C;
 
                               TBa_mode = {TBa_A,DIR_POS};
@@ -2898,17 +2968,9 @@ assign test_stage = stage_val & stage_rdy;
   */
   wire [SEQ_CNT_DW-1 : 0] seq_cnt_cal_d;
   wire [2:0]           PEn_cal_d;
+  // wire [2:0]           stage_cur_cal;
 
-  reg [1:0] cal_en_d_addr;
-
-  always @(posedge clk) begin
-    if(sys_rst) begin
-      cal_en_d_addr <= 0;
-    end
-    else begin
-      cal_en_d_addr <= CAL_EN_D;
-    end
-  end
+  reg [1:0] cal_en_d_addr = CAL_EN_D;
 
   dynamic_shreg 
     #(
@@ -2936,6 +2998,21 @@ assign test_stage = stage_val & stage_rdy;
     .dout (PEn_cal_d )
   );
 
+  // dynamic_shreg 
+  // #(
+  //   .DW    (3    ),
+  //   .AW    (2    )
+  // )
+  // stage_cal_d_shreg(
+  // 	.clk  (clk  ),
+  //   .ce   (1'b1   ),
+  //   .addr (cal_en_d_addr ),
+  //   .din  (stage_cur  ),
+  //   .dout (stage_cur_cal )
+  // );
+
+  
+
   reg new_cal_en_new;
   reg new_cal_done_new;
   //由于实际的new_cal_en[0]为new_cal_en_new的一级延迟，所以均比实际数据流提前一个T
@@ -2944,7 +3021,7 @@ assign test_stage = stage_val & stage_rdy;
       new_cal_en_new <= 0;
     end
     else begin
-      if(seq_cnt_cal_d >= 0 && seq_cnt_cal_d < PEn_cal_d) begin
+      if(PEn_cal_d != 0 && seq_cnt_cal_d >= 0 && seq_cnt_cal_d < PEn_cal_d) begin
         new_cal_en_new <= 1'b1;
       end
       else
@@ -2957,7 +3034,7 @@ assign test_stage = stage_val & stage_rdy;
       new_cal_done_new <= 0;
     end
     else begin
-      if(seq_cnt_cal_d == PEn_cal_d)
+      if(PEn_cal_d != 0 && seq_cnt_cal_d == PEn_cal_d)
         new_cal_done_new <= 1'b1;
       else
         new_cal_done_new <= 1'b0;
@@ -3032,6 +3109,8 @@ assign test_stage = stage_val & stage_rdy;
     wire [6:0]           CBb_mode_WR;
     wire [2:0]           PE_n_WR;
     wire [2:0]           PE_k_WR;
+
+    wire [TB_AW-1:0] C_TB_base_addr_set_WR;
     
     reg [2 : 0]          PE_n_d_addr = RD_2_WR_D;     //PE_n延迟级数，固定值
     reg [3 : 0]          WR_d_addr;       //读出部分取多少级延迟
@@ -3202,6 +3281,19 @@ assign test_stage = stage_val & stage_rdy;
       .addr (WR_d_addr ),
       .din  (CBb_mode  ),
       .dout (CBb_mode_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (TB_AW  ),
+      .AW  (4  )
+    )
+    C_TB_base_addr_set_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (C_TB_base_addr_set  ),
+      .dout (C_TB_base_addr_set_WR )
     );
 
 /*
@@ -3544,7 +3636,7 @@ assign test_stage = stage_val & stage_rdy;
                     TB_enb_new <= 1'b1;
                     TB_web_new <= 1'b1;
                     if(v_group_cnt_WR == 0)
-                      TB_addrb_new <= C_TB_base_addr_set;
+                      TB_addrb_new <= C_TB_base_addr_set_WR;
                     else
                       TB_addrb_new <= C_TB_base_addr;
                   end
@@ -3578,7 +3670,7 @@ assign test_stage = stage_val & stage_rdy;
                     TB_enb_new <= 1'b1;
                     TB_web_new <= 1'b1;
                     if(v_group_cnt_WR == 0)
-                      TB_addrb_new <= C_TB_base_addr_set;
+                      TB_addrb_new <= C_TB_base_addr_set_WR;
                     else
                       TB_addrb_new <= C_TB_base_addr;
                   end
@@ -3681,16 +3773,23 @@ assign test_stage = stage_val & stage_rdy;
                           end
               TBb_B_cache_inv: begin
                             TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_inv;
-                            if(seq_cnt < PE_n) begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b0;
-                              TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
-                            end
-                            else begin
-                              TB_enb_new <= 1'b0;
-                              TB_web_new <= 1'b0;
-                              TB_addrb_new <= TB_addrb_new;
-                            end
+                            case (seq_cnt)
+                              SEQ_0: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= B_TB_base_addr_set;
+                              end 
+                              SEQ_1: begin
+                                TB_enb_new <= 1'b1;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= B_TB_base_addr_set + 1'b1;
+                              end
+                              default: begin
+                                TB_enb_new <= 1'b0;
+                                TB_web_new <= 1'b0;
+                                TB_addrb_new <= TB_addrb_new;
+                              end
+                            endcase
                           end
               default: begin
                 TB_enb_new <= 1'b0;
@@ -3851,39 +3950,37 @@ assign test_stage = stage_val & stage_rdy;
           TBb_mode_d <= TBb_mode;
       end
 
+    //TBb_shift_dir 需考虑写入和读取两种状态
+      always @(posedge clk) begin
+        if(sys_rst) begin
+          TBb_shift_dir <= DIR_IDLE;
+        end
+         else begin
+          case(TBb_mode_WR[4:2])
+            TBb_C: begin
+              TBb_shift_dir <= TBb_mode_WR[1:0];
+            end
+            TBb_BC: begin
+              TBb_shift_dir <= TBb_mode_WR[1:0];
+            end
+            default: begin    //非写时序
+              TBb_shift_dir <= TBb_mode[1:0];
+            end
+          endcase
+        end 
+      end
+
+    //TB_doutb_sel 只与读取有关
       always @(posedge clk) begin
         if(sys_rst) begin
           TB_doutb_sel_new[1:0] = DIR_IDLE;
-          TBb_shift_dir <= DIR_IDLE;
         end
         else begin
           TB_doutb_sel_new[1:0] <= TBb_mode_d[1:0];
-          TBb_shift_dir <= TBb_mode[1:0];
         end
       end
 
-      // always @(posedge clk) begin
-      //   if(sys_rst) begin
-      //     TBb_shift_dir <= 0;
-      //   end
-      //   else begin
-      //     case(TBb_mode[1:0])
-      //       DIR_IDLE: begin
-      //         TBb_shift_dir <= DIR_POS;
-      //       end
-      //       DIR_POS: begin
-      //         TBb_shift_dir <= DIR_POS;
-      //       end
-      //       DIR_NEG: begin
-      //         TBb_shift_dir <= DIR_NEG;
-      //       end
-      //       DIR_NEW: begin
-      //         TBb_shift_dir <= DIR_NEW;
-      //       end
-      //     endcase
-      //   end
-      // end
-
+    //TB_dinb_sel 只与读取有关
       always @(posedge clk) begin
         if(sys_rst) begin
           TB_dinb_sel_new <= 0;
@@ -4252,11 +4349,11 @@ assign test_stage = stage_val & stage_rdy;
                     end
                     else begin
                       case(seq_cnt_M[0])
-                      1'b1: begin
+                      1'b0: begin
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_new + 1'b1;
                       end
-                      1'b0: begin
+                      1'b1: begin
                         CB_ena_new <= 1'b0;
                         CB_addra_new <= CB_addra_new;
                       end
@@ -4451,16 +4548,22 @@ assign test_stage = stage_val & stage_rdy;
                             CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
                             CB_dinb_sel_new[1:0] <= DIR_POS;
                             CBb_shift_dir <= DIR_POS;
-                            case(seq_cnt_WR[0])
+                            if(v_group_cnt_WR == 0 && seq_cnt_WR == 0) begin
+                              CB_enb_new <= 1'b1;
+                              CB_addrb_new <= 0;
+                            end
+                            else begin
+                              case(seq_cnt_WR[0])
                               1'b0: begin
-                                CB_enb_new <= 1'b0;
-                                CB_addrb_new <= CB_addrb_new;
-                              end
-                              1'b1: begin
                                 CB_enb_new <= 1'b1;
                                 CB_addrb_new <= CB_addrb_new + 1'b1;
                               end
-                            endcase     
+                              1'b1: begin
+                                CB_enb_new <= 1'b0;
+                                CB_addrb_new <= CB_addrb_new;
+                              end
+                            endcase
+                            end    
                           end
               CB_cov_lv : begin
                             CB_web_new <= 1'b1;
