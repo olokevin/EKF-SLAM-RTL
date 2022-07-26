@@ -93,6 +93,8 @@ module PE_config #(
   output [L*CB_AW-1 : 0]      CB_addra,
   output [L*CB_AW-1 : 0]      CB_addrb,
 
+  output  reg [3:0]                     B_cache_in_sel,
+  output  reg [3:0]                     B_cache_out_sel,
   output  [Y-1:0]         B_cache_en,
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
@@ -624,8 +626,6 @@ module PE_config #(
   reg [TB_AW-1 : 0]             TB_addrb_new;
   
   //B_cache def
-  reg [3:0]                     B_cache_in_sel;
-  reg [3:0]                     B_cache_out_sel;
   reg                           B_cache_en_new;
   reg                           B_cache_we_new;
   reg [2 : 0]                   B_cache_addr_new;
@@ -4632,10 +4632,10 @@ assign test_stage = stage_val & stage_rdy;
       case (B_cache_mode)
         Bca_RD_A,Bca_RD_B: begin
                     B_cache_we_new <= 0;
-                    B_cache_in_sel <= B_cache_mode;
+                    B_cache_out_sel <= B_cache_mode;
                     if(seq_cnt < PE_n) begin
                       B_cache_en_new <= 1'b1;
-                      B_cache_addr_new <= B_cache_base_addr_set + PE_n;
+                      B_cache_addr_new <= B_cache_base_addr_set + seq_cnt;
                     end
                     else begin
                       B_cache_en_new <= 0;
@@ -4643,10 +4643,11 @@ assign test_stage = stage_val & stage_rdy;
                     end
                   end
         Bca_WR_NL_PRD,Bca_WR_NL_NEW,Bca_WR_NL_UPD: begin
+                    B_cache_in_sel <= B_cache_mode;
                     if(seq_cnt < PE_n) begin
                       B_cache_we_new <= 1'b1;
                       B_cache_en_new <= 1'b1;
-                      B_cache_addr_new <= B_cache_base_addr_set + PE_n;
+                      B_cache_addr_new <= B_cache_base_addr_set + seq_cnt;
                     end
                     else begin
                       B_cache_we_new <= 1'b0;
@@ -4655,6 +4656,7 @@ assign test_stage = stage_val & stage_rdy;
                     end
                   end
         Bca_WR_transpose: begin
+                    B_cache_in_sel <= B_cache_mode;
                     case(seq_cnt)
                       SEQ_3:begin
                           B_cache_en_new <= 1'b1;
@@ -4689,6 +4691,7 @@ assign test_stage = stage_val & stage_rdy;
                     endcase
                   end
         Bca_WR_inv: begin
+                    B_cache_in_sel <= B_cache_mode;
                     case(seq_cnt)
                       SEQ_6:begin
                           B_cache_en_new <= 1'b1;

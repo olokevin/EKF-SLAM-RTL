@@ -1287,6 +1287,8 @@ u_PE_config(
   .CB_web        (CB_web        ),
   .CB_addra      (CB_addra      ),
   .CB_addrb      (CB_addrb      ),
+  .B_cache_in_sel(B_cache_in_sel),
+  .B_cache_out_sel(B_cache_out_sel),
   .B_cache_en    (B_cache_en    ),
   .B_cache_we    (B_cache_we    ),
   .B_cache_addr  (B_cache_addr  ),
