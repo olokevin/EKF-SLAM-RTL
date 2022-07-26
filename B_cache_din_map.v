@@ -64,13 +64,25 @@ localparam Q_22 = 1'b1;
                         end
                     'd2:begin
                           B_cache_din[0 +: RSA_DW]        <= 0;
-                          B_cache_din[1*RSA_DW +: RSA_DW] <= 1;
+                          B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                         end
                     'd3:begin
                           B_cache_din[0 +: RSA_DW]        <= Fxi_13;
+                          B_cache_din[1*RSA_DW +: RSA_DW] <= 1;
+                          B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
+                          B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd4:begin
+                          B_cache_din[0 +: RSA_DW]        <= 0;
                           B_cache_din[1*RSA_DW +: RSA_DW] <= Fxi_23;
+                          B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
+                          B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd5:begin
+                          B_cache_din[0 +: RSA_DW]        <= 0;
+                          B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[2*RSA_DW +: RSA_DW] <= 1;
                           B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                         end
@@ -100,16 +112,16 @@ localparam Q_22 = 1'b1;
                         end
                     'd4:begin
                         B_cache_din[0 +: RSA_DW]        <= Gz_11;
-                        B_cache_din[1*RSA_DW +: RSA_DW] <= Gxi_13;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= Gxi_23;
                       end
                     'd5:begin
                         B_cache_din[0 +: RSA_DW]        <= Gz_12;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= Gz_21;
                       end
-                      'd5:begin
-                        B_cache_din[0 +: RSA_DW]        <= 0;
-                        B_cache_din[1*RSA_DW +: RSA_DW] <= Gz_22;
-                      end
+                    'd6:begin
+                      B_cache_din[0 +: RSA_DW]        <= 0;
+                      B_cache_din[1*RSA_DW +: RSA_DW] <= Gz_22;
+                    end
                     default:begin
                         B_cache_din[0 +: RSA_DW]        <= 0;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= 0;

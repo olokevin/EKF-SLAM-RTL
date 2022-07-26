@@ -301,11 +301,11 @@ module PE_config #(
   ******************* params of Prediction stage *****************
 */
   // TEMP BANK offsets of PRD
-    localparam [TB_AW-1 : 0] F_xi = 'd0;
-    localparam [TB_AW-1 : 0] F_xi_T = 'd3;
-    localparam [TB_AW-1 : 0] t_cov = 'd6;
-    localparam [TB_AW-1 : 0] F_cov = 'd9;
-    localparam [TB_AW-1 : 0] M_t = 'd12;
+    // localparam [TB_AW-1 : 0] F_xi = 'd0;
+    // localparam [TB_AW-1 : 0] F_xi_T = 'd3;
+    // localparam [TB_AW-1 : 0] t_cov = 'd6;
+    localparam [TB_AW-1 : 0] F_cov = 'd5;
+    localparam [TB_AW-1 : 0] M_t = 'd0;
   // PREDICTION SERIES
     localparam PRD_IDLE = 4'b0000;
     localparam PRD_NL_SEND = 4'b1001;
@@ -323,7 +323,7 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] PRD_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] PRD_NL_RCV_CNT_MAX  = 'd6;
     localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
-    localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd17;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd5;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_CNT_MAX = 'd5;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_HALT_CNT_MAX = 'd7;
 
@@ -344,11 +344,11 @@ module PE_config #(
   NEW: params of New landmark initialization stage
 */
   // TEMP BANK offsets of PRD
-    localparam [TB_AW-1 : 0] G_xi          = 'd15;
-    localparam [TB_AW-1 : 0] G_z           = 'd18;
-    localparam [TB_AW-1 : 0] Q         = 'd20;
-    localparam [TB_AW-1 : 0] G_z_Q         = 'd22;
-    localparam [TB_AW-1 : 0] lv_G_xi           = 'd24;
+    // localparam [TB_AW-1 : 0] G_xi          = 'd15;
+    // localparam [TB_AW-1 : 0] G_z           = 'd18;
+    localparam [TB_AW-1 : 0] Q         = 'd3;
+    localparam [TB_AW-1 : 0] G_z_Q         = 'd8;
+    localparam [TB_AW-1 : 0] lv_G_xi           = 'd10;
   // NEW SERIES
     localparam NEW_IDLE      = 'b000000;
     localparam NEW_NL_SEND   = 'b100001;
@@ -391,14 +391,15 @@ module PE_config #(
   UPD: params of Update stage
 */
   // TEMP BANK offsets of PRD
-    localparam [TB_AW-1 : 0] H_xi          = 'd26;
-    localparam [TB_AW-1 : 0] H_z           = 'd29;
-    localparam [TB_AW-1 : 0] S_t           = 'd31;
-    localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
-    localparam [TB_AW-1 : 0] cov_HT        = 'd38;
-    localparam [TB_AW-1 : 0] v_t        = 'd38;
-    localparam [TB_AW-1 : 0] t_cov_l       = 'd40;
-    localparam [TB_AW-1 : 0] K_t           = 'd40;
+    // localparam [TB_AW-1 : 0] H_xi          = 'd26;
+    // localparam [TB_AW-1 : 0] H_z           = 'd29;
+    // localparam [TB_AW-1 : 0] S_t           = 'd31;
+    // localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
+    // localparam [TB_AW-1 : 0] cov_HT        = 'd38;
+    localparam [TB_AW-1 : 0] cov_HT        = 'd12;
+    localparam [TB_AW-1 : 0] v_t           = 'd12;
+    localparam [TB_AW-1 : 0] t_cov_l       = 'd14;
+    localparam [TB_AW-1 : 0] K_t           = 'd14;
   // UPDATE SERIES
     localparam UPD_IDLE      = 11'b000_0000_0000;
     localparam UPD_NL_SEND   = 11'b100_0000_0001;
@@ -472,12 +473,12 @@ module PE_config #(
   ******************* params of Data Assoc stage *****************
 */
   // TEMP BANK offsets of ASSOC
-    localparam [TB_AW-1 : 0] H_vv = 'd33;
-    localparam [TB_AW-1 : 0] H_lv = 'd36;
-    localparam [TB_AW-1 : 0] H_ll = 'd38;
-    localparam [TB_AW-1 : 0] H_vv_H = 'd33;
-    localparam [TB_AW-1 : 0] H_lv_H = 'd36;
-    localparam [TB_AW-1 : 0] H_ll_H = 'd38;
+    localparam [TB_AW-1 : 0] H_vv = 'd5;
+    localparam [TB_AW-1 : 0] H_lv = 'd8;
+    localparam [TB_AW-1 : 0] H_ll = 'd10;
+    localparam [TB_AW-1 : 0] H_vv_H = 'd5;
+    localparam [TB_AW-1 : 0] H_lv_H = 'd8;
+    localparam [TB_AW-1 : 0] H_ll_H = 'd10;
   // ASSOC SERIES
     localparam ASSOC_IDLE      = 5'b00000;
     localparam ASSOC_NL_SEND   = 5'b10001;
@@ -2229,7 +2230,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = {CBa_B,CB_cov_vv};
                               CBb_mode = CB_IDLE;
 
-                              A_TB_base_addr_set = F_xi;
+                              A_TB_base_addr_set = 0;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = F_cov;
@@ -2256,7 +2257,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBb_mode = {CBb_C,CB_cov_vv};
 
                               A_TB_base_addr_set = F_cov;
-                              B_TB_base_addr_set = F_xi;
+                              B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = M_t;
                               C_TB_base_addr_set = 0;
 
@@ -2282,7 +2283,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBb_mode = {CBb_C,CB_cov_mv};
 
                               A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = F_xi;
+                              B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = 0;
 
@@ -2382,7 +2383,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = {CBa_B,CB_cov_vv};
                               CBb_mode = {CBb_C,CB_cov_lv};
 
-                              A_TB_base_addr_set = G_xi;
+                              A_TB_base_addr_set = 0;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = 0;
@@ -2416,7 +2417,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = {CBa_B,CB_cov_mv};
                               CBb_mode = {CBb_C,CB_cov_lm};
 
-                              A_TB_base_addr_set = G_xi;
+                              A_TB_base_addr_set = 0;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = 0;
@@ -2451,7 +2452,7 @@ assign test_stage = stage_val & stage_rdy;
                                 CBb_mode = CB_IDLE;
 
                                 A_TB_base_addr_set = 0;
-                                B_TB_base_addr_set = G_xi;
+                                B_TB_base_addr_set = 0;
                                 M_TB_base_addr_set = 0;
                                 C_TB_base_addr_set = lv_G_xi;
 
@@ -2484,7 +2485,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = CB_IDLE; 
                               CBb_mode = CB_IDLE;
 
-                              A_TB_base_addr_set = G_z;
+                              A_TB_base_addr_set = 0;
                               B_TB_base_addr_set = Q;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = G_z_Q;
@@ -2519,7 +2520,7 @@ assign test_stage = stage_val & stage_rdy;
                               CBb_mode = {CBb_C,CB_cov_ll};
 
                               A_TB_base_addr_set = G_z_Q;
-                              B_TB_base_addr_set = G_z;
+                              B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = lv_G_xi;
                               C_TB_base_addr_set = 0;
 
@@ -2826,10 +2827,10 @@ assign test_stage = stage_val & stage_rdy;
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
-                              A_TB_base_addr_set = H_xi;
+                              A_TB_base_addr_set = 0;
                               B_TB_base_addr_set = 0;
                               M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = S_t;
+                              C_TB_base_addr_set = 0;
 
                               B_cache_mode = Bca_RD_B;
                               B_cache_base_addr_set = 0;
@@ -6038,13 +6039,13 @@ assign test_stage = stage_val & stage_rdy;
     else begin
       case(CBb_mode_WR[3:0])
         CB_cov_vv: begin
-          if(seq_cnt_WR == seq_cnt_max)
+          if(seq_cnt_WR == seq_cnt_max_WR)
             CB_addrb_base <= CB_addrb_base_raw;
           else
             CB_addrb_base <= 1'b1;
         end
         CB_cov_mv: begin
-          if(seq_cnt_WR == seq_cnt_max)
+          if(seq_cnt_WR == seq_cnt_max_WR)
             CB_addrb_base <= CB_addrb_base_raw;
           else
             CB_addrb_base <= CB_addrb_base;
