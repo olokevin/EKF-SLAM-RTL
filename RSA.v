@@ -241,10 +241,11 @@ module RSA
   wire [5 : 0]            new_cur_out;
   wire [10 :0]            upd_cur_out;
   //stage
-    localparam      IDLE       = 3'b000 ;
-    localparam      STAGE_PRD  = 3'b001 ;
-    localparam      STAGE_NEW  = 3'b010 ;
-    localparam      STAGE_UPD  = 3'b100 ;
+  localparam      IDLE       = 3'b000 ;
+  localparam      STAGE_PRD  = 3'b001 ;
+  localparam      STAGE_NEW  = 3'b010 ;
+  localparam      STAGE_UPD  = 3'b011 ;
+  localparam      STAGE_ASSOC  = 3'b100 ;
 
 /*
   ********************** 接收非线性发回的数据 *******************
@@ -260,89 +261,156 @@ module RSA
   reg signed [RSA_DW - 1 : 0] Hxi_11, Hxi_12, Hxi_21, Hxi_22;
   reg signed [RSA_DW - 1 : 0] vt_1, vt_2;
   
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //         x_hat <= 0;
+  //         y_hat <= 0;
+  //         xita_hat <= 0;
+  //         Fxi_13 <= 0;
+  //         Fxi_23 <= 0;
+  //         lkx_hat = 0;
+  //         lky_hat = 0;
+  //         Gxi_13 = 0;
+  //         Gxi_23 = 0;
+  //         Gz_11 = 0;
+  //         Gz_12 = 0;
+  //         Gz_21 = 0;
+  //         Gz_22 = 0;
+  //         Hxi_11 = 0;
+  //         Hxi_12 = 0;
+  //         Hxi_21 = 0;
+  //         Hxi_22 = 0;
+  //         Hz_11 = 0;
+  //         Hz_12 = 0;
+  //         Hz_21 = 0;
+  //         Hz_22 = 0;
+  //         vt_1 = 0;
+  //         vt_2 = 0;
+  //       end
+  //   else begin
+  //     case (stage_cur_out)
+  //       STAGE_PRD: begin
+  //         x_hat <= xk + result_2;
+  //         y_hat <= yk + result_3;
+  //         xita_hat <= xita + result_1;
+  //         Fxi_13 <= - result_3;
+  //         Fxi_23 <= result_2;
+  //       end
+  //       STAGE_NEW: begin
+  //         lkx_hat = lkx + result_3;
+  //         lky_hat = lky + result_2;
+  //         Gxi_13 = -result_2;
+  //         Gxi_23 = result_3;
+  //         Gz_11 = result_0;
+  //         Gz_12 = -result_2;
+  //         Gz_21 = result_1;
+  //         Gz_22 = result_3;
+  //       end
+  //       STAGE_UPD: begin
+  //         Hxi_11 = -result_4;
+  //         Hxi_12 = -result_5;
+  //         Hxi_21 = result_2;
+  //         Hxi_22 = -result_3;
+  //         Hz_11 = result_4;
+  //         Hz_12 = result_5;
+  //         Hz_21 = -result_2;
+  //         Hz_22 = result_3;
+  //         vt_1 = result_0;
+  //         vt_2 = result_1;
+  //       end 
+  //       default: begin
+  //         x_hat <= 0;
+  //         y_hat <= 0;
+  //         xita_hat <= 0;
+  //         Fxi_13 <= 0;
+  //         Fxi_23 <= 0;
+  //         lkx_hat = 0;
+  //         lky_hat = 0;
+  //         Gxi_13 = 0;
+  //         Gxi_23 = 0;
+  //         Gz_11 = 0;
+  //         Gz_12 = 0;
+  //         Gz_21 = 0;
+  //         Gz_22 = 0;
+  //         Hxi_11 = 0;
+  //         Hxi_12 = 0;
+  //         Hxi_21 = 0;
+  //         Hxi_22 = 0;
+  //         Hz_11 = 0;
+  //         Hz_12 = 0;
+  //         Hz_21 = 0;
+  //         Hz_22 = 0;
+  //         vt_1 = 0;
+  //         vt_2 = 0;
+  //       end
+  //     endcase
+  //   end
+  // end
+
   always @(posedge clk) begin
     if(sys_rst) begin
-          x_hat <= 0;
-          y_hat <= 0;
-          xita_hat <= 0;
-          Fxi_13 <= 0;
-          Fxi_23 <= 0;
-          lkx_hat = 0;
-          lky_hat = 0;
-          Gxi_13 = 0;
-          Gxi_23 = 0;
-          Gz_11 = 0;
-          Gz_12 = 0;
-          Gz_21 = 0;
-          Gz_22 = 0;
-          Hxi_11 = 0;
-          Hxi_12 = 0;
-          Hxi_21 = 0;
-          Hxi_22 = 0;
-          Hz_11 = 0;
-          Hz_12 = 0;
-          Hz_21 = 0;
-          Hz_22 = 0;
-          vt_1 = 0;
-          vt_2 = 0;
-        end
-    else begin
-      case (stage_cur_out)
-        STAGE_PRD: begin
-          x_hat <= xk + result_2;
-          y_hat <= yk + result_3;
-          xita_hat <= xita + result_1;
-          Fxi_13 <= - result_3;
-          Fxi_23 <= result_2;
-        end
-        STAGE_NEW: begin
-          lkx_hat = lkx + result_3;
-          lky_hat = lky + result_2;
-          Gxi_13 = -result_2;
-          Gxi_23 = result_3;
-          Gz_11 = result_0;
-          Gz_12 = -result_2;
-          Gz_21 = result_1;
-          Gz_22 = result_3;
-        end
-        STAGE_UPD: begin
-          Hxi_11 = -result_4;
-          Hxi_12 = -result_5;
-          Hxi_21 = result_2;
-          Hxi_22 = -result_3;
-          Hz_11 = result_4;
-          Hz_12 = result_5;
-          Hz_21 = -result_2;
-          Hz_22 = result_3;
-          vt_1 = result_0;
-          vt_2 = result_1;
-        end 
-        default: begin
-          x_hat <= 0;
-          y_hat <= 0;
-          xita_hat <= 0;
-          Fxi_13 <= 0;
-          Fxi_23 <= 0;
-          lkx_hat = 0;
-          lky_hat = 0;
-          Gxi_13 = 0;
-          Gxi_23 = 0;
-          Gz_11 = 0;
-          Gz_12 = 0;
-          Gz_21 = 0;
-          Gz_22 = 0;
-          Hxi_11 = 0;
-          Hxi_12 = 0;
-          Hxi_21 = 0;
-          Hxi_22 = 0;
-          Hz_11 = 0;
-          Hz_12 = 0;
-          Hz_21 = 0;
-          Hz_22 = 0;
-          vt_1 = 0;
-          vt_2 = 0;
-        end
-      endcase
+      x_hat <= 0;
+      y_hat <= 0;
+      xita_hat <= 0;
+      Fxi_13 <= 0;
+      Fxi_23 <= 0;
+    end
+    else if(done_predict == 1'b1) begin
+      x_hat <= xk + result_2;
+      y_hat <= yk + result_3;
+      xita_hat <= xita + result_1;
+      Fxi_13 <= - result_3;
+      Fxi_23 <= result_2;
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      lkx_hat = 0;
+      lky_hat = 0;
+      Gxi_13 = 0;
+      Gxi_23 = 0;
+      Gz_11 = 0;
+      Gz_12 = 0;
+      Gz_21 = 0;
+      Gz_22 = 0;
+    end
+    else if(done_newlm == 1'b1) begin
+      lkx_hat = lkx + result_3;
+      lky_hat = lky + result_2;
+      Gxi_13 = -result_2;
+      Gxi_23 = result_3;
+      Gz_11 = result_0;
+      Gz_12 = -result_2;
+      Gz_21 = result_1;
+      Gz_22 = result_3;
+    end
+  end
+
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      Hxi_11 = 0;
+      Hxi_12 = 0;
+      Hxi_21 = 0;
+      Hxi_22 = 0;
+      Hz_11 = 0;
+      Hz_12 = 0;
+      Hz_21 = 0;
+      Hz_22 = 0;
+      vt_1 = 0;
+      vt_2 = 0;
+    end
+    else if(done_update == 1'b1) begin
+      Hxi_11 = -result_4;
+      Hxi_12 = -result_5;
+      Hxi_21 = result_2;
+      Hxi_22 = -result_3;
+      Hz_11 = result_4;
+      Hz_12 = result_5;
+      Hz_21 = -result_2;
+      Hz_22 = result_3;
+      vt_1 = result_0;
+      vt_2 = result_1;
     end
   end
 

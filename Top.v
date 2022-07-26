@@ -114,7 +114,7 @@ u_NonLinear(
   .xk           (xk           ),
   .yk           (yk           ),
   .alpha        (alpha        ),
-  .xita         (xita[RSA_AW-1 : 0]         ),
+  .xita         ({xita[31],xita[19 -: 16]}),
   .phi          (phi          ),
   .done_predict (done_predict ),
   .done_newlm   (done_newlm   ),

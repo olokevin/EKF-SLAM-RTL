@@ -278,8 +278,8 @@ module PE_config #(
   localparam      IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
-  localparam      STAGE_UPD  = 3'b100 ;
-  localparam      STAGE_ASSOC  = 3'b101 ;
+  localparam      STAGE_UPD  = 3'b011 ;
+  localparam      STAGE_ASSOC  = 3'b100 ;
   // parameter      STAGE_INIT = 3'b111 ;
 
 //stage_rdy
@@ -310,10 +310,10 @@ module PE_config #(
     localparam PRD_IDLE = 4'b0000;
     localparam PRD_NL_SEND = 4'b1001;
     localparam PRD_NL_WAIT = 4'b1010;
-    localparam PRD_NL_RCV  = 4'b1100;
+    localparam PRD_NL_RCV  = 4'b1011;
     localparam PRD_1 = 4'b0001;       //prd_cur[1]
     localparam PRD_2 = 4'b0010;
-    localparam PRD_3 = 4'b0100;
+    localparam PRD_3 = 4'b0011;
 
     // localparam PRD_1_START = 0;
     // localparam PRD_2_START = 'd18;
@@ -351,12 +351,12 @@ module PE_config #(
     localparam NEW_IDLE      = 'b000000;
     localparam NEW_NL_SEND   = 'b100001;
     localparam NEW_NL_WAIT   = 'b100010;
-    localparam NEW_NL_RCV    = 'b100100;
+    localparam NEW_NL_RCV    = 'b100011;
     localparam NEW_1         = 'b000001;       //prd_cur[1]
     localparam NEW_2         = 'b000010;
-    localparam NEW_3         = 'b000100;
-    localparam NEW_4         = 'b001000;
-    localparam NEW_5         = 'b010000;
+    localparam NEW_3         = 'b000011;
+    localparam NEW_4         = 'b000100;
+    localparam NEW_5         = 'b000101;
 
     localparam [SEQ_CNT_DW-1 : 0] NEW_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] NEW_NL_RCV_CNT_MAX  = 'd6;
@@ -717,6 +717,7 @@ module PE_config #(
                   STAGE_PRD:  stage_cur <= STAGE_PRD;
                   STAGE_NEW:  stage_cur <= STAGE_NEW;
                   STAGE_UPD:  stage_cur <= STAGE_UPD;
+                  STAGE_ASSOC:  stage_cur <= STAGE_ASSOC;
                   default: begin
                     stage_cur <= IDLE;
                     stage_change_err <= 1'b1;
@@ -731,7 +732,7 @@ module PE_config #(
                       stage_cur <= STAGE_PRD;
                   end
         STAGE_NEW:begin
-                    if(new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+                    if(new_cur == NEW_5 && seq_cnt == seq_cnt_max)
                       stage_cur <= IDLE;
                     else
                       stage_cur <= STAGE_NEW;
@@ -741,6 +742,12 @@ module PE_config #(
                       stage_cur <= IDLE;
                     else
                       stage_cur <= STAGE_UPD;
+                  end
+        STAGE_ASSOC:begin
+                    if(assoc_cur == ASSOC_8 && seq_cnt == seq_cnt_max)
+                      stage_cur <= IDLE;
+                    else
+                      stage_cur <= STAGE_ASSOC;
                   end
         default: stage_cur <= IDLE;
       endcase

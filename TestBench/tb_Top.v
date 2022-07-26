@@ -1,8 +1,11 @@
 `timescale  1ns / 1ps
-`include "macro.v"
 module tb_Top;
 
 parameter RST_START = 10;
+parameter PRD_WORK = 250;
+parameter NEW_WORK = 200;
+parameter UPD_WORK = 500;
+
 
 // Top Parameters
 parameter PERIOD      = 10;
@@ -16,26 +19,33 @@ parameter TB_AW       = 11;
 parameter CB_AW       = 17;
 parameter SEQ_CNT_DW  = 5 ;
 
+//乘积 部分和  32-bit signed (Q1.12.19) multiplier
+    localparam  DATA_INT_BIT = 12;
+    localparam  DATA_DEC_BIT = 19;
+
+    localparam  ANGLE_DEC_BIT = 15;
+
 // Top Inputs
 reg   clk                                  = 1 ;
 reg   sys_rst                              = 0 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
 reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
-reg   [RSA_DW - 1 : 0]  vlr                = 2 ;
-reg   [RSA_AW - 1 : 0]  alpha              = 3 ;
-reg   [RSA_DW - 1 : 0]  rk                 = 4 ;
-reg   [RSA_AW - 1 : 0]  phi                = 5 ;
+reg   [RSA_DW - 1 : 0]  vlr                = (2 <<< DATA_DEC_BIT);
+reg   [RSA_AW - 1 : 0]  alpha              = (1 <<< (ANGLE_DEC_BIT-1));
+reg   [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
+reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
 
 // Top Outputs
 wire  [2:0]  stage_rdy                     ;
 wire  signed [RSA_DW - 1 : 0] S_data       ;
 
 //stage
-  localparam      IDLE     = 3'b000 ;
+  localparam      IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
-  localparam      STAGE_UPD  = 3'b100 ;
+  localparam      STAGE_UPD  = 3'b011 ;
+  localparam      STAGE_ASSOC  = 3'b100 ;
 
 
 initial
@@ -47,6 +57,31 @@ initial
 begin
     #(PERIOD*RST_START) sys_rst  =  1;
     #(PERIOD*2) sys_rst  =  0;
+end
+
+/*
+    ************* PRD *****************
+*/
+initial begin
+    #(PERIOD*RST_START*2)
+    stage_val = STAGE_PRD;
+    #(PERIOD * 2)
+    stage_val = 0;
+
+    #(PERIOD*PRD_WORK)
+    stage_val = STAGE_NEW;
+    #(PERIOD * 2)
+    stage_val = 0;
+
+    #(PERIOD*NEW_WORK)
+    stage_val = STAGE_UPD;
+    #(PERIOD * 2)
+    stage_val = 0;
+
+    #(PERIOD*UPD_WORK)
+    stage_val = STAGE_ASSOC;
+    #(PERIOD * 2)
+    stage_val = 0;
 end
 
 /*
