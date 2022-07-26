@@ -296,6 +296,7 @@ module PE_config #(
   localparam [SEQ_CNT_DW-1 : 0] SEQ_6 = 'd6;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_7 = 'd7;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 'd8;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_9 = 'd9;
 /*
   ******************* params of Prediction stage *****************
 */
@@ -411,6 +412,7 @@ module PE_config #(
     localparam UPD_8         = 11'b1000;
     localparam UPD_9         = 11'b1001;
     localparam UPD_10        = 11'b1010;
+    localparam UPD_HALT_56   = 11'b1101;
     localparam UPD_HALT_78   = 11'b1110;
     localparam UPD_HALT_910  = 11'b1111;
 
@@ -421,7 +423,8 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_3_CNT_MAX     = 'd2;
     localparam [SEQ_CNT_DW-1 : 0] UPD_4_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_56_CNT_MAX  = 'd11;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd10; //HALT： 8
     localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd9;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
@@ -1010,13 +1013,25 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_5: begin
             if(seq_cnt == seq_cnt_max) begin
-              if(v_group_cnt == v_group_cnt_max)
-                upd_cur <= UPD_6;
+              if(v_group_cnt == v_group_cnt_max) begin
+                if(l_k_group == v_group_cnt_max)
+                  upd_cur <= UPD_HALT_56;
+                else
+                  upd_cur <= UPD_6;
+              end
               else
                 upd_cur <= UPD_3;
             end
             else begin
               upd_cur <= UPD_5;
+            end
+          end
+          UPD_HALT_56: begin
+            if(seq_cnt == seq_cnt_max) begin
+              upd_cur <= UPD_6;
+            end
+            else begin
+              upd_cur <= UPD_HALT_56;
             end
           end
           UPD_6: begin
@@ -1340,6 +1355,7 @@ assign test_stage = stage_val & stage_rdy;
           UPD_8: seq_cnt_max = UPD_8_CNT_MAX;
           UPD_9: seq_cnt_max = UPD_9_CNT_MAX;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
+          UPD_HALT_56: seq_cnt_max = UPD_HALT_56_CNT_MAX;
           UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
           UPD_HALT_910: seq_cnt_max = UPD_HALT_910_CNT_MAX;
           default: seq_cnt_max = 0;
@@ -2680,6 +2696,32 @@ assign test_stage = stage_val & stage_rdy;
                               B_cache_mode = Bca_RD_B;
                               B_cache_base_addr_set = 3'b011;
                             end
+                      UPD_HALT_56: begin
+                              PE_m = UPD_5_M;
+                              PE_n = UPD_5_N;
+                              PE_k = UPD_5_K;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_CBa;   
+                              B_in_mode = B_cache;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_TBb;
+                              M_adder_mode_set = NONE;
+
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
+                              CBa_mode = CB_IDLE; 
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_IDLE;
+                              B_cache_base_addr_set = 0;
+                      end
                       UPD_6: begin
                             /*
                               cov_HT transpose
@@ -2862,6 +2904,9 @@ assign test_stage = stage_val & stage_rdy;
                                 B_TB_base_addr_set = 0;
                                 M_TB_base_addr_set = 0;
                                 C_TB_base_addr_set = 0;
+
+                                B_cache_mode = Bca_IDLE;
+                                B_cache_base_addr_set = 0;
                               end
                       UPD_10: begin
                             /*
@@ -2893,6 +2938,9 @@ assign test_stage = stage_val & stage_rdy;
                               B_TB_base_addr_set = cov_HT;
                               M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_IDLE;
+                              B_cache_base_addr_set = 0;
                             end
                       default: begin
                                 PE_m = 0;
@@ -2916,6 +2964,9 @@ assign test_stage = stage_val & stage_rdy;
                                 B_TB_base_addr_set = 0;
                                 M_TB_base_addr_set = 0;
                                 C_TB_base_addr_set = 0;
+
+                                B_cache_mode = Bca_IDLE;
+                                B_cache_base_addr_set = 0;
                               end
                     endcase
                   end
@@ -4658,27 +4709,27 @@ assign test_stage = stage_val & stage_rdy;
         Bca_WR_transpose: begin
                     B_cache_in_sel <= B_cache_mode;
                     case(seq_cnt)
-                      SEQ_3:begin
+                      SEQ_4:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b000;
                         end
-                      SEQ_4:begin
+                      SEQ_5:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b001;
                         end
-                      SEQ_5:begin
+                      SEQ_6:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b010;
                         end
-                      SEQ_7:begin
+                      SEQ_8:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b011;
                         end
-                      SEQ_8:begin
+                      SEQ_9:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b100;
@@ -4711,6 +4762,8 @@ assign test_stage = stage_val & stage_rdy;
                     endcase
                   end
         default: begin
+                    B_cache_in_sel <= Bca_IDLE;
+                    B_cache_out_sel <= Bca_IDLE;
                     B_cache_we_new <= 0;
                     B_cache_en_new <= 0;
                     B_cache_addr_new <= 0;
