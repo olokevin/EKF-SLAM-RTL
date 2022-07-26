@@ -2,8 +2,8 @@
 module tb_Top;
 
 parameter RST_START = 10;
-parameter PRD_WORK = 250;
-parameter NEW_WORK = 200;
+parameter PRD_WORK = 600;
+parameter NEW_WORK = 500;
 parameter UPD_WORK = 500;
 
 

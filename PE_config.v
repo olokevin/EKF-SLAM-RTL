@@ -314,6 +314,7 @@ module PE_config #(
     localparam PRD_1 = 4'b0001;       //prd_cur[1]
     localparam PRD_2 = 4'b0010;
     localparam PRD_3 = 4'b0011;
+    localparam PRD_3_HALT = 4'b0100;
 
     // localparam PRD_1_START = 0;
     // localparam PRD_2_START = 'd18;
@@ -324,6 +325,7 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
     localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd17;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_CNT_MAX = 'd5;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_3_HALT_CNT_MAX = 'd7;
 
     localparam PRD_1_M = 3'b011;
     localparam PRD_2_M = 3'b011;
@@ -726,7 +728,8 @@ module PE_config #(
               end
         //STAGE_PRD  STAGE_NEW  STAGE_UPD
         STAGE_PRD:begin
-                    if(prd_cur == PRD_3 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+                    // if(prd_cur == PRD_3 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+                    if(prd_cur == PRD_3_HALT && seq_cnt == seq_cnt_max)
                       stage_cur <= IDLE;
                     else
                       stage_cur <= STAGE_PRD;
@@ -825,10 +828,18 @@ assign test_stage = stage_val & stage_rdy;
           end
           PRD_3: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              prd_cur <= PRD_IDLE;
+              prd_cur <= PRD_3_HALT;
             end
             else begin
               prd_cur <= PRD_3;
+            end
+          end
+          PRD_3_HALT: begin
+            if(seq_cnt == seq_cnt_max) begin
+              prd_cur <= PRD_IDLE;
+            end
+            else begin
+              prd_cur <= PRD_3_HALT;
             end
           end
           default: begin
@@ -1333,6 +1344,7 @@ assign test_stage = stage_val & stage_rdy;
           PRD_1: seq_cnt_max = PRD_1_CNT_MAX;
           PRD_2: seq_cnt_max = PRD_2_CNT_MAX;
           PRD_3: seq_cnt_max = PRD_3_CNT_MAX;
+          PRD_3_HALT: seq_cnt_max = PRD_3_HALT_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
       end
@@ -2264,7 +2276,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_out_mode = C_CBb;
                               M_adder_mode_set = NONE;
 
-                              TBa_mode = {TBa_IDLE,DIR_IDLE};
+                              TBa_mode = TB_IDLE;
                               TBb_mode = TB_IDLE;
                               CBa_mode = {CBa_A,CB_cov_mv};
                               CBb_mode = {CBb_C,CB_cov_mv};
@@ -2275,6 +2287,32 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = 0;
 
                               B_cache_mode = Bca_RD_B;
+                              B_cache_base_addr_set = 0;
+                            end
+                      PRD_3_HALT: begin
+                              PE_m = PRD_3_M;
+                              PE_n = PRD_3_N;
+                              PE_k = PRD_3_K;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_CBb;
+                              M_adder_mode_set = NONE;
+
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_IDLE;
                               B_cache_base_addr_set = 0;
                             end
                       default: begin
@@ -5266,14 +5304,14 @@ assign test_stage = stage_val & stage_rdy;
             end 
         1'b0: begin
             case (CBb_mode_WR[3:0])
-              CB_cov_IDLE: begin
-                            CBb_shift_dir   <= 0;
-                            CB_dinb_sel_new <= 0;
+              // CB_cov_IDLE: begin
+              //               CBb_shift_dir   <= 0;
+              //               CB_dinb_sel_new <= 0;
 
-                            CB_enb_new <= 1'b0;
-                            CB_web_new <= 1'b0;
-                            CB_addrb_new <= 0;
-                          end
+              //               CB_enb_new <= 1'b0;
+              //               CB_web_new <= 1'b0;
+              //               CB_addrb_new <= 0;
+              //             end
               CB_cov_vv : begin
                             CB_web_new <= 1'b1;
                             CB_dinb_sel_new[CB_DINB_SEL_DW-1 : 2] <= CBb_C;
