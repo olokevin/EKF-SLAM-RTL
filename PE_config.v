@@ -485,49 +485,69 @@ module PE_config #(
     localparam ASSOC_7         = 5'b00111;
     localparam ASSOC_8         = 5'b01000;
     localparam ASSOC_9         = 5'b01001;
+    localparam ASSOC_10        = 5'b01010;
 
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_NL_RCV_CNT_MAX  = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_1_CNT_MAX     = 'd4;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_2_CNT_MAX     = 'd2;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_3_CNT_MAX     = 'd2;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_4_CNT_MAX     = 'd3;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_5_CNT_MAX     = 'd3;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd8;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_1_CNT_MAX     = 'd6;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_2_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_3_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_4_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_5_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd9;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_10_CNT_MAX    = 'd4;
 
 
-    localparam ASSOC_1_M       = 3'b000;
-    localparam ASSOC_2_M       = 3'b011;
-    localparam ASSOC_3_M       = 3'b100;
-    localparam ASSOC_4_M       = 3'b100;
-    localparam ASSOC_5_M       = 3'b100;
-    localparam ASSOC_6_M       = 3'b100;    //保持en
+    localparam ASSOC_1_M       = 3'b010;
+    localparam ASSOC_2_M       = 3'b010;
+    localparam ASSOC_3_M       = 3'b010;
+    localparam ASSOC_4_M       = 3'b010;
+    localparam ASSOC_5_M       = 3'b010;
+    localparam ASSOC_6_M       = 3'b010;    //保持en
     localparam ASSOC_7_M       = 3'b010;
-    localparam ASSOC_8_M       = 3'b100;    //保持en
-    localparam ASSOC_9_M       = 3'b010;
+    localparam ASSOC_8_M       = 3'b010;    //保持en
+    localparam ASSOC_9_M       = 3'b001;
+    localparam ASSOC_10_M      = 3'b001;
     
-    localparam ASSOC_1_N       = 3'b101;
+    localparam ASSOC_1_N       = 3'b011;
     localparam ASSOC_2_N       = 3'b011;
-    localparam ASSOC_3_N       = 3'b011;    //在ASSOC_2 ASSOC_3读出，保持延迟时序
+    localparam ASSOC_3_N       = 3'b010;    //在ASSOC_2 ASSOC_3读出，保持延迟时序
     localparam ASSOC_4_N       = 3'b010;
-    localparam ASSOC_5_N       = 3'b010;
-    localparam ASSOC_6_N       = 3'b101;
-    localparam ASSOC_7_N       = 3'b101;
-    localparam ASSOC_8_N       = 3'b101;
-    localparam ASSOC_9_N       = 3'b101;
+    localparam ASSOC_5_N       = 3'b011;
+    localparam ASSOC_6_N       = 3'b010;
+    localparam ASSOC_7_N       = 3'b010;
+    localparam ASSOC_8_N       = 3'b010;
+    localparam ASSOC_9_N       = 3'b010;
+    localparam ASSOC_10_N      = 3'b010;
 
-    localparam ASSOC_1_K       = 3'b000;
+    localparam ASSOC_1_K       = 3'b011;
     localparam ASSOC_2_K       = 3'b010;
     localparam ASSOC_3_K       = 3'b010;
     localparam ASSOC_4_K       = 3'b010;
     localparam ASSOC_5_K       = 3'b010;
-    localparam ASSOC_6_K       = 3'b000;
+    localparam ASSOC_6_K       = 3'b010;
     localparam ASSOC_7_K       = 3'b010;
     localparam ASSOC_8_K       = 3'b000;
     localparam ASSOC_9_K       = 3'b010;
+    localparam ASSOC_10_K      = 3'b001;
+
+/*
+  ******************* params of B_cache addr *****************
+*/
+    localparam Fxi_cache = 3'b000;
+
+    localparam Gxi_cache = 3'b000;
+    localparam Gz_cache  = 3'b011;
+
+    localparam Hxi_cache = 3'b000;
+    localparam Hz_cache  = 3'b011;
+    
+    localparam cov_HT_cache = 3'b000;
+    localparam S_cache_0 = 3'b000;
+    localparam S_cache_1 = 3'b001;
 
 /*
   ******************DATA FLOW config*******************
@@ -1064,16 +1084,139 @@ assign test_stage = stage_val & stage_rdy;
       end
     end
 
-    //output: init_predict, rcv_OK_predict
+    //output: init_predict
       always @(posedge clk) begin
         if(sys_rst) begin
           init_update <= 0;
         end
-        else if(stage_cur == STAGE_UPD && upd_cur == UPD_NL_SEND && seq_cnt == seq_cnt_max)
+        else if((stage_cur == STAGE_UPD && upd_cur == UPD_NL_SEND && seq_cnt == seq_cnt_max)          //update
+                ||(stage_cur == STAGE_ASSOC && assoc_cur == ASSOC_NL_SEND && seq_cnt == seq_cnt_max)) //assoc
           init_update <= 1'b1;
         else
           init_update <= 0;
       end
+
+/*
+  ************************ ASSOC state transfer **********************
+*/
+    always @(posedge clk) begin
+      if(stage_val & stage_rdy == STAGE_ASSOC) begin
+        assoc_cur <= ASSOC_IDLE;
+      end
+      else  begin
+        case(assoc_cur)
+          ASSOC_IDLE: begin
+            if((stage_val & stage_rdy) == STAGE_ASSOC) begin
+              assoc_cur <= ASSOC_NL_SEND;
+            end
+            else
+              assoc_cur <= ASSOC_IDLE;
+          end
+          ASSOC_NL_SEND: begin
+            if(init_update == 1'b1) begin       //复用update非线性
+              assoc_cur <= ASSOC_NL_WAIT;
+            end
+            else
+              assoc_cur <= ASSOC_NL_SEND;
+          end
+          ASSOC_NL_WAIT: begin
+            if(done_update == 1'b1) begin       //复用update非线性
+              assoc_cur <= ASSOC_NL_RCV;
+            end
+            else
+              assoc_cur <= ASSOC_NL_WAIT;
+          end
+          ASSOC_NL_RCV: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_1;
+            end
+            else
+              assoc_cur <= ASSOC_NL_RCV;
+          end
+          ASSOC_1: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_2;
+            end
+            else begin
+              assoc_cur <= ASSOC_1;
+            end
+          end
+          ASSOC_2: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_3;
+            end
+            else begin
+              assoc_cur <= ASSOC_2;
+            end
+          end
+          ASSOC_3: begin
+            if(seq_cnt == seq_cnt_max) begin
+                assoc_cur <= ASSOC_4;
+            end
+            else begin
+              assoc_cur <= ASSOC_3;
+            end
+          end
+          ASSOC_4: begin
+            if(seq_cnt == seq_cnt_max) 
+                assoc_cur <= ASSOC_5;
+            else
+              assoc_cur <= ASSOC_4;
+          end
+          ASSOC_5: begin
+            if(seq_cnt == seq_cnt_max) begin
+                assoc_cur <= ASSOC_6;
+            end
+            else begin
+              assoc_cur <= ASSOC_5;
+            end
+          end
+          ASSOC_6: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_7;
+            end
+            else begin
+              assoc_cur <= ASSOC_6;
+            end
+          end
+          ASSOC_7: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_8;    
+            end
+            else begin
+              assoc_cur <= ASSOC_7;
+            end
+          end
+          ASSOC_8: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_9;
+            end
+            else begin
+              assoc_cur <= ASSOC_8;
+            end
+          end
+          ASSOC_9: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_10;
+            end
+            else begin
+              assoc_cur <= ASSOC_9;
+            end
+          end
+          ASSOC_10: begin
+            if(seq_cnt == seq_cnt_max) begin
+              assoc_cur <= ASSOC_IDLE;
+            end
+            else begin
+              assoc_cur <= ASSOC_10;
+            end
+          end
+          default: begin
+            assoc_cur <= ASSOC_IDLE;
+          end
+        endcase
+      end
+    end
 
   /*
     (4) (old): nonlinear_val, nonlinear_rdy
@@ -1199,6 +1342,23 @@ assign test_stage = stage_val & stage_rdy;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
           UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
           UPD_HALT_910: seq_cnt_max = UPD_HALT_910_CNT_MAX;
+          default: seq_cnt_max = 0;
+        endcase
+      end
+      STAGE_ASSOC: begin
+        case(assoc_cur)
+          ASSOC_NL_SEND: seq_cnt_max = ASSOC_NL_SEND_CNT_MAX;
+          ASSOC_NL_RCV:  seq_cnt_max = ASSOC_NL_RCV_CNT_MAX;
+          ASSOC_1: seq_cnt_max = ASSOC_1_CNT_MAX;
+          ASSOC_2: seq_cnt_max = ASSOC_2_CNT_MAX;
+          ASSOC_3: seq_cnt_max = ASSOC_3_CNT_MAX;
+          ASSOC_4: seq_cnt_max = ASSOC_4_CNT_MAX;
+          ASSOC_5: seq_cnt_max = ASSOC_5_CNT_MAX;
+          ASSOC_6: seq_cnt_max = ASSOC_6_CNT_MAX;
+          ASSOC_7: seq_cnt_max = ASSOC_7_CNT_MAX;
+          ASSOC_8: seq_cnt_max = ASSOC_8_CNT_MAX;
+          ASSOC_9: seq_cnt_max = ASSOC_9_CNT_MAX;
+          ASSOC_10: seq_cnt_max = ASSOC_10_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
       end
@@ -2570,18 +2730,18 @@ assign test_stage = stage_val & stage_rdy;
 
                               A_in_mode = A_TBa;   
                               B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
+                              M_in_mode = M_NONE;
                               C_out_mode = C_cache;
-                              M_adder_mode_set = ADD;
+                              M_adder_mode_set = NONE;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
+                              TBa_mode = {TBa_A,DIR_POS};
                               TBb_mode = {TBb_C, DIR_POS};
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
                               A_TB_base_addr_set = H_xi;
                               B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = Q;
+                              M_TB_base_addr_set = 0;
                               C_TB_base_addr_set = S_t;
 
                               B_cache_mode = Bca_RD_B;
@@ -2988,6 +3148,58 @@ assign test_stage = stage_val & stage_rdy;
                               B_cache_mode = Bca_WR_inv;
                               B_cache_base_addr_set = 0;
                             end
+                      ASSOC_9: begin
+                              PE_m = ASSOC_9_M;
+                              PE_n = ASSOC_9_N;
+                              PE_k = ASSOC_9_K;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_TBa;   
+                              B_in_mode = B_cache;
+                              M_in_mode = M_TBa;
+                              C_out_mode = C_cache;
+                              M_adder_mode_set = ADD;
+
+                              TBa_mode = {TBa_AM,DIR_POS};
+                              TBb_mode = {TBb_C,DIR_POS};
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = H_ll_H;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = H_vv_H;
+                              C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_WR_inv;
+                              B_cache_base_addr_set = 3'b101; 
+                          end
+                      ASSOC_10: begin
+                              PE_m = ASSOC_7_M;
+                              PE_n = ASSOC_7_N;
+                              PE_k = ASSOC_7_K;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_TBa;   
+                              B_in_mode = B_cache;
+                              M_in_mode = M_TBa;
+                              C_out_mode = C_cache;
+                              M_adder_mode_set = ADD;
+
+                              TBa_mode = {TBa_AM,DIR_POS};
+                              TBb_mode = {TBb_C,DIR_POS};
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = H_ll_H;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = H_vv_H;
+                              C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_WR_inv;
+                              B_cache_base_addr_set = 3'b101; 
+                          end
                       default: begin
                                 PE_m = 0;
                                 PE_n = 0;
@@ -4146,19 +4358,19 @@ assign test_stage = stage_val & stage_rdy;
                             TB_addrb_new <= B_TB_base_addr + seq_cnt;
                         end
                       end
-              TBb_B_cache_trnsfer: begin
-                            TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_trnsfer;
-                            if(v_group_cnt == 0 && seq_cnt < PE_n) begin
-                              TB_enb_new <= 1'b1;
-                              TB_web_new <= 1'b0;
-                              TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
-                            end
-                            else begin
-                                  TB_enb_new <= 1'b0;
-                                  TB_web_new <= 1'b0;
-                                  TB_addrb_new <= TB_addrb_new;
-                                end
-                          end
+              // TBb_B_cache_trnsfer: begin
+              //               TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_trnsfer;
+              //               if(v_group_cnt == 0 && seq_cnt < PE_n) begin
+              //                 TB_enb_new <= 1'b1;
+              //                 TB_web_new <= 1'b0;
+              //                 TB_addrb_new <= B_TB_base_addr_set + seq_cnt;
+              //               end
+              //               else begin
+              //                     TB_enb_new <= 1'b0;
+              //                     TB_web_new <= 1'b0;
+              //                     TB_addrb_new <= TB_addrb_new;
+              //                   end
+              //             end
               TBb_B_cache_transpose: begin
                             TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_transpose;
                             case (seq_cnt)
@@ -4189,26 +4401,26 @@ assign test_stage = stage_val & stage_rdy;
                               end
                             endcase 
                           end
-              TBb_B_cache_inv: begin
-                            TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_inv;
-                            case (seq_cnt)
-                              SEQ_0: begin
-                                TB_enb_new <= 1'b1;
-                                TB_web_new <= 1'b0;
-                                TB_addrb_new <= B_TB_base_addr_set;
-                              end 
-                              SEQ_1: begin
-                                TB_enb_new <= 1'b1;
-                                TB_web_new <= 1'b0;
-                                TB_addrb_new <= B_TB_base_addr_set + 1'b1;
-                              end
-                              default: begin
-                                TB_enb_new <= 1'b0;
-                                TB_web_new <= 1'b0;
-                                TB_addrb_new <= TB_addrb_new;
-                              end
-                            endcase
-                          end
+              // TBb_B_cache_inv: begin
+              //               TB_doutb_sel_new[TB_DOUTB_SEL_DW-1 : 2] <= TBb_B_cache_inv;
+              //               case (seq_cnt)
+              //                 SEQ_0: begin
+              //                   TB_enb_new <= 1'b1;
+              //                   TB_web_new <= 1'b0;
+              //                   TB_addrb_new <= B_TB_base_addr_set;
+              //                 end 
+              //                 SEQ_1: begin
+              //                   TB_enb_new <= 1'b1;
+              //                   TB_web_new <= 1'b0;
+              //                   TB_addrb_new <= B_TB_base_addr_set + 1'b1;
+              //                 end
+              //                 default: begin
+              //                   TB_enb_new <= 1'b0;
+              //                   TB_web_new <= 1'b0;
+              //                   TB_addrb_new <= TB_addrb_new;
+              //                 end
+              //               endcase
+              //             end
               default: begin
                 TB_enb_new <= 1'b0;
                 TB_web_new <= 1'b0;
@@ -4468,6 +4680,25 @@ assign test_stage = stage_val & stage_rdy;
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= 3'b100;
+                        end
+                      default:begin
+                          B_cache_en_new <= 0;
+                          B_cache_we_new <= 0;
+                          B_cache_addr_new <= 0;
+                        end
+                    endcase
+                  end
+        Bca_WR_inv: begin
+                    case(seq_cnt)
+                      SEQ_6:begin
+                          B_cache_en_new <= 1'b1;
+                          B_cache_we_new <= 1'b1;
+                          B_cache_addr_new <= S_cache_0;
+                        end
+                      SEQ_7:begin
+                          B_cache_en_new <= 1'b1;
+                          B_cache_we_new <= 1'b1;
+                          B_cache_addr_new <= S_cache_1;
                         end
                       default:begin
                           B_cache_en_new <= 0;

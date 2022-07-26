@@ -764,6 +764,8 @@ u_B_cache_din_map(
   .Hxi_12         (Hxi_12         ),
   .Hxi_21         (Hxi_21         ),
   .Hxi_22         (Hxi_22         ),
+  .vt_1           (vt_1           ),
+  .vt_2           (vt_2           ),
   .B_cache_din    (B_cache_din    )
 );
 

@@ -21,6 +21,7 @@ module B_cache_din_map #(
   input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
   input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
   input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
+  input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
 
   output  reg  signed [L*RSA_DW-1 : 0]    B_cache_din
 );
@@ -33,6 +34,9 @@ localparam Bca_WR_NL_PRD  = 4'b1101;
 localparam Bca_WR_NL_NEW  = 4'b1110;
 localparam Bca_WR_NL_UPD  = 4'b1111; 
 
+localparam Q_11 = 1'b1;
+localparam Q_22 = 1'b1;
+
 //inverse
   reg signed [RSA_DW-1 : 0] S_11;
   reg signed [RSA_DW-1 : 0] S_12;
@@ -40,6 +44,10 @@ localparam Bca_WR_NL_UPD  = 4'b1111;
   reg signed [RSA_DW-1 : 0] S_11_S_22;
   reg signed [RSA_DW-1 : 0] S_12_S_21;
   reg signed [RSA_DW-1 : 0] S_det;
+
+  reg signed [RSA_DW-1 : 0] S_inv_11;
+  reg signed [RSA_DW-1 : 0] S_inv_12;
+  reg signed [RSA_DW-1 : 0] S_inv_22;
 
   always @(posedge clk) begin
     if(sys_rst)
@@ -132,6 +140,14 @@ localparam Bca_WR_NL_UPD  = 4'b1111;
                         B_cache_din[0 +: RSA_DW]        <= Hz_12;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= Hz_21;
                       end
+                    'd6:begin
+                        B_cache_din[0 +: RSA_DW]        <= vt_1;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= Hz_22;
+                      end
+                    'd7:begin
+                        B_cache_din[0 +: RSA_DW]        <= vt_2;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+                      end
                     default:begin
                         B_cache_din[0 +: RSA_DW]        <= 0;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
@@ -146,14 +162,14 @@ localparam Bca_WR_NL_UPD  = 4'b1111;
             B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
             case(seq_cnt_out)
               'd3:begin
-                    S_11 <= C_B_cache_din[0 +: RSA_DW];
+                    S_11 <= C_B_cache_din[0 +: RSA_DW] + Q_11;    //加Q
                   end
               'd4:begin
                     S_12 <= C_B_cache_din[0 +: RSA_DW];
                     S_12_S_21 <= C_B_cache_din[0 +: RSA_DW] * C_B_cache_din[1*RSA_DW +: RSA_DW];
                   end
               'd5:begin
-                    S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW];
+                    S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
                     S_11_S_22 <= S_11 * C_B_cache_din[1*RSA_DW +: RSA_DW];
                   end
               'd6:begin
