@@ -21,7 +21,7 @@ module TB_dina_map #(
   // input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
   // input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
   // input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
-  // input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
+  input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
 
   output  reg  signed [L*RSA_DW-1 : 0]    TB_dina
 );
@@ -87,6 +87,28 @@ integer i_TB_non_linear;
                     end
                     default:
                       TB_dina <= 0;
+                  endcase
+                end
+        TBa_NL_UPD: begin   //只写vt
+                  case(seq_cnt_out)    
+                    'd1:begin
+                          TB_dina[0 +: RSA_DW]        <= vt_1;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    'd2:begin
+                          TB_dina[0 +: RSA_DW]        <= vt_2;
+                          TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                          TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                        end
+                    default:begin
+                        TB_dina[0 +: RSA_DW]        <= 0;
+                        TB_dina[1*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[2*RSA_DW +: RSA_DW] <= 0;
+                        TB_dina[3*RSA_DW +: RSA_DW] <= 0;
+                      end
                   endcase
                 end
         // TBa_NL_PRD: begin

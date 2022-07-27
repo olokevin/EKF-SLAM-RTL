@@ -30,6 +30,7 @@ localparam Bca_IDLE       = 4'b0000;
 
 localparam Bca_WR_transpose     = 4'b1001;
 localparam Bca_WR_inv     = 4'b1010;
+localparam Bca_WR_chi     = 4'b1011;
 localparam Bca_WR_NL_PRD  = 4'b1101;
 localparam Bca_WR_NL_NEW  = 4'b1110;
 localparam Bca_WR_NL_UPD  = 4'b1111; 
@@ -216,6 +217,22 @@ localparam Q_22 = 1'b1;
               default: begin
                     B_cache_din[0 +: RSA_DW] <= 0;
                     B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+                  end
+            endcase
+        end
+        Bca_WR_chi: begin
+            B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+            B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
+            B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
+            case(seq_cnt_out)
+              'd10:begin
+                    B_cache_din[0 +: RSA_DW] <= C_B_cache_din[0 +: RSA_DW];
+                  end
+              'd11:begin
+                    B_cache_din[0 +: RSA_DW] <= C_B_cache_din[0 +: RSA_DW];
+                  end
+              default: begin
+                    B_cache_din[0 +: RSA_DW] <= 0;
                   end
             endcase
         end

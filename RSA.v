@@ -939,8 +939,8 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     // .Hxi_12           (Hxi_12           ),
     // .Hxi_21           (Hxi_21           ),
     // .Hxi_22           (Hxi_22           ),
-    // .vt_1             (vt_1             ),
-    // .vt_2             (vt_2             ),
+    .vt_1             (vt_1             ),
+    .vt_2             (vt_2             ),
 
     .TB_dina            (TB_dina            )
   );

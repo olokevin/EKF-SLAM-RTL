@@ -157,7 +157,7 @@ module PE_MAC
         if(sys_rst)  begin
             mulres_val_r <= 1'b0;
         end
-        else if(cal_done == 1'b1 || mulres_val == 1) begin
+        else if(cal_done == 1'b1 || mulres_val == 1'b1) begin
             mulres_val_r <= 1'b1;
         end
         else

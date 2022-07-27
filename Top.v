@@ -27,11 +27,11 @@ module Top #(
 
   //预测步数据
     input signed [RSA_DW - 1 : 0] vlr,
-    input signed [RSA_AW - 1 : 0] alpha,
+    input signed [RSA_DW - 1 : 0] alpha,    //角度输入也为32位
 
   //更新步数据
     input signed [RSA_DW - 1 : 0] rk,
-    input signed [RSA_AW - 1 : 0] phi,
+    input signed [RSA_DW - 1 : 0] phi,
 
   //输出S矩阵
     output signed [RSA_DW - 1 : 0] S_data
@@ -113,9 +113,9 @@ u_NonLinear(
   .lky          (lky          ),
   .xk           (xk           ),
   .yk           (yk           ),
-  .alpha        (alpha        ),
+  .alpha        ({alpha[31],alpha[19 -: 16]}        ),    //实际输入时转为17位
   .xita         ({xita[31],xita[19 -: 16]}),
-  .phi          (phi          ),
+  .phi          ({phi[31],phi[19 -: 16]}          ),
   .done_predict (done_predict ),
   .done_newlm   (done_newlm   ),
   .done_update  (done_update  ),

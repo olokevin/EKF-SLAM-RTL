@@ -32,9 +32,10 @@ reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
 reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
 reg   [RSA_DW - 1 : 0]  vlr                = (2 <<< DATA_DEC_BIT);
-reg   [RSA_AW - 1 : 0]  alpha              = (1 <<< (ANGLE_DEC_BIT-1));
+reg   [RSA_AW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
 reg   [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
-reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
+reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
+// reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
 
 // Top Outputs
 wire  [2:0]  stage_rdy                     ;
@@ -60,39 +61,39 @@ begin
 end
 
 /*
-    ************* PRD *****************
+    ************* test *****************
 */
-initial begin
-    #(PERIOD*RST_START*2)
-    stage_val = STAGE_PRD;
-    #(PERIOD * 2)
-    stage_val = 0;
+// initial begin
+//     #(PERIOD*RST_START*2)
+//     stage_val <= STAGE_PRD;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
 
-    #(PERIOD*PRD_WORK)
-    stage_val = STAGE_NEW;
-    #(PERIOD * 2)
-    stage_val = 0;
+//     #(PERIOD*PRD_WORK)
+//     stage_val <= STAGE_NEW;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
 
-    #(PERIOD*NEW_WORK)
-    stage_val = STAGE_UPD;
-    #(PERIOD * 2)
-    stage_val = 0;
+//     #(PERIOD*NEW_WORK)
+//     stage_val <= STAGE_UPD;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
 
-    #(PERIOD*UPD_WORK)
-    stage_val = STAGE_ASSOC;
-    #(PERIOD * 2)
-    stage_val = 0;
-end
+//     #(PERIOD*UPD_WORK)
+//     stage_val <= STAGE_ASSOC;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
+// end
 
 /*
     ************* PRD *****************
 */
-initial begin
-    #(PERIOD*RST_START*2)
-    stage_val = STAGE_PRD;
-    #(PERIOD * 2)
-    stage_val = 0;
-end
+// initial begin
+//     #(PERIOD*RST_START*2)
+//     stage_val = STAGE_PRD;
+//     #(PERIOD * 2)
+//     stage_val = 0;
+// end
 
 
 /*
@@ -115,6 +116,16 @@ end
 //     #(PERIOD * 2)
 //     stage_val = 0;
 // end
+
+/*
+    ************* ASSOC *****************
+*/
+initial begin
+    #(PERIOD*RST_START)
+    stage_val = STAGE_ASSOC;
+    #(PERIOD * 2)
+    stage_val = 0;
+end
 
 
 Top #(
