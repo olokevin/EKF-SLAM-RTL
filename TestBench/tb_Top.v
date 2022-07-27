@@ -121,7 +121,7 @@ end
     ************* ASSOC *****************
 */
 initial begin
-    #(PERIOD*RST_START)
+    #(PERIOD*RST_START*2)
     stage_val = STAGE_ASSOC;
     #(PERIOD * 2)
     stage_val = 0;

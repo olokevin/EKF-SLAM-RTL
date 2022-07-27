@@ -399,10 +399,10 @@ module PE_config #(
     // localparam [TB_AW-1 : 0] S_t           = 'd31;
     // localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
     // localparam [TB_AW-1 : 0] cov_HT        = 'd38;
-    localparam [TB_AW-1 : 0] cov_HT        = 'd12;
+    localparam [TB_AW-1 : 0] cov_HT        = 'd14;
     localparam [TB_AW-1 : 0] v_t           = 'd12;
-    localparam [TB_AW-1 : 0] t_cov_l       = 'd14;
-    localparam [TB_AW-1 : 0] K_t           = 'd14;
+    localparam [TB_AW-1 : 0] t_cov_l       = 'd16;
+    localparam [TB_AW-1 : 0] K_t           = 'd16;
   // UPDATE SERIES
     localparam UPD_IDLE      = 11'b000_0000_0000;
     localparam UPD_NL_SEND   = 11'b100_0000_0001;
@@ -751,7 +751,7 @@ module PE_config #(
                       stage_cur <= STAGE_UPD;
                   end
         STAGE_ASSOC:begin
-                    if(assoc_cur == ASSOC_8 && seq_cnt == seq_cnt_max)
+                    if(assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max)
                       stage_cur <= IDLE;
                     else
                       stage_cur <= STAGE_ASSOC;
