@@ -1,5 +1,4 @@
 `timescale  1ns / 10ps
-`include "macro.v"
 module tb_RSA;
 
 parameter RST_START = 20;
@@ -135,13 +134,9 @@ RSA #(
     .ROW_LEN      ( ROW_LEN      ))
  u_RSA (
     .clk                     ( clk                    ),
-    .sys_rst                 ( sys_rst                ),
-`ifdef LANDMARK_NUM_IN    
+    .sys_rst                 ( sys_rst                ),   
     .landmark_num            (landmark_num            ),
-`endif
-// `ifdef L_K_IN
     .l_k                     (l_k                     ),
-// `endif
     .stage_val               ( stage_val        [2:0] ),
     .nonlinear_s_val         ( nonlinear_s_val  [2:0] ),
     .nonlinear_s_rdy         ( nonlinear_s_rdy  [2:0] ),

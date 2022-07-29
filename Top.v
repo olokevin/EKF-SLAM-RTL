@@ -1,5 +1,3 @@
-`include "macro.v"
-
 module Top #(
   parameter X = 4,
   parameter Y = 4,
@@ -19,9 +17,8 @@ module Top #(
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
-    `ifdef LANDMARK_NUM_IN
-      input   [ROW_LEN-1 : 0]  landmark_num,    
-    `endif
+    input   [ROW_LEN-1 : 0]  landmark_num,    
+
   //当前地标编号
     input   [ROW_LEN-1 : 0]  l_k, 
 

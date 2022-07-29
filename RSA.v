@@ -1,4 +1,3 @@
-`include "macro.v"
 module RSA 
 #(
   parameter X = 4,
@@ -13,167 +12,16 @@ module RSA
   parameter ROW_LEN = 10
 ) 
 (
-`ifdef USE_DIFF_CLK
-  input   sys_clk_p,
-  input   sys_clk_n,
-`else 
+
   input   clk,
-`endif
-  // input   clk,
-
   input   sys_rst,
-
-`ifdef BRAM_OUT
-  //************************ TEMP BANK *************************
-      output [TB_AW-1:0]  TB0_addra,
-      output              TB0_clka,
-      output signed [RSA_DW-1:0] TB0_dina,
-      input  signed [RSA_DW-1:0] TB0_douta,
-      output              TB0_ena,
-      output              TB0_wea,
-
-      output [TB_AW-1:0]  TB0_addrb,
-      output              TB0_clkb,
-      output  [RSA_DW-1:0] TB0_dinb,
-      input [RSA_DW-1:0] TB0_doutb,
-      output              TB0_enb,
-      output              TB0_web,
-
-      output [TB_AW-1:0]  TB1_addra,
-      output              TB1_clka,
-      output signed  [RSA_DW-1:0] TB1_dina,
-      input  signed [RSA_DW-1:0] TB1_douta,
-      output              TB1_ena,
-      output              TB1_wea,
-
-      output [TB_AW-1:0]  TB1_addrb,
-      output              TB1_clkb,
-      output signed  [RSA_DW-1:0] TB1_dinb,
-      input  signed [RSA_DW-1:0] TB1_doutb,
-      output              TB1_enb,
-      output              TB1_web,
-
-      output [TB_AW-1:0]  TB2_addra,
-      output              TB2_clka,
-      output signed  [RSA_DW-1:0] TB2_dina,
-      input signed [RSA_DW-1:0] TB2_douta,
-      output              TB2_ena,
-      output              TB2_wea,
-
-      output [TB_AW-1:0]  TB2_addrb,
-      output              TB2_clkb,
-      output signed  [RSA_DW-1:0] TB2_dinb,
-      input signed [RSA_DW-1:0] TB2_doutb,
-      output              TB2_enb,
-      output              TB2_web,
-
-      output [TB_AW-1:0]  TB3_addra,
-      output              TB3_clka,
-      output signed  [RSA_DW-1:0] TB3_dina,
-      input signed [RSA_DW-1:0] TB3_douta,
-      output              TB3_ena,
-      output              TB3_wea,
-
-      output [TB_AW-1:0]  TB3_addrb,
-      output              TB3_clkb,
-      output signed  [RSA_DW-1:0] TB3_dinb,
-      input signed [RSA_DW-1:0] TB3_doutb,
-      output              TB3_enb,
-      output              TB3_web,
-
-  //************************** COV BANK *************************
-      output [CB_AW-1:0]  CB0_addra,
-      output              CB0_clka,
-      output signed  [RSA_DW-1:0] CB0_dina,
-      input signed [RSA_DW-1:0] CB0_douta,
-      output              CB0_ena,
-      output              CB0_wea,
-
-      output [CB_AW-1:0]  CB0_addrb,
-      output              CB0_clkb,
-      output signed  [RSA_DW-1:0] CB0_dinb,
-      input signed [RSA_DW-1:0] CB0_doutb,
-      output              CB0_enb,
-      output              CB0_web,
-
-      output [CB_AW-1:0]  CB1_addra,
-      output              CB1_clka,
-      output signed  [RSA_DW-1:0] CB1_dina,
-      input signed [RSA_DW-1:0] CB1_douta,
-      output              CB1_ena,
-      output              CB1_wea,
-
-      output [CB_AW-1:0]  CB1_addrb,
-      output              CB1_clkb,
-      output signed  [RSA_DW-1:0] CB1_dinb,
-      input signed [RSA_DW-1:0] CB1_doutb,
-      output              CB1_enb,
-      output              CB1_web,
-
-      output [CB_AW-1:0]  CB2_addra,
-      output              CB2_clka,
-      output signed  [RSA_DW-1:0] CB2_dina,
-      input signed [RSA_DW-1:0] CB2_douta,
-      output              CB2_ena,
-      output              CB2_wea,
-
-      output [CB_AW-1:0]  CB2_addrb,
-      output              CB2_clkb,
-      output signed  [RSA_DW-1:0] CB2_dinb,
-      input signed [RSA_DW-1:0] CB2_doutb,
-      output              CB2_enb,
-      output              CB2_web,
-
-      output [CB_AW-1:0]  CB3_addra,
-      output              CB3_clka,
-      output signed  [RSA_DW-1:0] CB3_dina,
-      input signed [RSA_DW-1:0] CB3_douta,
-      output              CB3_ena,
-      output              CB3_wea,
-
-      output [CB_AW-1:0]  CB3_addrb,
-      output              CB3_clkb,
-      output signed  [RSA_DW-1:0] CB3_dinb,
-      input signed [RSA_DW-1:0] CB3_doutb,
-      output              CB3_enb,
-      output              CB3_web,
-    
-    // TEMP BANK ports
-      // output  [L-1 : 0]    TB_ena,
-      // output  [L-1 : 0]    TB_wea,
-      // output  [L*TB_AW-1 : 0]    TB_addra,
-      // output  signed [L*RSA_DW-1 : 0]   TB_dina,
-      // input   signed [L*RSA_DW-1 : 0]   TB_douta,
-
-      // output  [L-1 : 0]    TB_enb,
-      // output  [L-1 : 0]    TB_web,
-      // output  [L*TB_AW-1 : 0]    TB_addrb,
-      // output  signed [L*RSA_DW-1 : 0]   TB_dinb,
-      // input   signed [L*RSA_DW-1 : 0]   TB_doutb,
-
-
-    //COV BANK ports
-      // output  [L-1 : 0]    CB_ena,
-      // output  [L-1 : 0]    CB_wea,
-      // output  [L*CB_AW-1 : 0]    CB_addra,
-      // output  signed [L*RSA_DW-1 : 0]   CB_dina,
-      // input   signed [L*RSA_DW-1 : 0]   CB_douta,
-
-      // output  [L-1 : 0]    CB_enb,
-      // output  [L-1 : 0]    CB_web,
-      // output  [L*CB_AW-1 : 0]    CB_addrb,
-      // output  signed [L*RSA_DW-1 : 0]   CB_dinb,
-      // input   signed [L*RSA_DW-1 : 0]   CB_doutb,
-`endif
 
 /****************** PS -> RSA **************************/
   //handshake of stage change
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
-    `ifdef LANDMARK_NUM_IN
-      input   [ROW_LEN-1 : 0]  landmark_num,    
-    `endif
+    input   [ROW_LEN-1 : 0]  landmark_num,    
   //当前地标编号
     input   [ROW_LEN-1 : 0]  l_k,  
 
@@ -210,24 +58,6 @@ module RSA
   parameter CB_DINA_SEL_DW  = 2;
   parameter CB_DINB_SEL_DW  = 5;
   parameter CB_DOUTA_SEL_DW = 5;  //注意MUX deMUX需手动修改
-
-/*
-  ******************* 差分时钟信号转单端 ************************
-*/
-`ifdef USE_DIFF_CLK
-  wire clk;
-
-  IBUFDS #( 
-  .DIFF_TERM("FALSE"), // Differential Termination 
-  .IBUF_LOW_PWR("FALSE"), // Low power="TRUE", Highest performance="FALSE" 
-  .IOSTANDARD("DEFAULT") // Specify the input I/O standard 
-  ) 
-  IBUFDS_inst ( 
-  .O(clk), // Buffer output 
-  .I(sys_clk_p), // Diff_p buffer input (connect directly to top-level port) 
-  .IB(sys_clk_n) // Diff_n buffer input (connect directly to top-level port) 
-  );
-`endif
 
 /*
   ************************* 当前状态量 ***********************
@@ -1056,115 +886,6 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .lky              (lky              )
   );
 
-`ifdef BRAM_OUT
-  //************************** TEMP BANK *************************
-    //************** TB0 ***************
-      assign TB0_addra = TB_addra[0 +: TB_AW];
-      assign TB0_clka  = clk;
-      assign TB0_dina  = TB_dina[0 +: RSA_DW];
-      assign TB_douta[0 +: RSA_DW] = TB0_douta;
-      assign TB0_ena   = TB_ena[0];
-      assign TB0_wea   = TB_wea[0];
-      assign TB0_addrb = TB_addrb[0 +: TB_AW];
-      assign TB0_clkb  = clk;
-      assign TB0_dinb  = TB_dinb[0 +: RSA_DW];
-      assign TB_doutb[0 +: RSA_DW] = TB0_doutb;
-      assign TB0_enb   = TB_enb[0];
-      assign TB0_web   = TB_web[0];
-    //************** TB1 ***************
-      assign TB1_addra = TB_addra[1*TB_AW +: TB_AW];
-      assign TB1_clka  = clk;
-      assign TB1_dina  = TB_dina[1*RSA_DW +: RSA_DW];
-      assign TB_douta[1*RSA_DW +: RSA_DW] = TB1_douta;
-      assign TB1_ena   = TB_ena[1];
-      assign TB1_wea   = TB_wea[1];
-      assign TB1_addrb = TB_addrb[1*TB_AW +: TB_AW];
-      assign TB1_clkb  = clk;
-      assign TB1_dinb  = TB_dinb[1*RSA_DW +: RSA_DW];
-      assign TB_doutb[1*RSA_DW +: RSA_DW] = TB1_doutb;
-      assign TB1_enb   = TB_enb[1];
-      assign TB1_web   = TB_web[1];
-    //************** TB2 ***************
-      assign TB2_addra = TB_addra[2*TB_AW +: TB_AW];
-      assign TB2_clka  = clk;
-      assign TB2_dina  = TB_dina[2*RSA_DW +: RSA_DW];
-      assign TB_douta[2*RSA_DW +: RSA_DW] = TB2_douta;
-      assign TB2_ena   = TB_ena[2];
-      assign TB2_wea   = TB_wea[2];
-      assign TB2_addrb = TB_addrb[2*TB_AW +: TB_AW];
-      assign TB2_clkb  = clk;
-      assign TB2_dinb  = TB_dinb[2*RSA_DW +: RSA_DW];
-      assign TB_doutb[2*RSA_DW +: RSA_DW] = TB2_doutb;
-      assign TB2_enb   = TB_enb[2];
-      assign TB2_web   = TB_web[2];
-    //************** TB3 ***************
-      assign TB3_addra = TB_addra[3*TB_AW +: TB_AW];
-      assign TB3_clka  = clk;
-      assign TB3_dina  = TB_dina[3*RSA_DW +: RSA_DW];
-      assign TB_douta[3*RSA_DW +: RSA_DW] = TB3_douta;
-      assign TB3_ena   = TB_ena[3];
-      assign TB3_wea   = TB_wea[3];
-      assign TB3_addrb = TB_addrb[3*TB_AW +: TB_AW];
-      assign TB3_clkb  = clk;
-      assign TB3_dinb  = TB_dinb[3*RSA_DW +: RSA_DW];
-      assign TB_doutb[3*RSA_DW +: RSA_DW] = TB3_doutb;
-      assign TB3_enb   = TB_enb[3];
-      assign TB3_web   = TB_web[3];
-
-  //************************** COV BANK *************************
-    //************** CB0 ***************
-      assign CB0_addra = CB_addra[0 +: CB_AW];
-      assign CB0_clka  = clk;
-      assign CB0_dina  = CB_dina[0 +: RSA_DW];
-      assign CB_douta[0 +: RSA_DW] = CB0_douta;
-      assign CB0_ena   = CB_ena[0];
-      assign CB0_wea   = CB_wea[0];
-      assign CB0_addrb = CB_addrb[0 +: CB_AW];
-      assign CB0_clkb  = clk;
-      assign CB0_dinb  = CB_dinb[0 +: RSA_DW];
-      assign CB_doutb[0 +: RSA_DW] = CB0_doutb;
-      assign CB0_enb   = CB_enb[0];
-      assign CB0_web   = CB_web[0];
-    //************** CB1 ***************
-      assign CB1_addra = CB_addra[1*CB_AW +: CB_AW];
-      assign CB1_clka  = clk;
-      assign CB1_dina  = CB_dina[1*RSA_DW +: RSA_DW];
-      assign CB_douta[1*RSA_DW +: RSA_DW] = CB1_douta;
-      assign CB1_ena   = CB_ena[1];
-      assign CB1_wea   = CB_wea[1];
-      assign CB1_addrb = CB_addrb[1*CB_AW +: CB_AW];
-      assign CB1_clkb  = clk;
-      assign CB1_dinb  = CB_dinb[1*RSA_DW +: RSA_DW];
-      assign CB_doutb[1*RSA_DW +: RSA_DW] = CB1_doutb;
-      assign CB1_enb   = CB_enb[1];
-      assign CB1_web   = CB_web[1];
-    //************** CB2 ***************
-      assign CB2_addra = CB_addra[2*CB_AW +: CB_AW];
-      assign CB2_clka  = clk;
-      assign CB2_dina  = CB_dina[2*RSA_DW +: RSA_DW];
-      assign CB_douta[2*RSA_DW +: RSA_DW] = CB2_douta;
-      assign CB2_ena   = CB_ena[2];
-      assign CB2_wea   = CB_wea[2];
-      assign CB2_addrb = CB_addrb[2*CB_AW +: CB_AW];
-      assign CB2_clkb  = clk;
-      assign CB2_dinb  = CB_dinb[2*RSA_DW +: RSA_DW];
-      assign CB_doutb[2*RSA_DW +: RSA_DW] = CB2_doutb;
-      assign CB2_enb   = CB_enb[2];
-      assign CB2_web   = CB_web[2];
-    //************** CB3 ***************
-      assign CB3_addra = CB_addra[3*CB_AW +: CB_AW];
-      assign CB3_clka  = clk;
-      assign CB3_dina  = CB_dina[3*RSA_DW +: RSA_DW];
-      assign CB_douta[3*RSA_DW +: RSA_DW] = CB3_douta;
-      assign CB3_ena   = CB_ena[3];
-      assign CB3_wea   = CB_wea[3];
-      assign CB3_addrb = CB_addrb[3*CB_AW +: CB_AW];
-      assign CB3_clkb  = clk;
-      assign CB3_dinb  = CB_dinb[3*RSA_DW +: RSA_DW];
-      assign CB_doutb[3*RSA_DW +: RSA_DW] = CB3_doutb;
-      assign CB3_enb   = CB_enb[3];
-      assign CB3_web   = CB_web[3];
-`else
 //instantiate of TEMP BANK
   TB_0 u_TB_0 (
   .clka(clk),  // input wire clka
@@ -1286,7 +1007,6 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
   .dinb(CB_dinb[3*RSA_DW +: RSA_DW]),  // input wire [15 : 0] dinb
   .doutb(CB_doutb[3*RSA_DW +: RSA_DW])  // output wire [15 : 0] doutb
   );
-`endif
 
 PE_config 
 #(
@@ -1316,9 +1036,7 @@ PE_config
 u_PE_config(
   .clk                  (clk               ),
   .sys_rst              (sys_rst           ),
-  `ifdef LANDMARK_NUM_IN
   .landmark_num         (landmark_num      ),
-  `endif
   .l_k           (l_k           ),
   .stage_val     (stage_val     ),
   .stage_rdy     (stage_rdy     ),

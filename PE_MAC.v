@@ -1,7 +1,6 @@
 /*
     PE_MAC with only one mode, no inout ports
 */
-`include "macro.v"
 module PE_MAC 
 #(
     parameter RSA_DW = 32
@@ -81,11 +80,11 @@ module PE_MAC
     reg signed [2*RSA_DW-1:0] product_temp;
     wire signed [RSA_DW-1:0] product;
     reg signed [RSA_DW-1:0] partial_sum;
-  `ifdef USE_QUANT
+  // `ifdef USE_QUANT
     assign product = {product_temp[2*RSA_DW-1], product_temp[DEC_BIT+RSA_DW-2 : DEC_BIT]};
-  `else 
-    assign product = product_temp[RSA_DW-1:0];
-  `endif
+  // `else 
+  //   assign product = product_temp[RSA_DW-1:0];
+  // `endif
 
 
 //mode的一级缓存，用于判断mode跳变

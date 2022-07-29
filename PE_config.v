@@ -1,4 +1,3 @@
-`include "macro.v"
 module PE_config #(
   parameter X = 4,
   parameter Y = 4,
@@ -28,9 +27,7 @@ module PE_config #(
   input sys_rst,
 
 //landmark numbers
-`ifdef LANDMARK_NUM_IN
   input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
-`endif
   input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
 //handshake of stage change
   input   [2:0]   stage_val,
@@ -1279,19 +1276,19 @@ assign test_stage = stage_val & stage_rdy;
     // end 
 
   //(5)output: calculate the landmark number
-`ifndef LANDMARK_NUM_IN
-  reg [ROW_LEN-1 : 0]  landmark_num;
-  always @(posedge clk) begin
-    if(sys_rst)
-      landmark_num <= 0;
-    else begin
-      if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
-        landmark_num <= landmark_num + 1'b1;
-      else 
-        landmark_num <= landmark_num;
-    end
-  end
-`endif
+// `ifndef LANDMARK_NUM_IN
+//   reg [ROW_LEN-1 : 0]  landmark_num;
+//   always @(posedge clk) begin
+//     if(sys_rst)
+//       landmark_num <= 0;
+//     else begin
+//       if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
+//         landmark_num <= landmark_num + 1'b1;
+//       else 
+//         landmark_num <= landmark_num;
+//     end
+//   end
+// `endif
 
 // `ifndef L_K_IN
   // reg [ROW_LEN-1 : 0]  l_k = 'd3;
