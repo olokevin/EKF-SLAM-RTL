@@ -4722,7 +4722,7 @@ assign test_stage = stage_val & stage_rdy;
     //TB_doutb_sel 只与读取有关
       always @(posedge clk) begin
         if(sys_rst) begin
-          TB_doutb_sel_new[1:0] = DIR_IDLE;
+          TB_doutb_sel_new[1:0] <= DIR_IDLE;
         end
         else begin
           TB_doutb_sel_new[1:0] <= TBb_mode_d[1:0];
