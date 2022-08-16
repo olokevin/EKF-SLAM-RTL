@@ -30,10 +30,20 @@ module Top #(
     input signed [RSA_DW - 1 : 0] rk,
     input signed [RSA_DW - 1 : 0] phi,
 
-  //输出S矩阵
-    output signed [RSA_DW - 1 : 0] S_data
+  //AXI BRAM
+    output          PLB_clk,
+    output          PLB_rst,
+
+    output          PLB_en,   
+    output          PLB_we,   
+    output  [9:0]   PLB_addr,
+    input   [31:0]  PLB_din,
+    output  [31:0]  PLB_dout
 
 );
+/******************RSA ->  PS*********************/
+    assign PLB_clk = clk;
+    assign PLB_rst = sys_rst;
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
@@ -70,7 +80,12 @@ u_RSA(
   .stage_rdy    (stage_rdy    ),
   .landmark_num (landmark_num ),
   .l_k          (l_k          ),
-  .S_data       (S_data       ),
+
+  .PLB_en        (PLB_en        ),
+  .PLB_we        (PLB_we        ),
+  .PLB_addr      (PLB_addr      ),
+  .PLB_din       (PLB_din       ),
+  .PLB_dout      (PLB_dout      ),
 
   .init_predict (init_predict ),
   .init_newlm   (init_newlm   ),

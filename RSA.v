@@ -25,9 +25,13 @@ module RSA
   //当前地标编号
     input   [ROW_LEN-1 : 0]  l_k,  
 
-/****************** PS -> RSA **************************/
-  //输出S矩阵
-    output signed [RSA_DW - 1 : 0] S_data,
+/****************** RSA -> PS **************************/
+  //AXI BRAM
+    output          PLB_en,   
+    output          PLB_we,   
+    output  [9:0]   PLB_addr,
+    input   [31:0]  PLB_din,
+    output  [31:0]  PLB_dout,
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
@@ -1054,6 +1058,7 @@ u_PE_config(
   .M_in_en       (M_in_en       ),
   .C_out_sel     (C_out_sel     ),
   .C_out_en      (C_out_en      ),
+
   .TB_dina_sel   (TB_dina_sel   ),
   .TB_dinb_sel   (TB_dinb_sel   ),
   .TB_douta_sel  (TB_douta_sel  ),
@@ -1064,6 +1069,7 @@ u_PE_config(
   .TB_web        (TB_web        ),
   .TB_addra      (TB_addra      ),
   .TB_addrb      (TB_addrb      ),
+
   // .CB_dina_sel   (CB_dina_sel   ),
   .CB_dinb_sel   (CB_dinb_sel   ),
   .CB_douta_sel  (CB_douta_sel  ),
@@ -1073,16 +1079,25 @@ u_PE_config(
   .CB_web        (CB_web        ),
   .CB_addra      (CB_addra      ),
   .CB_addrb      (CB_addrb      ),
+
   .B_cache_in_sel(B_cache_in_sel),
   .B_cache_out_sel(B_cache_out_sel),
   .B_cache_en    (B_cache_en    ),
   .B_cache_we    (B_cache_we    ),
   .B_cache_addr  (B_cache_addr  ),
+
+  .PLB_en        (PLB_en        ),
+  .PLB_we        (PLB_we        ),
+  .PLB_addr      (PLB_addr      ),
+  .PLB_din       (PLB_din       ),
+  .PLB_dout      (PLB_dout      ),
+
   .seq_cnt_out   (seq_cnt_out   ),
   .stage_cur_out (stage_cur_out ),
   .prd_cur_out   (prd_cur_out   ),
   .new_cur_out   (new_cur_out   ),
   .upd_cur_out   (upd_cur_out   ),
+
   .M_adder_mode  (M_adder_mode  ),
   .PE_mode       (PE_mode       ),
   .new_cal_en    (new_cal_en    ),
