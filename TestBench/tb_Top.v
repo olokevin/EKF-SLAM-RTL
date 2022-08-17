@@ -119,22 +119,22 @@ end
 /*
     ************* UPD *****************
 */
-initial begin
-    #(PERIOD*RST_START*2)
-    stage_val = STAGE_UPD;
-    #(PERIOD * 2)
-    stage_val = 0;
-end
+// initial begin
+//     #(PERIOD*RST_START*2)
+//     stage_val = STAGE_UPD;
+//     #(PERIOD * 2)
+//     stage_val = 0;
+// end
 
 /*
     ************* ASSOC *****************
 */
-// initial begin
-//     #(PERIOD*RST_START*2)
-//     stage_val = STAGE_ASSOC;
-//     #(PERIOD * 2)
-//     stage_val = 0;
-// end
+initial begin
+    #(PERIOD*RST_START*2)
+    stage_val = STAGE_ASSOC;
+    #(PERIOD * 2)
+    stage_val = 0;
+end
 
 
 Top 

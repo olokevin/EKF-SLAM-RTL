@@ -532,9 +532,9 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_2_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_3_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_4_CNT_MAX     = 'd4;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_5_CNT_MAX     = 'd4;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd4;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd4;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_5_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd10;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd9;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_10_CNT_MAX    = 'd8;
@@ -1330,6 +1330,7 @@ assign test_stage = stage_val & stage_rdy;
           STAGE_PRD: l_k_group <= (l_k + 1'b1) >> 1;
           STAGE_NEW: l_k_group <= (l_k + 1'b1) >> 1;
           STAGE_UPD: l_k_group <= (l_k + 1'b1) >> 1;
+          STAGE_ASSOC: l_k_group <= (l_k + 1'b1) >> 1;
           default: l_k_group <= 0;
         endcase
       end
@@ -5818,32 +5819,9 @@ assign test_stage = stage_val & stage_rdy;
                       end
                     endcase 
                   end
-        CB_cov_lv: begin
-                    CB_wea_new <= 1'b0;
-                    case(seq_cnt)
-                      SEQ_0: begin
-                        CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
-                        CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD;
-                      end     
-                      SEQ_1: begin
-                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
-                        CB_douta_sel_new[1:0] <= DIR_NEW;
-                        CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD + 2'b01;
-                      end
-                      SEQ_2: begin
-                        CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD + 2'b10;
-                      end
-                      default: begin
-                        CB_ena_new <= 1'b0;
-                        CB_addra_new <= 0;
-                      end
-                    endcase 
-                  end
         CB_cov:   begin
                     CB_wea_new <= 1'b0;
+                    CBa_shift_dir <= DIR_POS;
                     if(v_group_cnt == 0) begin
                       case(seq_cnt)
                         SEQ_3: begin
@@ -5877,7 +5855,7 @@ assign test_stage = stage_val & stage_rdy;
                     endcase
                     end
                   end
-        CB_cov_lm: begin
+        CB_cov_lv: begin
                     CB_wea_new <= 1'b0;
                     case(seq_cnt)
                       SEQ_0: begin
@@ -5895,9 +5873,36 @@ assign test_stage = stage_val & stage_rdy;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= l_k_base_addr_RD + 2'b10;
                       end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
+        CB_cov_lm: begin
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt)
+                      SEQ_0: begin
+                        CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
+                        CB_ena_new <= 1'b1;
+                        if(v_group_cnt == 0)
+                          CB_addra_new <= l_k_base_addr_RD + 3'b100;
+                        else
+                          CB_addra_new <= CB_addra_new + 1'b1;
+                      end     
+                      SEQ_1: begin
+                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
+                        CB_douta_sel_new[1:0] <= DIR_NEW;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 1'b1;
+                      end
+                      SEQ_2: begin
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 1'b1;
+                      end
                       SEQ_3: begin
                         CB_ena_new <= 1'b1;
-                        CB_addra_new <= l_k_base_addr_RD + 2'b11;
+                        CB_addra_new <= CB_addra_new + 1'b1;
                       end
                       default: begin
                         CB_ena_new <= 1'b0;
@@ -5916,6 +5921,26 @@ assign test_stage = stage_val & stage_rdy;
                       SEQ_1: begin
                         CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
                         CB_douta_sel_new[1:0] <= DIR_POS;
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= CB_addra_new + 1'b1;
+                      end
+                      default: begin
+                        CB_ena_new <= 1'b0;
+                        CB_addra_new <= 0;
+                      end
+                    endcase 
+                  end
+          CB_cov_ll: begin
+                    CB_wea_new <= 1'b0;
+                    case(seq_cnt) 
+                      SEQ_0: begin 
+                        CBa_shift_dir <= DIR_NEW; 
+                        CB_ena_new <= 1'b1;
+                        CB_addra_new <= l_k_base_addr_RD + l_k_row;
+                      end     
+                      SEQ_1: begin
+                        CB_douta_sel_new[CB_DOUTA_SEL_DW-1:2] <= CBa_mode[6:4]; 
+                        CB_douta_sel_new[1:0] <= DIR_NEW;
                         CB_ena_new <= 1'b1;
                         CB_addra_new <= CB_addra_new + 1'b1;
                       end
@@ -6757,6 +6782,7 @@ assign test_stage = stage_val & stage_rdy;
           STAGE_UPD: l_k_AGD_en <= 1'b1;
           STAGE_NEW: l_k_AGD_en <= 1'b1;
           STAGE_UPD: l_k_AGD_en <= 1'b1;
+          STAGE_ASSOC: l_k_AGD_en <= 1'b1;
           default:   l_k_AGD_en <= 1'b0;
         endcase
       end
@@ -6784,21 +6810,22 @@ assign test_stage = stage_val & stage_rdy;
         l_k_base_addr_RD <= 0;
       end
       else begin
-        case(CBa_mode[3:0])
-          CB_cov_lv: begin
-            if(seq_cnt == seq_cnt_max)
-              l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;  //准备好 cov_lm的起始地址
-            else
-              l_k_base_addr_RD <= l_k_base_addr_raw;
-          end
-          CB_cov_lm: begin
-            if(seq_cnt == seq_cnt_max)
-              l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;
-            else
-              l_k_base_addr_RD <= l_k_base_addr_RD;
-          end
-          default:   l_k_base_addr_RD <= l_k_base_addr_raw;
-        endcase
+        // case(CBa_mode[3:0])
+        //   CB_cov_lv: begin
+        //     if(seq_cnt == seq_cnt_max)
+        //       l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;  //准备好 cov_lm的起始地址
+        //     else
+        //       l_k_base_addr_RD <= l_k_base_addr_raw;
+        //   end
+        //   CB_cov_lm: begin
+        //     if(seq_cnt == seq_cnt_max)
+        //       l_k_base_addr_RD <= l_k_base_addr_RD + 3'b100;
+        //     else
+        //       l_k_base_addr_RD <= l_k_base_addr_RD;
+        //   end
+        //   default:   l_k_base_addr_RD <= l_k_base_addr_raw;
+        // endcase
+        l_k_base_addr_RD <= l_k_base_addr_raw;
       end
     end
   /*

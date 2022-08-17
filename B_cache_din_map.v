@@ -63,7 +63,7 @@ localparam I_22 = 32'h8_0000;
         Bca_WR_NL_PRD: begin
                   case(seq_cnt_out)     //不用延迟时序
                     'd1:begin
-                          B_cache_din[0 +: RSA_DW]        <= 1;
+                          B_cache_din[0 +: RSA_DW]        <= I_11;
                           B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
@@ -76,7 +76,7 @@ localparam I_22 = 32'h8_0000;
                         end
                     'd3:begin
                           B_cache_din[0 +: RSA_DW]        <= Fxi_13;
-                          B_cache_din[1*RSA_DW +: RSA_DW] <= 1;
+                          B_cache_din[1*RSA_DW +: RSA_DW] <= I_11;
                           B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
                           B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                         end
@@ -89,7 +89,7 @@ localparam I_22 = 32'h8_0000;
                     'd5:begin
                           B_cache_din[0 +: RSA_DW]        <= 0;
                           B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
-                          B_cache_din[2*RSA_DW +: RSA_DW] <= 1;
+                          B_cache_din[2*RSA_DW +: RSA_DW] <= I_11;
                           B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                         end
                     default:begin
@@ -105,7 +105,7 @@ localparam I_22 = 32'h8_0000;
                   B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
                   case(seq_cnt_out)     //不用延迟时序
                     'd1:begin
-                          B_cache_din[0 +: RSA_DW]        <= 1;
+                          B_cache_din[0 +: RSA_DW]        <= I_11;
                           B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                         end
                     'd2:begin
@@ -114,7 +114,7 @@ localparam I_22 = 32'h8_0000;
                         end
                     'd3:begin
                           B_cache_din[0 +: RSA_DW]        <= Gxi_13;
-                          B_cache_din[1*RSA_DW +: RSA_DW] <= 1;
+                          B_cache_din[1*RSA_DW +: RSA_DW] <= I_11;
                         end
                     'd4:begin
                         B_cache_din[0 +: RSA_DW]        <= Gz_11;
@@ -152,7 +152,7 @@ localparam I_22 = 32'h8_0000;
                         end
                     'd4:begin
                         B_cache_din[0 +: RSA_DW]        <= Hz_11;
-                        B_cache_din[1*RSA_DW +: RSA_DW] <= -1;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= -I_11;
                       end
                     'd5:begin
                         B_cache_din[0 +: RSA_DW]        <= Hz_12;
@@ -190,7 +190,7 @@ localparam I_22 = 32'h8_0000;
                         end
                     'd4:begin
                         B_cache_din[0 +: RSA_DW]        <= Hz_11;
-                        B_cache_din[1*RSA_DW +: RSA_DW] <= -1;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= -I_11;
                       end
                     'd5:begin
                         B_cache_din[0 +: RSA_DW]        <= Hz_12;
@@ -201,6 +201,10 @@ localparam I_22 = 32'h8_0000;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= Hz_22;
                       end
                     'd7:begin
+                        B_cache_din[0 +: RSA_DW]        <= 0;
+                        B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+                      end
+                    'd8:begin
                         B_cache_din[0 +: RSA_DW]        <= 0;
                         B_cache_din[1*RSA_DW +: RSA_DW] <= I_22;
                       end
