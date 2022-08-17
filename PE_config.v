@@ -106,6 +106,9 @@ module PE_config #(
   output [10:0]             upd_cur_out,
   output [4:0]              assoc_cur_out,
 
+  input  [1:0]              assoc_status,
+  input  [ROW_LEN-1 : 0]    assoc_l_k,
+
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
   output  [Y-1 : 0]           new_cal_en,
@@ -475,7 +478,7 @@ module PE_config #(
     localparam UPD_9_M       = 3'b100;
     localparam UPD_10_M      = 3'b100;
     
-    localparam UPD_1_N       = 3'b101;
+    localparam UPD_1_N       = 3'b000;
     localparam UPD_2_N       = 3'b011;
     localparam UPD_3_N       = 3'b011;    //在UPD_2 UPD_3读出，保持延迟时序
     localparam UPD_4_N       = 3'b010;
@@ -3214,7 +3217,6 @@ assign test_stage = stage_val & stage_rdy;
                       UPD_1: begin
                             /*
                               transfer
-                              H:    TB-B -> B_cache
                               cov_l:CB-A -> TB-A
                               X=0 Y=2 N=5
                               Ain: 0
@@ -3227,15 +3229,15 @@ assign test_stage = stage_val & stage_rdy;
 
                               CAL_mode = N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_TBb;
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
                               M_in_mode = M_NONE;
-                              C_out_mode = C_CBb;
+                              C_out_mode = C_NONE;
                               M_adder_mode_set = NONE;
 
-                              TBa_mode = {TBa_CBa,DIR_POS};
+                              TBa_mode = {TBa_CBa,DIR_POS};     //TB_dina直接接收即可
                               TBb_mode = TB_IDLE;
-                              CBa_mode = {CBa_TBa, CB_cov_lm};
+                              CBa_mode = {CBa_TBa, CB_cov_lm};  //在CB_douta_map处理数据
                               CBb_mode = CB_IDLE;
 
                               A_TB_base_addr_set = t_cov_l;
@@ -3568,7 +3570,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = K_t;
 
                               B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_base_addr_set = S_cache_0;
                             end
                       UPD_STATE: begin
                                 PE_m = 3'b100;
@@ -4341,50 +4343,37 @@ assign test_stage = stage_val & stage_rdy;
 
   reg [1:0] cal_en_d_addr = CAL_EN_D;
 
-  dynamic_shreg 
+  // seq_cnt PE_n 延迟
+    dynamic_shreg 
+      #(
+        .DW  (SEQ_CNT_DW  ),
+        .AW  (2  )
+      )
+      seq_cnt_cal_d_shreg(
+        .clk  (clk  ),
+        .ce   (1'b1  ),
+        .addr (cal_en_d_addr ),
+        .din  (seq_cnt  ),
+        .dout (seq_cnt_cal_d )
+      );
+
+    dynamic_shreg 
     #(
-      .DW  (SEQ_CNT_DW  ),
-      .AW  (2  )
+      .DW    (3    ),
+      .AW    (2    )
     )
-    seq_cnt_cal_d_shreg(
+    PEn_cal_d_shreg(
       .clk  (clk  ),
-      .ce   (1'b1  ),
+      .ce   (1'b1   ),
       .addr (cal_en_d_addr ),
-      .din  (seq_cnt  ),
-      .dout (seq_cnt_cal_d )
+      .din  (PE_n  ),
+      .dout (PEn_cal_d )
     );
 
-  dynamic_shreg 
-  #(
-    .DW    (3    ),
-    .AW    (2    )
-  )
-  PEn_cal_d_shreg(
-  	.clk  (clk  ),
-    .ce   (1'b1   ),
-    .addr (cal_en_d_addr ),
-    .din  (PE_n  ),
-    .dout (PEn_cal_d )
-  );
-
-  // dynamic_shreg 
-  // #(
-  //   .DW    (3    ),
-  //   .AW    (2    )
-  // )
-  // stage_cal_d_shreg(
-  // 	.clk  (clk  ),
-  //   .ce   (1'b1   ),
-  //   .addr (cal_en_d_addr ),
-  //   .din  (stage_cur  ),
-  //   .dout (stage_cur_cal )
-  // );
-
-  
-
+  // 确定最低位
   reg new_cal_en_new;
   reg new_cal_done_new;
-  //由于实际的new_cal_en[0]为new_cal_en_new的一级延迟，所以均比实际数据流提前一个T
+  
   always @(posedge clk) begin
     if(sys_rst) begin
       new_cal_en_new <= 0;
@@ -4411,13 +4400,11 @@ assign test_stage = stage_val & stage_rdy;
       
   end
 
-  //new_cal_en 移位 与 B_in_en相与
+  //new_cal_en 移位 
   wire  [Y-1 : 0]           new_cal_en_shift;
   wire  [Y-1 : 0]           new_cal_done_shift;
 
-  assign new_cal_en = new_cal_en_shift && B_in_en;
-  assign new_cal_done = new_cal_done_shift && B_in_en;
-    dshift 
+  dshift 
     #(
       .DW  (1  ),
       .DEPTH (Y )
@@ -4444,6 +4431,11 @@ assign test_stage = stage_val & stage_rdy;
       .din   (new_cal_done_new   ),
       .dout  (new_cal_done_shift  )
     );
+
+  //与 B_in_en相与, 得到于第一行输入，纵向传递的cal向量
+  assign new_cal_en = new_cal_en_shift & B_in_en;
+  assign new_cal_done = new_cal_done_shift & B_in_en;
+    
 
 //******************* M读取状态延迟*************************
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_M;

@@ -160,14 +160,14 @@ Top
     .rk                      ( rk                      [RSA_DW - 1 : 0] ),
     .phi                     ( phi                     [RSA_AW - 1 : 0] ),
 
-    .stage_rdy               ( stage_rdy               [2:0]            ),
-    .PLB_clk       (PLB_clk       ),
-	  .PLB_rst       (PLB_rst       ),
-	  .PLB_en        (PLB_en        ),
-    .PLB_we        (PLB_we        ),
-    .PLB_addr      (PLB_addr      ),
-    .PLB_din       (PLB_din       ),
-    .PLB_dout      (PLB_dout      )
+    .stage_rdy               ( stage_rdy               [2:0]            )
+    // .PLB_clk       (PLB_clk       ),
+	  // .PLB_rst       (PLB_rst       ),
+	  // .PLB_en        (PLB_en        ),
+    // .PLB_we        (PLB_we        ),
+    // .PLB_addr      (PLB_addr      ),
+    // .PLB_din       (PLB_din       ),
+    // .PLB_dout      (PLB_dout      )
 );
 
 endmodule

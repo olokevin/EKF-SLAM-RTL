@@ -61,7 +61,7 @@ localparam UPD_STATE     = 11'b1100;
     if(!sys_rst) begin
       seq_cnt_out_delay[1] <= seq_cnt_out;
       upd_cur_out_delay[1] <= upd_cur_out;
-      for(i_delay=1; i_delay < 7; i_delay=i_delay+1) begin
+      for(i_delay=1; i_delay <= 7; i_delay=i_delay+1) begin
         seq_cnt_out_delay[i_delay+1] <= seq_cnt_out_delay[i_delay];
         upd_cur_out_delay[i_delay+1] <= upd_cur_out_delay[i_delay];
       end
@@ -112,30 +112,33 @@ always @(posedge clk) begin
         SEQ_1: begin
               PLB_we <= 1'b0;
               PLB_addr <= PLB_addr + 1'b1;
-              result_0 <= PLB_dout + C_PLB_din[0 +: RSA_DW];
         end
         SEQ_2: begin
               PLB_we <= 1'b0;
               PLB_addr <= PLB_addr + 1'b1;
-              result_1 <= PLB_dout + C_PLB_din[1*RSA_DW +: RSA_DW];
+              
+              result_0 <= PLB_dout + C_PLB_din[0 +: RSA_DW];
         end
         SEQ_3: begin
               PLB_we <= 1'b0;
               PLB_addr <= PLB_addr + 1'b1;
-              result_2 <= PLB_dout + C_PLB_din[2*RSA_DW +: RSA_DW];
+              
+              result_1 <= PLB_dout + C_PLB_din[1*RSA_DW +: RSA_DW];
         end
         SEQ_4: begin
               PLB_we <= 1'b1;
               PLB_addr <= PLB_addr_base;
-
-              result_3 <= PLB_dout + C_PLB_din[3*RSA_DW +: RSA_DW];
-
+              
+              result_2 <= PLB_dout + C_PLB_din[2*RSA_DW +: RSA_DW];
+              
               PLB_din <= result_0;
         end
         SEQ_5: begin
               PLB_we <= 1'b1;
               PLB_addr <= PLB_addr + 1'b1;
 
+              result_3 <= PLB_dout + C_PLB_din[3*RSA_DW +: RSA_DW];
+              
               PLB_din <= result_1;
         end
         SEQ_6: begin

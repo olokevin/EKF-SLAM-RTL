@@ -30,17 +30,17 @@ module Top
 
   //更新步数据
     input signed [31 : 0] rk,
-    input signed [31 : 0] phi,
+    input signed [31 : 0] phi
 
   //AXI BRAM
-    output          PLB_clk,
-    output          PLB_rst,
+    // output          PLB_clk,
+    // output          PLB_rst,
 
-    output          PLB_en,   
-    output          PLB_we,   
-    output  [9:0]   PLB_addr,
-    output  signed [31:0]  PLB_din,
-    input   signed [31:0]  PLB_dout
+    // output          PLB_en,   
+    // output          PLB_we,   
+    // output  [9:0]   PLB_addr,
+    // output  signed [31:0]  PLB_din,
+    // input   signed [31:0]  PLB_dout
 
 );
 /******************PARAMETERS*********************/
@@ -60,8 +60,28 @@ module Top
   assign sys_rst = ~sys_rst_n;
 
 /******************RSA ->  PS*********************/
-    assign PLB_clk = clk;
-    assign PLB_rst = sys_rst;
+  // assign PLB_clk = clk;
+  // assign PLB_rst = sys_rst;
+  
+  //PS-PL BRAM for simulation
+
+  wire          PLB_clk;
+  assign        PLB_clk = clk;
+
+  wire          PLB_en;   
+  wire          PLB_we;   
+  wire  [9:0]   PLB_addr;
+  wire  signed [31:0]  PLB_din;
+  wire  signed [31:0]  PLB_dout;
+
+  PLB u_PLB (
+    .clka(PLB_clk),    // input wire clka
+    .ena(PLB_en),      // input wire ena
+    .wea(PLB_we),      // input wire [0 : 0] wea
+    .addra(PLB_addr),  // input wire [9 : 0] addra
+    .dina(PLB_din),    // input wire [31 : 0] dina
+    .douta(PLB_dout)  // output wire [31 : 0] douta
+  );
 
 /******************RSA ->  NonLinear*********************/
   //开始信号

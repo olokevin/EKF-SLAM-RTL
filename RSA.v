@@ -694,6 +694,9 @@ u_B_cache_dout_map(
   ********************** PS-PL BRAM ports **********************
 */
 
+wire  [1:0]             assoc_status;
+wire  [ROW_LEN-1 : 0]   assoc_l_k;
+
 PLB_din_map 
 #(
   .X          (X          ),
@@ -708,12 +711,15 @@ u_PLB_din_map(
   .sys_rst     (sys_rst     ),
   .seq_cnt_out (seq_cnt_out ),
   .upd_cur_out (upd_cur_out ),
+  .assoc_cur_out(assoc_cur_out),
   .C_PLB_din   (C_PLB_din   ),
   .PLB_dout    (PLB_dout    ),
   .PLB_en      (PLB_en      ),
   .PLB_we      (PLB_we      ),
   .PLB_addr    (PLB_addr    ),
-  .PLB_din     (PLB_din     )
+  .PLB_din     (PLB_din     ),
+  .assoc_status(assoc_status),
+  .assoc_l_k   (assoc_l_k)
 );
 
 
@@ -1119,6 +1125,9 @@ u_PE_config(
   .new_cur_out   (new_cur_out   ),
   .upd_cur_out   (upd_cur_out   ),
   .assoc_cur_out (assoc_cur_out ),
+
+  .assoc_status(assoc_status),
+  .assoc_l_k   (assoc_l_k),
 
   .M_adder_mode  (M_adder_mode  ),
   .PE_mode       (PE_mode       ),

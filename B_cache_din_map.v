@@ -246,16 +246,16 @@ localparam I_22 = 32'h8_0000;
 
               /*temporary for test*/
               'd7:begin
-                    B_cache_din[0 +: RSA_DW] <= 2'b10;
+                    B_cache_din[0 +: RSA_DW] <= (2 <<< 19);
                     B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                   end  
               'd8:begin
-                    B_cache_din[0 +: RSA_DW] <= 2'b11;
-                    B_cache_din[1*RSA_DW +: RSA_DW] <= 2'b11;
+                    B_cache_din[0 +: RSA_DW] <= (3 <<< 19);
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= (3 <<< 19);
                   end
               'd9:begin
                     B_cache_din[0 +: RSA_DW] <= 0;
-                    B_cache_din[1*RSA_DW +: RSA_DW] <= 1'b1;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= (1 <<< 19);
                   end
               default: begin
                     B_cache_din[0 +: RSA_DW] <= 0;
