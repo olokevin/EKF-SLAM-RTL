@@ -99,18 +99,12 @@ module PE_config #(
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
 
-//AXI BRAM
-    output  reg        PLB_en,   
-    output  reg        PLB_we,   
-    output  reg [9:0]   PLB_addr,
-    input       [31:0]  PLB_din,
-    output  reg [31:0]  PLB_dout,
-
   output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
   output [2 : 0]            stage_cur_out,
   output [3:0]              prd_cur_out,
   output [5:0]              new_cur_out,
   output [10:0]             upd_cur_out,
+  output [4:0]              assoc_cur_out,
 
   output [2*X-1 : 0]          M_adder_mode, 
   output reg [1:0]            PE_mode,
@@ -183,7 +177,7 @@ module PE_config #(
   localparam  C_TBb = 2'b00;
   localparam  C_cache = 2'b01;
   localparam  C_CBb = 2'b10;
-  localparam  C_ser = 2'b11;
+  localparam  C_PLB = 2'b11;
   localparam  C_NONE = 2'b11;
 
 //CB portA map mode
@@ -276,7 +270,9 @@ module PE_config #(
     localparam Bca_WR_transpose = 4'b1001;
     localparam Bca_WR_inv     = 4'b1010;
     localparam Bca_WR_chi     = 4'b1011;
-    localparam Bca_WR_NL_PRD  = 4'b1101;
+    
+    localparam Bca_WR_NL_PRD  = 4'b1100;
+    localparam Bca_WR_NL_ASSOC= 4'b1101;
     localparam Bca_WR_NL_NEW  = 4'b1110;
     localparam Bca_WR_NL_UPD  = 4'b1111; 
 
@@ -296,17 +292,38 @@ module PE_config #(
   localparam READY   = 3'b111;
 
 //SEQ_CNT_PARAM
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 'd0;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_1 = 'd1;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_2 = 'd2;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_3 = 'd3;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_4 = 'd4;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_5 = 'd5;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_6 = 'd6;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_7 = 'd7;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 'd8;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_9 = 'd9;
-  localparam [SEQ_CNT_DW-1 : 0] SEQ_10 = 'd10;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 5'd0;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_1 = 5'd1;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_2 = 5'd2;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_3 = 5'd3;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_4 = 5'd4;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_5 = 5'd5;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_6 = 5'd6;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_7 = 5'd7;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 5'd8;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_9 = 5'd9;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_10 = 5'd10;
+
+/*
+  ******************* params of B_cache addr *****************
+*/
+    localparam Fxi_cache = 3'b000;
+
+    localparam Gxi_cache = 3'b000;
+    localparam Gz_cache  = 3'b011;
+
+    localparam Hxi_cache = 3'b000;
+    localparam Hz_cache  = 3'b011;
+
+  //ASSOC
+    localparam I_cache = 3'b101;
+  //UPD
+    localparam v_t_cache = 3'b101;
+    localparam cov_HT_cache = 3'b000;
+    localparam S_cache_0 = 3'b000;
+    localparam S_cache_1 = 3'b001;
+
+
 /*
   ******************* params of Prediction stage *****************
 */
@@ -424,10 +441,11 @@ module PE_config #(
     localparam UPD_7         = 11'b111;
     localparam UPD_8         = 11'b1000;
     localparam UPD_9         = 11'b1001;
+    localparam UPD_STATE     = 11'b1100;
     localparam UPD_10        = 11'b1010;
     localparam UPD_HALT_56   = 11'b1101;
     localparam UPD_HALT_78   = 11'b1110;
-    localparam UPD_HALT_910  = 11'b1111;
+    
 
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_RCV_CNT_MAX  = 'd10;
@@ -443,7 +461,7 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
     localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_910_CNT_MAX  = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_STATE_CNT_MAX  = 'd7;
 
 
     localparam UPD_1_M       = 3'b000;
@@ -551,21 +569,6 @@ module PE_config #(
     localparam ASSOC_8_K       = 3'b000;
     localparam ASSOC_9_K       = 3'b010;
     localparam ASSOC_10_K      = 3'b001;
-
-/*
-  ******************* params of B_cache addr *****************
-*/
-    localparam Fxi_cache = 3'b000;
-
-    localparam Gxi_cache = 3'b000;
-    localparam Gz_cache  = 3'b011;
-
-    localparam Hxi_cache = 3'b000;
-    localparam Hz_cache  = 3'b011;
-    
-    localparam cov_HT_cache = 3'b000;
-    localparam S_cache_0 = 3'b000;
-    localparam S_cache_1 = 3'b001;
 
 /*
   ******************DATA FLOW config*******************
@@ -711,6 +714,7 @@ module PE_config #(
   assign prd_cur_out = prd_cur;
   assign new_cur_out = new_cur;
   assign upd_cur_out = upd_cur;
+  assign assoc_cur_out = assoc_cur;
 
   
 
@@ -1099,18 +1103,18 @@ assign test_stage = stage_val & stage_rdy;
           UPD_9: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
               // upd_cur <= UPD_10;  //220722 加入halt
-              upd_cur <= UPD_HALT_910;
+              upd_cur <= UPD_STATE;
             end
             else begin
               upd_cur <= UPD_9;
             end
           end
-          UPD_HALT_910: begin
-            if(seq_cnt == seq_cnt_max) begin
+          UPD_STATE: begin
+            if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
               upd_cur <= UPD_10;
             end
             else begin
-              upd_cur <= UPD_HALT_910;
+              upd_cur <= UPD_STATE;
             end
           end
           UPD_10: begin
@@ -1387,7 +1391,7 @@ assign test_stage = stage_val & stage_rdy;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
           UPD_HALT_56: seq_cnt_max = UPD_HALT_56_CNT_MAX;
           UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
-          UPD_HALT_910: seq_cnt_max = UPD_HALT_910_CNT_MAX;
+          UPD_STATE: seq_cnt_max = UPD_STATE_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
       end
@@ -1528,7 +1532,7 @@ assign test_stage = stage_val & stage_rdy;
                       v_group_cnt <= v_group_cnt;
                     end
                   end
-            UPD_9: begin
+            UPD_9,UPD_STATE: begin
                     if(seq_cnt == seq_cnt_max) begin
                       if(v_group_cnt == v_group_cnt_max) //这已经是最后一组
                         v_group_cnt <= 0;
@@ -2382,7 +2386,7 @@ assign test_stage = stage_val & stage_rdy;
   //                               B_cache_mode <= Bca_RD_B;
   //                               B_cache_base_addr_set <= 0;
   //                             end
-  //                       UPD_HALT_910: begin
+  //                       UPD_STATE: begin
   //                                 PE_m <= UPD_9_M;
   //                                 PE_n <= UPD_9_N;
   //                                 PE_k <= UPD_9_K;
@@ -2735,7 +2739,7 @@ assign test_stage = stage_val & stage_rdy;
   //                               A_in_mode <= A_cache;   
   //                               B_in_mode <= B_TBb;
   //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_ser;
+  //                               C_out_mode <= C_PLB;
   //                               M_adder_mode_set <= NONE;
 
   //                               TBa_mode <= TB_IDLE;
@@ -3203,8 +3207,8 @@ assign test_stage = stage_val & stage_rdy;
                             begin
                               TBa_mode = {TBa_NL_UPD,DIR_POS};
                               CBb_mode = CB_IDLE;  
-                              PE_n = 3'b101;
-                              B_cache_mode = Bca_WR_NL_UPD;
+                              PE_n = 3'b111;
+                              B_cache_mode = Bca_WR_NL_UPD;   //UPD中vt写入Bcache
                               B_cache_base_addr_set = 0; 
                             end
                       UPD_1: begin
@@ -3566,31 +3570,31 @@ assign test_stage = stage_val & stage_rdy;
                               B_cache_mode = Bca_RD_B;
                               B_cache_base_addr_set = 0;
                             end
-                      UPD_HALT_910: begin
-                                PE_m = UPD_9_M;
-                                PE_n = UPD_9_N;
-                                PE_k = UPD_9_K;
+                      UPD_STATE: begin
+                                PE_m = 3'b100;
+                                PE_n = 3'b010;
+                                PE_k = 3'b001;
 
                                 CAL_mode = N_W;
 
-                                A_in_mode = A_NONE;   
-                                B_in_mode = B_NONE;
+                                A_in_mode = A_TBa;   
+                                B_in_mode = B_cache;
                                 M_in_mode = M_NONE;
-                                C_out_mode = C_TBb;
+                                C_out_mode = C_PLB;
                                 M_adder_mode_set = NONE;
 
-                                TBa_mode = {TBa_IDLE,DIR_POS};
+                                TBa_mode = {TBa_A,DIR_POS};
                                 TBb_mode = {TBb_IDLE,DIR_POS};
                                 CBa_mode = CB_IDLE;
                                 CBb_mode = CB_IDLE;
 
-                                A_TB_base_addr_set = 0;
+                                A_TB_base_addr_set = K_t;
                                 B_TB_base_addr_set = 0;
                                 M_TB_base_addr_set = 0;
                                 C_TB_base_addr_set = 0;
 
-                                B_cache_mode = Bca_IDLE;
-                                B_cache_base_addr_set = 0;
+                                B_cache_mode = Bca_RD_B;
+                                B_cache_base_addr_set = v_t_cache;
                               end
                       UPD_10: begin
                             /*
@@ -3662,10 +3666,10 @@ assign test_stage = stage_val & stage_rdy;
                             end
                       ASSOC_NL_RCV:
                             begin
-                              // TBa_mode = {TBa_NL_UPD,DIR_POS};
+                              TBa_mode = {TBa_NL_UPD,DIR_POS};    //ASSOC中vt写入TB
                               CBb_mode = CB_IDLE;  
-                              PE_n = 3'b101;
-                              B_cache_mode = Bca_WR_NL_UPD;
+                              PE_n = 3'b111;
+                              B_cache_mode = Bca_WR_NL_ASSOC;     //ASSOC写入
                               B_cache_base_addr_set = 0; 
                             end
                       ASSOC_1: begin
@@ -3692,7 +3696,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_vv;
 
                               B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_base_addr_set = Hxi_cache; 
                           end
                       ASSOC_2: begin
                               PE_m = ASSOC_2_M;
@@ -3718,7 +3722,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_lv;
 
                               B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_base_addr_set = Hxi_cache; 
                           end
                       ASSOC_3: begin
                               PE_m = ASSOC_3_M;
@@ -3744,7 +3748,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_ll;
 
                               B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 3'b011; 
+                              B_cache_base_addr_set = Hz_cache; 
                           end
                       ASSOC_4: begin
                               PE_m = ASSOC_4_M;
@@ -3770,7 +3774,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_lv_H;
 
                               B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 3'b011; 
+                              B_cache_base_addr_set = Hz_cache; 
                           end
                        ASSOC_5: begin
                               PE_m = ASSOC_5_M;
@@ -3796,7 +3800,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_vv_H;
 
                               B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_base_addr_set = Hxi_cache; 
                           end
                       ASSOC_6: begin
                               PE_m = ASSOC_6_M;
@@ -3822,7 +3826,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = H_ll_H;
 
                               B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 3'b011; 
+                              B_cache_base_addr_set = Hz_cache; 
                           end
                       ASSOC_7: begin
                               PE_m = ASSOC_7_M;
@@ -3847,8 +3851,8 @@ assign test_stage = stage_val & stage_rdy;
                               M_TB_base_addr_set = H_vv_H;
                               C_TB_base_addr_set = 0;
 
-                              B_cache_mode = Bca_WR_inv;
-                              B_cache_base_addr_set = 3'b101; 
+                              B_cache_mode = Bca_RD_B;
+                              B_cache_base_addr_set = I_cache; 
                           end
                       ASSOC_8: begin
                             /*
@@ -3907,7 +3911,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = 0;
 
                               B_cache_mode = Bca_WR_chi;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_base_addr_set = S_cache_0; 
                           end
                       ASSOC_10: begin
                               PE_m = ASSOC_10_M;
@@ -3919,7 +3923,7 @@ assign test_stage = stage_val & stage_rdy;
                               A_in_mode = A_cache;   
                               B_in_mode = B_TBb;
                               M_in_mode = M_NONE;
-                              C_out_mode = C_ser;
+                              C_out_mode = C_PLB;
                               M_adder_mode_set = NONE;
 
                               TBa_mode = TB_IDLE;
@@ -4407,7 +4411,12 @@ assign test_stage = stage_val & stage_rdy;
       
   end
 
-  //new_cal_en 移位
+  //new_cal_en 移位 与 B_in_en相与
+  wire  [Y-1 : 0]           new_cal_en_shift;
+  wire  [Y-1 : 0]           new_cal_done_shift;
+
+  assign new_cal_en = new_cal_en_shift && B_in_en;
+  assign new_cal_done = new_cal_done_shift && B_in_en;
     dshift 
     #(
       .DW  (1  ),
@@ -4419,7 +4428,7 @@ assign test_stage = stage_val & stage_rdy;
       .dir   (cal_en_done_dir   ),
       .l_k_0       (l_k_0       ),
       .din   (new_cal_en_new   ),
-      .dout  (new_cal_en  )
+      .dout  (new_cal_en_shift  )
     );
 
     dshift 
@@ -4433,7 +4442,7 @@ assign test_stage = stage_val & stage_rdy;
       .dir   (cal_en_done_dir   ),
       .l_k_0       (l_k_0       ),
       .din   (new_cal_done_new   ),
-      .dout  (new_cal_done  )
+      .dout  (new_cal_done_shift  )
     );
 
 //******************* M读取状态延迟*************************
@@ -5396,7 +5405,7 @@ assign test_stage = stage_val & stage_rdy;
                       B_cache_addr_new <= 0;
                     end
                   end
-        Bca_WR_NL_PRD,Bca_WR_NL_NEW,Bca_WR_NL_UPD: begin
+        Bca_WR_NL_PRD,Bca_WR_NL_NEW,Bca_WR_NL_UPD,Bca_WR_NL_ASSOC: begin
                     B_cache_in_sel <= B_cache_mode;
                     if(seq_cnt < PE_n) begin
                       B_cache_we_new <= 1'b1;
@@ -6511,7 +6520,7 @@ assign test_stage = stage_val & stage_rdy;
             UPD_5: begin
               A_TB_base_addr <= A_TB_base_addr;
             end
-            UPD_9: begin
+            UPD_9, UPD_STATE: begin
               if(seq_cnt == 1'b1 && v_group_cnt == 0) begin
                 A_TB_base_addr <= A_TB_base_addr_set;
               end

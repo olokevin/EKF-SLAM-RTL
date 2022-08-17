@@ -30,8 +30,8 @@ module RSA
     output          PLB_en,   
     output          PLB_we,   
     output  [9:0]   PLB_addr,
-    input   [31:0]  PLB_din,
-    output  [31:0]  PLB_dout,
+    output  signed [31:0]  PLB_din,
+    input   signed [31:0]  PLB_dout,
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
@@ -94,7 +94,8 @@ module RSA
   reg signed [RSA_DW - 1 : 0] Hz_11, Hz_12, Hz_21, Hz_22;
   reg signed [RSA_DW - 1 : 0] Hxi_11, Hxi_12, Hxi_21, Hxi_22;
   reg signed [RSA_DW - 1 : 0] vt_1, vt_2;
-  
+
+//(old) sampling nonlinear data
   // always @(posedge clk) begin
   //   if(sys_rst) begin
   //         x_hat <= 0;
@@ -181,6 +182,7 @@ module RSA
   //   end
   // end
 
+//(using) sampling
   always @(posedge clk) begin
     if(sys_rst) begin
       x_hat <= 0;
@@ -506,6 +508,7 @@ wire [X-1 : 0]          M_in_en;
 wire signed [X*RSA_DW-1 : 0]   C_TB_dinb; 
 wire signed [X*RSA_DW-1 : 0]   C_CB_dinb;
 wire signed [X*RSA_DW-1 : 0]   C_B_cache_din;
+wire signed [X*RSA_DW-1 : 0]   C_PLB_din;
 wire [C_OUT_SEL_DW*X-1 : 0]        C_out_sel; 
 wire [X-1 : 0]          C_out_en; 
 
@@ -560,10 +563,9 @@ generate
         .dout_00 (C_TB_dinb[RSA_DW*i_X +: RSA_DW] ),
         .dout_01 (C_B_cache_din[RSA_DW*i_X +: RSA_DW] ),
         .dout_10 (C_CB_dinb[RSA_DW*i_X +: RSA_DW] ),
-        .dout_11 ( )
+        .dout_11 (C_PLB_din[RSA_DW*i_X +: RSA_DW] )
       );
-      
-
+     
   end
 endgenerate
 
@@ -688,6 +690,31 @@ u_B_cache_dout_map(
   .B_cache_dout_B  (B_cache_dout_B  )
 );
 
+/*
+  ********************** PS-PL BRAM ports **********************
+*/
+
+PLB_din_map 
+#(
+  .X          (X          ),
+  .Y          (Y          ),
+  .L          (L          ),
+  .RSA_DW     (RSA_DW     ),
+  .SEQ_CNT_DW (SEQ_CNT_DW ),
+  .ROW_LEN    (ROW_LEN    )
+)
+u_PLB_din_map(
+  .clk         (clk         ),
+  .sys_rst     (sys_rst     ),
+  .seq_cnt_out (seq_cnt_out ),
+  .upd_cur_out (upd_cur_out ),
+  .C_PLB_din   (C_PLB_din   ),
+  .PLB_dout    (PLB_dout    ),
+  .PLB_en      (PLB_en      ),
+  .PLB_we      (PLB_we      ),
+  .PLB_addr    (PLB_addr    ),
+  .PLB_din     (PLB_din     )
+);
 
 
 /*
@@ -1086,17 +1113,12 @@ u_PE_config(
   .B_cache_we    (B_cache_we    ),
   .B_cache_addr  (B_cache_addr  ),
 
-  .PLB_en        (PLB_en        ),
-  .PLB_we        (PLB_we        ),
-  .PLB_addr      (PLB_addr      ),
-  .PLB_din       (PLB_din       ),
-  .PLB_dout      (PLB_dout      ),
-
   .seq_cnt_out   (seq_cnt_out   ),
   .stage_cur_out (stage_cur_out ),
   .prd_cur_out   (prd_cur_out   ),
   .new_cur_out   (new_cur_out   ),
   .upd_cur_out   (upd_cur_out   ),
+  .assoc_cur_out (assoc_cur_out ),
 
   .M_adder_mode  (M_adder_mode  ),
   .PE_mode       (PE_mode       ),

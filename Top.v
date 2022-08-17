@@ -13,24 +13,24 @@ module Top
 // ) 
 (
   input clk,
-  input sys_rst,
+  input sys_rst_n,    //AXI总线为低电平复位
 
   //模式控制
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
-    input   [ROW_LEN-1 : 0]  landmark_num,    
+    input   [9 : 0]  landmark_num,    
 
   //当前地标编号
-    input   [ROW_LEN-1 : 0]  l_k, 
+    input   [9 : 0]  l_k, 
 
   //预测步数据
-    input signed [RSA_DW - 1 : 0] vlr,
-    input signed [RSA_DW - 1 : 0] alpha,    //角度输入也为32位
+    input signed [31 : 0] vlr,
+    input signed [31 : 0] alpha,    //角度输入也为32位
 
   //更新步数据
-    input signed [RSA_DW - 1 : 0] rk,
-    input signed [RSA_DW - 1 : 0] phi,
+    input signed [31 : 0] rk,
+    input signed [31 : 0] phi,
 
   //AXI BRAM
     output          PLB_clk,
@@ -39,11 +39,11 @@ module Top
     output          PLB_en,   
     output          PLB_we,   
     output  [9:0]   PLB_addr,
-    input   [31:0]  PLB_din,
-    output  [31:0]  PLB_dout
+    output  signed [31:0]  PLB_din,
+    input   signed [31:0]  PLB_dout
 
 );
-
+/******************PARAMETERS*********************/
   parameter X = 4;
   parameter Y = 4;
   parameter L = 4;
@@ -54,6 +54,10 @@ module Top
   parameter CB_AW = 17;
   parameter SEQ_CNT_DW = 5;
   parameter ROW_LEN = 10;
+
+/******************sys_rst*********************/
+  wire  sys_rst;
+  assign sys_rst = ~sys_rst_n;
 
 /******************RSA ->  PS*********************/
     assign PLB_clk = clk;

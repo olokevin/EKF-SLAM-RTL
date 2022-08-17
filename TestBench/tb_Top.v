@@ -27,7 +27,7 @@ parameter SEQ_CNT_DW  = 5 ;
 
 // Top Inputs
 reg   clk                                  = 1 ;
-reg   sys_rst                              = 0 ;
+reg   sys_rst_n                            = 1 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
 reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
@@ -36,10 +36,19 @@ reg   [RSA_AW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
 reg   [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
 reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
 // reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
+reg  [31:0]  PLB_dout;
+
 
 // Top Outputs
 wire  [2:0]  stage_rdy                     ;
-wire  signed [RSA_DW - 1 : 0] S_data       ;
+
+wire          PLB_clk;
+wire          PLB_rst;
+
+wire          PLB_en;  
+wire          PLB_we;   
+wire  [9:0]   PLB_addr;
+wire   [31:0]  PLB_din;
 
 //stage
   localparam      IDLE       = 3'b000 ;
@@ -56,8 +65,8 @@ end
 
 initial
 begin
-    #(PERIOD*RST_START) sys_rst  =  1;
-    #(PERIOD*2) sys_rst  =  0;
+    #(PERIOD*RST_START) sys_rst_n  =  0;
+    #(PERIOD*2) sys_rst_n  =  1;
 end
 
 /*
@@ -141,7 +150,7 @@ Top
   //   .SEQ_CNT_DW ( SEQ_CNT_DW ))
  u_Top (
     .clk                     ( clk                                      ),
-    .sys_rst                 ( sys_rst                                  ),
+    .sys_rst_n               ( sys_rst_n                                  ),
     .stage_val               ( stage_val               [2:0]            ),
     .landmark_num            ( landmark_num            [ROW_LEN-1 : 0]  ),
 
@@ -152,7 +161,13 @@ Top
     .phi                     ( phi                     [RSA_AW - 1 : 0] ),
 
     .stage_rdy               ( stage_rdy               [2:0]            ),
-    .S_data                  ( S_data                  [RSA_DW - 1 : 0] )
+    .PLB_clk       (PLB_clk       ),
+	  .PLB_rst       (PLB_rst       ),
+	  .PLB_en        (PLB_en        ),
+    .PLB_we        (PLB_we        ),
+    .PLB_addr      (PLB_addr      ),
+    .PLB_din       (PLB_din       ),
+    .PLB_dout      (PLB_dout      )
 );
 
 endmodule
