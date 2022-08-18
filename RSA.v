@@ -73,7 +73,8 @@ module RSA
   wire [2 : 0]            stage_cur_out;
   wire [3 : 0]            prd_cur_out;
   wire [5 : 0]            new_cur_out;
-  wire [10 :0]            upd_cur_out;
+  wire [5 :0]             upd_cur_out;
+  wire [4 :0]             assoc_cur_out;
   //stage
   localparam      IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
@@ -202,51 +203,51 @@ module RSA
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      lkx_hat = 0;
-      lky_hat = 0;
-      Gxi_13 = 0;
-      Gxi_23 = 0;
-      Gz_11 = 0;
-      Gz_12 = 0;
-      Gz_21 = 0;
-      Gz_22 = 0;
+      lkx_hat <= 0;
+      lky_hat <= 0;
+      Gxi_13 <= 0;
+      Gxi_23 <= 0;
+      Gz_11 <= 0;
+      Gz_12 <= 0;
+      Gz_21 <= 0;
+      Gz_22 <= 0;
     end
     else if(done_newlm == 1'b1) begin
-      lkx_hat = lkx + result_3;
-      lky_hat = lky + result_2;
-      Gxi_13 = -result_2;
-      Gxi_23 = result_3;
-      Gz_11 = result_0;
-      Gz_12 = -result_2;
-      Gz_21 = result_1;
-      Gz_22 = result_3;
+      lkx_hat <= lkx + result_3;
+      lky_hat <= lky + result_2;
+      Gxi_13 <= -result_2;
+      Gxi_23 <= result_3;
+      Gz_11 <= result_0;
+      Gz_12 <= -result_2;
+      Gz_21 <= result_1;
+      Gz_22 <= result_3;
     end
   end
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      Hxi_11 = 0;
-      Hxi_12 = 0;
-      Hxi_21 = 0;
-      Hxi_22 = 0;
-      Hz_11 = 0;
-      Hz_12 = 0;
-      Hz_21 = 0;
-      Hz_22 = 0;
-      vt_1 = 0;
-      vt_2 = 0;
+      Hxi_11 <= 0;
+      Hxi_12 <= 0;
+      Hxi_21 <= 0;
+      Hxi_22 <= 0;
+      Hz_11 <= 0;
+      Hz_12 <= 0;
+      Hz_21 <= 0;
+      Hz_22 <= 0;
+      vt_1 <= 0;
+      vt_2 <= 0;
     end
     else if(done_update == 1'b1) begin
-      Hxi_11 = -result_4;
-      Hxi_12 = -result_5;
-      Hxi_21 = result_2;
-      Hxi_22 = -result_3;
-      Hz_11 = result_4;
-      Hz_12 = result_5;
-      Hz_21 = -result_2;
-      Hz_22 = result_3;
-      vt_1 = result_0;
-      vt_2 = result_1;
+      Hxi_11 <= -result_4;
+      Hxi_12 <= -result_5;
+      Hxi_21 <= result_2;
+      Hxi_22 <= -result_3;
+      Hz_11 <= result_4;
+      Hz_12 <= result_5;
+      Hz_21 <= -result_2;
+      Hz_22 <= result_3;
+      vt_1 <= result_0;
+      vt_2 <= result_1;
     end
   end
 
@@ -709,9 +710,25 @@ PLB_din_map
 u_PLB_din_map(
   .clk         (clk         ),
   .sys_rst     (sys_rst     ),
-  .seq_cnt_out (seq_cnt_out ),
-  .upd_cur_out (upd_cur_out ),
-  .assoc_cur_out(assoc_cur_out),
+  .l_k           (l_k           ),
+  .seq_cnt_out   (seq_cnt_out   ),
+  .prd_cur_out   (prd_cur_out   ),
+  .new_cur_out   (new_cur_out   ),
+  .upd_cur_out   (upd_cur_out   ),
+  .assoc_cur_out (assoc_cur_out ),
+
+  .xk            (xk            ),
+  .yk            (yk            ),
+  .xita          (xita          ),
+  .lkx           (lkx           ),
+  .lky           (lky           ),
+
+  .x_hat       (x_hat       ),
+  .y_hat       (y_hat       ),
+  .xita_hat    (xita_hat    ),
+  .lkx_hat     (lkx_hat         ),
+  .lky_hat     (lky_hat         ),
+
   .C_PLB_din   (C_PLB_din   ),
   .PLB_dout    (PLB_dout    ),
   .PLB_en      (PLB_en      ),
@@ -884,11 +901,11 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .l_k_0        (l_k_0        ),
     .seq_cnt_out  (seq_cnt_out  ),
 
-    .x_hat       (x_hat       ),
-    .y_hat       (y_hat       ),
-    .xita_hat    (xita_hat    ),
-    .lkx_hat     (lkx_hat         ),
-    .lky_hat     (lky_hat         ),
+    // .x_hat       (x_hat       ),
+    // .y_hat       (y_hat       ),
+    // .xita_hat    (xita_hat    ),
+    // .lkx_hat     (lkx_hat         ),
+    // .lky_hat     (lky_hat         ),
 
     .C_CB_dinb    (C_CB_dinb    ),
     .CB_dinb      (CB_dinb      )
@@ -915,12 +932,12 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .B_CB_douta   (B_CB_douta   ),
     .M_CB_douta   (M_CB_douta   ),
 
-    .TB_dina_CB_douta (TB_dina_CB_douta ),
-    .xk               (xk               ),
-    .yk               (yk               ),
-    .xita             (xita             ),
-    .lkx              (lkx              ),
-    .lky              (lky              )
+    .TB_dina_CB_douta (TB_dina_CB_douta )
+    // .xk               (xk               ),
+    // .yk               (yk               ),
+    // .xita             (xita             ),
+    // .lkx              (lkx              ),
+    // .lky              (lky              )
   );
 
 //instantiate of TEMP BANK

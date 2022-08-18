@@ -275,7 +275,7 @@ localparam I_22 = 32'h8_0000;
               'd10:begin
                     B_cache_din[0 +: RSA_DW] <= C_B_cache_din[0 +: RSA_DW];
                   end
-              'd11:begin
+              'd12:begin
                     B_cache_din[0 +: RSA_DW] <= C_B_cache_din[0 +: RSA_DW];
                   end
               default: begin

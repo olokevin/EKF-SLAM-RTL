@@ -14,10 +14,19 @@ module PLB_din_map #(
   input   [ROW_LEN-1 : 0]    l_k,           //当前地标编号
 
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
-  input   [10:0]             upd_cur_out,
+  input   [3:0]              prd_cur_out,
+  input   [5:0]              new_cur_out,
+  input   [5:0]              upd_cur_out,
   input   [4:0]              assoc_cur_out,
 
-//Output state vector
+//Output state vector to NonLinear
+  output  reg  signed [RSA_DW-1 : 0]      xk, yk, xita,
+  output  reg  signed [RSA_DW-1 : 0]      lkx, lky,
+//Input  predict/init state from NonLinear
+  input signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat,
+  input signed [RSA_DW - 1 : 0] lkx_hat, lky_hat,
+
+//Update state vector
   input   signed [X*RSA_DW-1 : 0]    C_PLB_din, 
   input   signed [RSA_DW-1 : 0]      PLB_dout,
 
@@ -32,7 +41,17 @@ module PLB_din_map #(
   output  reg  [ROW_LEN-1 : 0]   assoc_l_k
 );
 
-localparam UPD_STATE     = 11'b1100;
+localparam PRD_NL_SEND   = 4'b1001;
+localparam NEW_NL_SEND   = 6'b100001;
+localparam UPD_NL_SEND   = 6'b10_0001;
+localparam ASSOC_NL_SEND = 5'b10001;
+
+localparam PRD_NL_RCV    = 4'b1011;
+localparam NEW_NL_RCV    = 6'b100011;
+localparam UPD_NL_RCV    = 6'b10_0100;
+localparam ASSOC_NL_RCV  = 5'b10011;
+
+localparam UPD_STATE     = 6'b1100;
 
 //SEQ_CNT_PARAM
   localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 5'd0;
@@ -46,13 +65,30 @@ localparam UPD_STATE     = 11'b1100;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 5'd8;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_9 = 5'd9;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_10 = 5'd10;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_11 = 5'd11;
+
+/*
+  *********************Input predict state/ init map ********************
+*/
+
+  reg [9:0]  PLB_lk_base_addr;
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      PLB_lk_base_addr <= 0;
+    end
+    else 
+      PLB_lk_base_addr <= (l_k + 1'b1) <<< 1;
+  end
+/*
+  *********************Update State Vector ********************
+*/
 
 //delay
   reg  [SEQ_CNT_DW-1 : 0]  seq_cnt_out_delay [1:8];
-  reg  [10 : 0]            upd_cur_out_delay [1:8];
+  reg  [5 : 0]             upd_cur_out_delay [1:8];
 
   wire [SEQ_CNT_DW-1 : 0]  seq_cnt_out_d8;
-  wire [10 : 0]            upd_cur_out_d8;
+  wire [5 : 0]             upd_cur_out_d8;
   assign seq_cnt_out_d8 = seq_cnt_out_delay[8];
   assign upd_cur_out_d8 = upd_cur_out_delay[8];
 
@@ -102,7 +138,105 @@ always @(posedge clk) begin
     PLB_addr <= 0;
   end
   else begin
-    if(upd_cur_out_d8 == UPD_STATE) begin
+  //Output state vector to NonLinear
+    if(prd_cur_out == PRD_NL_SEND || new_cur_out == NEW_NL_SEND ||upd_cur_out == UPD_NL_SEND ||assoc_cur_out == ASSOC_NL_SEND) begin
+      PLB_we <= 1'b0;
+      PLB_din <= 0;
+      case (seq_cnt_out)
+        SEQ_1: begin
+              PLB_en   <= 1'b1;
+              PLB_addr <= 0;
+        end 
+        SEQ_2: begin
+              PLB_en   <= 1'b1;
+              PLB_addr <= 10'b1;
+
+              xk <= PLB_dout;
+        end 
+        SEQ_3: begin
+              PLB_en   <= 1'b1;
+              PLB_addr <= 10'b10;
+
+              yk <= PLB_dout;
+        end 
+        SEQ_4: begin
+              PLB_en   <= 1'b1;
+              PLB_addr <= PLB_lk_base_addr ;
+
+              xita <= PLB_dout;
+        end 
+        SEQ_5: begin
+              PLB_en   <= 1'b1;
+              PLB_addr <= PLB_lk_base_addr + 1'b1 ;
+
+              lkx <= PLB_dout;
+        end 
+        SEQ_6: begin
+              PLB_en   <= 1'b0;
+              PLB_addr <= 0 ;
+
+              lky <= PLB_dout;
+        end
+        default: begin
+              PLB_en   <= 1'b0;
+              PLB_addr <= 0 ;
+        end
+      endcase
+    end
+  //Input  predict state from NonLinear
+    else if(prd_cur_out == PRD_NL_RCV) begin
+      case (seq_cnt_out)
+        SEQ_1: begin
+              PLB_en   <= 1'b1;
+              PLB_we   <= 1'b1;
+              PLB_addr <= 0;
+              PLB_din  <= x_hat;
+        end 
+        SEQ_2: begin
+              PLB_en   <= 1'b1;
+              PLB_we   <= 1'b1;
+              PLB_addr <= 10'b1;
+              PLB_din  <= y_hat;
+        end 
+        SEQ_3: begin
+              PLB_en   <= 1'b1;
+              PLB_we   <= 1'b1;
+              PLB_addr <= 10'b10;
+              PLB_din  <= xita_hat;
+        end 
+        default: begin
+              PLB_en   <= 1'b0;
+              PLB_we   <= 1'b0;
+              PLB_addr <= 0;
+              PLB_din  <= 0;
+        end
+      endcase
+    end
+  //Input  init state from NonLinear
+    else if(prd_cur_out == PRD_NL_RCV) begin
+      case (seq_cnt_out)
+        SEQ_1: begin
+              PLB_en   <= 1'b1;
+              PLB_we   <= 1'b1;
+              PLB_addr <= PLB_lk_base_addr;
+              PLB_din  <= lkx_hat;
+        end 
+        SEQ_2: begin
+              PLB_en   <= 1'b1;
+              PLB_we   <= 1'b1;
+              PLB_addr <= PLB_lk_base_addr + 1'b1;
+              PLB_din  <= lky_hat;
+        end 
+        default: begin
+              PLB_en   <= 1'b0;
+              PLB_we   <= 1'b0;
+              PLB_addr <= 0;
+              PLB_din  <= 0;
+        end
+      endcase
+    end
+  //Update State Vector
+    else if(upd_cur_out_d8 == UPD_STATE) begin
       PLB_en <= 1'b1;
       case (seq_cnt_out_d8)
         SEQ_0: begin
@@ -173,7 +307,9 @@ always @(posedge clk) begin
     
 end
 
-/*******************data association******************************/
+/*
+    ******************data association*****************************
+*/
 localparam ASSOC_WAIT = 2'b00;
 localparam ASSOC_NEW  = 2'b01;
 localparam ASSOC_UPD  = 2'b10;
@@ -206,7 +342,8 @@ reg signed [RSA_DW-1 : 0] temp_chi;
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      assoc_status <= ASSOC_IDLE;
+      temp_chi <= 0;
+      min_chi  <= 0;
       assoc_l_k    <= 0;
     end
     else begin
@@ -219,17 +356,23 @@ reg signed [RSA_DW-1 : 0] temp_chi;
       //Get result
       else if(assoc_cur_out == ASSOC_10) begin
         case(seq_cnt_out)
-          SEQ_9: begin
-            temp_chi <= C_PLB_din[0 +: RSA_DW];
-          end
           SEQ_10: begin
-            if(temp_chi < min_chi) begin
+              temp_chi <= C_PLB_din[0 +: RSA_DW];
+          end
+          SEQ_11: begin
+            if(l_k == 10'b1) begin
               min_chi <= temp_chi;
               assoc_l_k <= l_k;
             end
             else begin
-              min_chi <= min_chi;
-              assoc_l_k <= assoc_l_k;
+              if(temp_chi < min_chi) begin
+                min_chi <= temp_chi;
+                assoc_l_k <= l_k;
+              end
+              else begin
+                min_chi <= min_chi;
+                assoc_l_k <= assoc_l_k;
+              end
             end
           end
           default: begin
@@ -239,9 +382,10 @@ reg signed [RSA_DW-1 : 0] temp_chi;
           end
         endcase
       end
-      else begin      //In between the association, save min_chi
+      else begin      //In between the association, save min_chi & assoc_l_k
         temp_chi <= 0;
         min_chi <= min_chi;
+        assoc_l_k <= assoc_l_k;
       end
     end
   end

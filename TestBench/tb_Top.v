@@ -32,9 +32,9 @@ reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
 reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
 reg   [RSA_DW - 1 : 0]  vlr                = (2 <<< DATA_DEC_BIT);
-reg   [RSA_AW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
+reg   [RSA_DW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
 reg   [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
-reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
+reg   [RSA_DW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
 // reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
 reg  [31:0]  PLB_dout;
 

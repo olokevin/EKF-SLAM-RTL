@@ -20,9 +20,9 @@ module CB_douta_map #(
   output  reg  signed [Y*RSA_DW-1 : 0]    B_CB_douta,
   output  reg  signed [X*RSA_DW-1 : 0]    M_CB_douta,
 
-  output  reg  signed [X*RSA_DW-1 : 0]    TB_dina_CB_douta,
-  output  reg  signed [RSA_DW-1 : 0]      xk, yk, xita,
-  output  reg  signed [RSA_DW-1 : 0]      lkx, lky
+  output  reg  signed [X*RSA_DW-1 : 0]    TB_dina_CB_douta
+  // output  reg  signed [RSA_DW-1 : 0]      xk, yk, xita,
+  // output  reg  signed [RSA_DW-1 : 0]      lkx, lky
 );
 
 //
@@ -273,45 +273,45 @@ end
 
 //CBa -> NonLinear
 
-always @(posedge clk) begin
-  if(sys_rst) begin
-    xk <= 0;
-    yk <= 0;
-    xita <= 0;
-    lkx <= 0;
-    lky <= 0;
-  end
-  else begin
-    case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
-        CBa_NL: begin
-                  case(seq_cnt_out)     //不用延迟时序
-                    'd7:begin
-                          xk <= CB_douta[0 +: RSA_DW];
-                        end
-                    'd8:begin
-                          yk <= CB_douta[1*RSA_DW +: RSA_DW];
-                          lkx <= l_k_0 ? CB_douta[0 +: RSA_DW] : lkx;
-                        end
-                    'd9:begin
-                          xita <= CB_douta[2*RSA_DW +: RSA_DW];
-                          lky  <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
-                        end
-                    'd10:begin
-                          lkx  <= l_k_0 ? lkx : CB_douta[2*RSA_DW +: RSA_DW];
-                        end
-                    'd11:begin
-                          lky  <= l_k_0 ? lky : CB_douta[3*RSA_DW +: RSA_DW];
-                        end
-                  endcase
-                end
-        default: begin    //缓存，不变化
-                  xk <= xk;
-                  yk <= yk;
-                  xita <= xita;
-                  lkx <= lkx;
-                  lky <= lky;
-                end 
-      endcase
-  end
-end
+  // always @(posedge clk) begin
+  //   if(sys_rst) begin
+  //     xk <= 0;
+  //     yk <= 0;
+  //     xita <= 0;
+  //     lkx <= 0;
+  //     lky <= 0;
+  //   end
+  //   else begin
+  //     case(CB_douta_sel[CB_DOUTA_SEL_DW-1 : 2])
+  //         CBa_NL: begin
+  //                   case(seq_cnt_out)     //不用延迟时序
+  //                     'd7:begin
+  //                           xk <= CB_douta[0 +: RSA_DW];
+  //                         end
+  //                     'd8:begin
+  //                           yk <= CB_douta[1*RSA_DW +: RSA_DW];
+  //                           lkx <= l_k_0 ? CB_douta[0 +: RSA_DW] : lkx;
+  //                         end
+  //                     'd9:begin
+  //                           xita <= CB_douta[2*RSA_DW +: RSA_DW];
+  //                           lky  <= l_k_0 ? CB_douta[1*RSA_DW +: RSA_DW] : CB_douta[3*RSA_DW +: RSA_DW];
+  //                         end
+  //                     'd10:begin
+  //                           lkx  <= l_k_0 ? lkx : CB_douta[2*RSA_DW +: RSA_DW];
+  //                         end
+  //                     'd11:begin
+  //                           lky  <= l_k_0 ? lky : CB_douta[3*RSA_DW +: RSA_DW];
+  //                         end
+  //                   endcase
+  //                 end
+  //         default: begin    //缓存，不变化
+  //                   xk <= xk;
+  //                   yk <= yk;
+  //                   xita <= xita;
+  //                   lkx <= lkx;
+  //                   lky <= lky;
+  //                 end 
+  //       endcase
+  //   end
+  // end
 endmodule

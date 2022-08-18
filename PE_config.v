@@ -100,10 +100,10 @@ module PE_config #(
   output  [Y*3-1:0]       B_cache_addr,
 
   output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
-  output [2 : 0]            stage_cur_out,
+  output [2:0]            stage_cur_out,
   output [3:0]              prd_cur_out,
   output [5:0]              new_cur_out,
-  output [10:0]             upd_cur_out,
+  output [5:0]              upd_cur_out,
   output [4:0]              assoc_cur_out,
 
   input  [1:0]              assoc_status,
@@ -306,6 +306,12 @@ module PE_config #(
   localparam [SEQ_CNT_DW-1 : 0] SEQ_8 = 5'd8;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_9 = 5'd9;
   localparam [SEQ_CNT_DW-1 : 0] SEQ_10 = 5'd10;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_11 = 5'd11;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_12 = 5'd12;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_13 = 5'd13;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_14 = 5'd14;
+  localparam [SEQ_CNT_DW-1 : 0] SEQ_15 = 5'd15;
+
 
 /*
   ******************* params of B_cache addr *****************
@@ -325,6 +331,8 @@ module PE_config #(
     localparam cov_HT_cache = 3'b000;
     localparam S_cache_0 = 3'b000;
     localparam S_cache_1 = 3'b001;
+    localparam vt_S_inv_cache_0 = 3'b010;
+    localparam vt_S_inv_cache_1 = 3'b011;
 
 
 /*
@@ -380,15 +388,15 @@ module PE_config #(
     localparam [TB_AW-1 : 0] G_z_Q         = 'd8;
     localparam [TB_AW-1 : 0] lv_G_xi           = 'd10;
   // NEW SERIES
-    localparam NEW_IDLE      = 'b000000;
-    localparam NEW_NL_SEND   = 'b100001;
-    localparam NEW_NL_WAIT   = 'b100010;
-    localparam NEW_NL_RCV    = 'b100011;
-    localparam NEW_1         = 'b000001;       //prd_cur[1]
-    localparam NEW_2         = 'b000010;
-    localparam NEW_3         = 'b000011;
-    localparam NEW_4         = 'b000100;
-    localparam NEW_5         = 'b000101;
+    localparam NEW_IDLE      = 6'b000000;
+    localparam NEW_NL_SEND   = 6'b100001;
+    localparam NEW_NL_WAIT   = 6'b100010;
+    localparam NEW_NL_RCV    = 6'b100011;
+    localparam NEW_1         = 6'b000001;       //prd_cur[1]
+    localparam NEW_2         = 6'b000010;
+    localparam NEW_3         = 6'b000011;
+    localparam NEW_4         = 6'b000100;
+    localparam NEW_5         = 6'b000101;
 
     localparam [SEQ_CNT_DW-1 : 0] NEW_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] NEW_NL_RCV_CNT_MAX  = 'd6;
@@ -431,23 +439,23 @@ module PE_config #(
     localparam [TB_AW-1 : 0] t_cov_l       = 'd16;
     localparam [TB_AW-1 : 0] K_t           = 'd16;
   // UPDATE SERIES
-    localparam UPD_IDLE      = 11'b000_0000_0000;
-    localparam UPD_NL_SEND   = 11'b100_0000_0001;
-    localparam UPD_NL_WAIT   = 11'b100_0000_0010;
-    localparam UPD_NL_RCV    = 11'b100_0000_0100;
-    localparam UPD_1         = 11'b1;       
-    localparam UPD_2         = 11'b10;
-    localparam UPD_3         = 11'b11;
-    localparam UPD_4         = 11'b100;
-    localparam UPD_5         = 11'b101;
-    localparam UPD_6         = 11'b110;
-    localparam UPD_7         = 11'b111;
-    localparam UPD_8         = 11'b1000;
-    localparam UPD_9         = 11'b1001;
-    localparam UPD_STATE     = 11'b1100;
-    localparam UPD_10        = 11'b1010;
-    localparam UPD_HALT_56   = 11'b1101;
-    localparam UPD_HALT_78   = 11'b1110;
+    localparam UPD_IDLE      = 6'b000_0000_0000;
+    localparam UPD_NL_SEND   = 6'b10_0001;
+    localparam UPD_NL_WAIT   = 6'b10_0010;
+    localparam UPD_NL_RCV    = 6'b10_0100;
+    localparam UPD_1         = 6'b1;       
+    localparam UPD_2         = 6'b10;
+    localparam UPD_3         = 6'b11;
+    localparam UPD_4         = 6'b100;
+    localparam UPD_5         = 6'b101;
+    localparam UPD_6         = 6'b110;
+    localparam UPD_7         = 6'b111;
+    localparam UPD_8         = 6'b1000;
+    localparam UPD_9         = 6'b1001;
+    localparam UPD_STATE     = 6'b1100;
+    localparam UPD_10        = 6'b1010;
+    localparam UPD_HALT_56   = 6'b1101;
+    // localparam UPD_HALT_78   = 6'b1110;
     
 
     localparam [SEQ_CNT_DW-1 : 0] UPD_NL_SEND_CNT_MAX = 'd11;
@@ -463,7 +471,7 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd9;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
+    // localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_STATE_CNT_MAX  = 'd7;
 
 
@@ -536,8 +544,8 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd9;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd11;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_10_CNT_MAX    = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd12;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_10_CNT_MAX    = 'd12;
 
 
     localparam ASSOC_1_M       = 3'b010;
@@ -704,7 +712,7 @@ module PE_config #(
 */
   reg [3:0]   prd_cur;
   reg [5:0]   new_cur;
-  reg [10:0]  upd_cur;
+  reg [5:0]   upd_cur;
   reg [4:0]   assoc_cur;
   reg [SEQ_CNT_DW-1:0]   seq_cnt;      //时序计数器
   reg [SEQ_CNT_DW-1:0]   seq_cnt_max;  //计数器上限
@@ -1081,7 +1089,7 @@ assign test_stage = stage_val & stage_rdy;
           UPD_7: begin
             if(seq_cnt == seq_cnt_max) begin
               upd_cur <= UPD_8;    
-              // upd_cur <= UPD_HALT_78;  //220722 加入halt
+              // upd_cur <= UPD_HALT_78;  //220722 加入halt //220726 取消
             end
             else begin
               upd_cur <= UPD_7;
@@ -1135,7 +1143,7 @@ assign test_stage = stage_val & stage_rdy;
       end
     end
 
-    //output: init_predict
+    //output: init_update
       always @(posedge clk) begin
         if(sys_rst) begin
           init_update <= 0;
@@ -1394,7 +1402,7 @@ assign test_stage = stage_val & stage_rdy;
           UPD_9: seq_cnt_max = UPD_9_CNT_MAX;
           UPD_10: seq_cnt_max = UPD_10_CNT_MAX;
           UPD_HALT_56: seq_cnt_max = UPD_HALT_56_CNT_MAX;
-          UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
+          // UPD_HALT_78: seq_cnt_max = UPD_HALT_78_CNT_MAX;
           UPD_STATE: seq_cnt_max = UPD_STATE_CNT_MAX;
           default: seq_cnt_max = 0;
         endcase
@@ -3845,7 +3853,7 @@ assign test_stage = stage_val & stage_rdy;
                               M_adder_mode_set = ADD;
 
                               TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
+                              TBb_mode = TB_IDLE;
                               CBa_mode = CB_IDLE;
                               CBb_mode = CB_IDLE;
 
@@ -3940,7 +3948,7 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = 0;
 
                               B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_base_addr_set = vt_S_inv_cache_0; 
                           end
                       default: begin
                                 PE_m = 0;
@@ -4467,6 +4475,7 @@ assign test_stage = stage_val & stage_rdy;
     wire [3:0]   prd_cur_WR;
     wire [5:0]   new_cur_WR;
     wire [10:0]  upd_cur_WR;
+    wire [4:0]   assoc_cur_WR;
     
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_max_WR;
@@ -4622,6 +4631,19 @@ assign test_stage = stage_val & stage_rdy;
       .addr (WR_d_addr ),
       .din  (upd_cur  ),
       .dout (upd_cur_WR )
+    );
+
+    dynamic_shreg 
+    #(
+      .DW  (5  ),
+      .AW  (4  )
+    )
+    assoc_cur_shreg(
+      .clk  (clk  ),
+      .ce   (1'b1  ),
+      .addr (WR_d_addr ),
+      .din  (assoc_cur  ),
+      .dout (assoc_cur_WR )
     );
 
     dynamic_shreg 
@@ -5467,8 +5489,8 @@ assign test_stage = stage_val & stage_rdy;
                     endcase
                   end
         Bca_WR_chi:begin
-                    B_cache_in_sel <= Bca_RD_B;
-                    B_cache_out_sel <= Bca_WR_chi;
+                    B_cache_out_sel <= Bca_RD_B;
+                    B_cache_in_sel  <= Bca_WR_chi;
                     case(seq_cnt)
                       SEQ_0:begin
                           B_cache_en_new <= 1'b1;
@@ -5483,16 +5505,16 @@ assign test_stage = stage_val & stage_rdy;
                       SEQ_9:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= S_cache_0;
+                          B_cache_addr_new <= vt_S_inv_cache_0;
                         end
-                      SEQ_10:begin
+                      SEQ_11:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= S_cache_1;
+                          B_cache_addr_new <= vt_S_inv_cache_1;
                         end
                       default:begin
-                          B_cache_en_new <= 0;
-                          B_cache_we_new <= 0;
+                          B_cache_en_new <= 1'b0;
+                          B_cache_we_new <= 1'b0;
                           B_cache_addr_new <= 0;
                         end
                     endcase
