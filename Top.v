@@ -30,7 +30,7 @@ module Top
 
     output          PLB_en,   
     output          PLB_we,   
-    output  [9:0]   PLB_addr,
+    output  [31:0]   PLB_addr,
     output  signed [31:0]  PLB_din,
     input   signed [31:0]  PLB_dout,
 
@@ -68,7 +68,7 @@ module Top
 
   // wire          PLB_en;   
   // wire          PLB_we;   
-  // wire  [9:0]   PLB_addr;
+  // wire  [31:0]   PLB_addr;
   // wire  signed [31:0]  PLB_din;
   // wire  signed [31:0]  PLB_dout;
 
@@ -76,7 +76,7 @@ module Top
   //   .clka(PLB_clk),    // input wire clka
   //   .ena(PLB_en),      // input wire ena
   //   .wea(PLB_we),      // input wire [0 : 0] wea
-  //   .addra(PLB_addr),  // input wire [9 : 0] addra
+  //   .addra(PLB_addr[9:0]),  // input wire [9 : 0] addra
   //   .dina(PLB_din),    // input wire [31 : 0] dina
   //   .douta(PLB_dout)  // output wire [31 : 0] douta
   // );

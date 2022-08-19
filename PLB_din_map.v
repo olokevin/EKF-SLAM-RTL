@@ -33,7 +33,7 @@ module PLB_din_map #(
   output  reg  PLB_en,
   output  reg  PLB_we,
   
-  output  reg  [9:0]                   PLB_addr,
+  output  reg  [31:0]                   PLB_addr,
   output  reg  signed [RSA_DW-1 : 0]   PLB_din,
 
 //output associated landmark number
@@ -41,9 +41,9 @@ module PLB_din_map #(
   output  reg  [ROW_LEN-1 : 0]   assoc_l_k
 );
 
-localparam xk_ADDR = 10'd1;
-localparam yk_ADDR = 10'd2;
-localparam xita_ADDR = 10'd3;
+localparam xk_ADDR = 32'd1;
+localparam yk_ADDR = 32'd2;
+localparam xita_ADDR = 32'd3;
 
 localparam PRD_NL_SEND   = 4'b1001;
 localparam NEW_NL_SEND   = 6'b100001;
@@ -78,7 +78,7 @@ localparam ASSOC_10        = 6'b001010;
   *********************Input predict state/ init map ********************
 */
 
-  reg [9:0]  PLB_lk_base_addr;
+  reg [31:0]  PLB_lk_base_addr;
   always @(posedge clk) begin
     if(sys_rst) begin
       PLB_lk_base_addr <= 0;
@@ -112,7 +112,7 @@ localparam ASSOC_10        = 6'b001010;
   end
 
 //PLB_addr_base
-  reg [ROW_LEN-1 : 0] PLB_addr_base;
+  reg [31 : 0] PLB_addr_base;
   always @(posedge clk) begin
     if(sys_rst) begin
       PLB_addr_base <= 0;
@@ -364,7 +364,7 @@ reg        [RSA_DW-1 : 0] temp_chi;
               temp_chi <= {1'b0, C_PLB_din[RSA_DW-2 : 0]};
           end
           SEQ_11: begin
-            if(l_k == 10'b1) begin
+            if(l_k == 32'b1) begin
               min_chi <= temp_chi;
               assoc_l_k <= l_k;
             end

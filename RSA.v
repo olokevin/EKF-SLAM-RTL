@@ -29,7 +29,7 @@ module RSA
   //AXI BRAM
     output          PLB_en,   
     output          PLB_we,   
-    output  [9:0]   PLB_addr,
+    output  [31:0]   PLB_addr,
     output  signed [31:0]  PLB_din,
     input   signed [31:0]  PLB_dout,
 
