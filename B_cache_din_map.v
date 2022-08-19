@@ -4,7 +4,7 @@ module B_cache_din_map #(
   parameter L = 4,
 
   parameter RSA_DW = 32,
-  parameter SEQ_CNT_DW = 10
+  parameter SEQ_CNT_DW = 5
 ) 
 (
   input   clk,
@@ -23,12 +23,16 @@ module B_cache_din_map #(
   input   signed [RSA_DW - 1 : 0]         Hxi_11, Hxi_12, Hxi_21, Hxi_22,
   input   signed [RSA_DW - 1 : 0]         vt_1, vt_2,
 
+  input        init_inv,
+  output  reg  done_inv,
+
   output  reg  signed [L*RSA_DW-1 : 0]    B_cache_din
 );
 
 localparam Bca_IDLE       = 4'b0000;
 
-localparam Bca_WR_transpose     = 4'b1001;
+localparam Bca_WR_transpose = 4'b1000;
+localparam Bca_RD_B_WR_S       = 4'b1010;
 localparam Bca_WR_inv     = 4'b1010;
 localparam Bca_WR_chi     = 4'b1011;
 
@@ -43,9 +47,11 @@ localparam Q_22 = 32'h8_0000;
 localparam I_11 = 32'h8_0000;  
 localparam I_22 = 32'h8_0000;   
 
-//inverse
+/*
+  *************************inverse*******************************
+*/
   reg signed [RSA_DW-1 : 0] S_11;
-  reg signed [RSA_DW-1 : 0] S_12;
+  reg signed [RSA_DW-1 : 0] S_21;
   reg signed [RSA_DW-1 : 0] S_22;
   reg signed [RSA_DW-1 : 0] S_11_S_22;
   reg signed [RSA_DW-1 : 0] S_12_S_21;
@@ -54,6 +60,191 @@ localparam I_22 = 32'h8_0000;
   reg signed [RSA_DW-1 : 0] S_inv_11;
   reg signed [RSA_DW-1 : 0] S_inv_12;
   reg signed [RSA_DW-1 : 0] S_inv_22;
+
+  //implement a 32-bit signed (Q1.12.19) multiplier
+    reg  signed [RSA_DW-1 : 0]   mul_a, mul_b;
+    wire signed [2*RSA_DW-1 : 0] mul_c_temp;
+    wire signed [RSA_DW-1 : 0]   mul_c;
+
+    assign mul_c_temp = mul_a * mul_b;
+    assign mul_c = {mul_c_temp[63], mul_c_temp[49 : 19]};
+  
+  //implement a 32-bit unsigned (Q1.12.19) divider
+    reg                        init_Div;
+    reg signed [RSA_DW-1 : 0]  divisor;
+    reg signed [RSA_DW-1 : 0]  dividend;
+    wire                       valid_Div;
+    wire signed [55:0]          quotient_temp;
+
+    wire [RSA_DW-1 : 0] quotient;
+    assign quotient = {quotient_temp[55], quotient_temp[31 : 20], quotient_temp[18 : 0]};
+
+    S_inv_div u_S_inv_div (
+      .aclk(clk),                                      // input wire aclk
+      .s_axis_divisor_tvalid(init_Div),    // input wire s_axis_divisor_tvalid
+      .s_axis_divisor_tdata(divisor),      // input wire [31 : 0] s_axis_divisor_tdata
+      .s_axis_dividend_tvalid(init_Div),  // input wire s_axis_dividend_tvalid
+      .s_axis_dividend_tdata(dividend),    // input wire [31 : 0] s_axis_dividend_tdata
+      .m_axis_dout_tvalid(valid_Div),          // output wire m_axis_dout_tvalid
+      .m_axis_dout_tdata(quotient_temp)            // output wire [55 : 0] m_axis_dout_tdata
+    );
+
+    localparam INV_IDLE= 3'b000;
+    localparam INV_RD  = 3'b001;
+    localparam INV_S11 = 3'b010;
+    localparam INV_S12 = 3'b011;
+    localparam INV_S22 = 3'b100;
+    localparam INV_DONE  = 3'b101;
+
+    reg [2:0]  inv_stage;
+    reg [2:0]  inv_stage_next;
+    reg [2:0]  inv_RD_cnt;
+
+    always@(posedge clk) begin
+        if(sys_rst) inv_stage <= INV_IDLE;
+        else inv_stage <= inv_stage_next;
+    end
+
+    always @(*) begin
+      inv_stage_next = inv_stage;   //状态不切换则保持
+      case(inv_stage)
+        INV_IDLE: begin
+          if(init_inv == 1'b1) inv_stage_next = INV_RD;
+        end
+        INV_RD: 
+          if(inv_RD_cnt == 3'd7) inv_stage_next = INV_S11;
+        INV_S11:
+          if(valid_Div) inv_stage_next = INV_S12;
+        INV_S12:
+          if(valid_Div) inv_stage_next = INV_S22;
+        INV_S22:
+          if(valid_Div) inv_stage_next = INV_DONE;
+        INV_DONE:
+          inv_stage_next = INV_IDLE;
+        default: inv_stage_next = inv_stage;
+      endcase
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        done_inv <= 1'b0;
+      end
+      else if(inv_stage == INV_DONE) begin
+        done_inv <= 1'b1;
+      end
+      else
+        done_inv <= 1'b0;
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        inv_RD_cnt <= 0;
+      end
+      else if(inv_stage == INV_RD) begin
+        inv_RD_cnt <= inv_RD_cnt + 1'b1;
+      end
+      else
+        inv_RD_cnt <= 0;
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        S_11 <= 0;
+        S_21 <= 0;
+        S_22 <= 0;
+        S_12_S_21 <= 0;
+        S_11_S_22 <= 0;
+        S_det <= 0;
+      end
+      else if(inv_stage == INV_RD) begin
+        case(inv_RD_cnt)
+          'd1:begin
+                S_11 <= C_B_cache_din[0 +: RSA_DW] + Q_11;    //加Q
+              end
+          'd2:begin
+                S_21 <= C_B_cache_din[1*RSA_DW +: RSA_DW];
+
+                mul_a <=  C_B_cache_din[1*RSA_DW +: RSA_DW];
+                mul_b <=  C_B_cache_din[1*RSA_DW +: RSA_DW];
+              end
+          'd3:begin
+                S_12_S_21 <= mul_c;
+              end
+          'd4:begin
+                S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
+                
+                mul_a <=  S_11;
+                mul_b <=  C_B_cache_din[1*RSA_DW +: RSA_DW];
+              end
+          'd5:begin
+                S_11_S_22 <= mul_c;
+              end
+          'd6: begin
+                S_det <= S_11_S_22 - S_12_S_21;
+               end
+        endcase
+      end
+      else if(inv_stage == INV_IDLE) begin
+        S_11 <= 0;
+        S_21 <= 0;
+        S_22 <= 0;
+        S_12_S_21 <= 0;
+        S_11_S_22 <= 0;
+        S_det <= 0;
+      end
+    end
+
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        init_Div <= 1'b0;
+        dividend <= 'd0;
+        divisor <= 'd0;
+      end
+      else if(inv_stage == INV_IDLE) begin
+        init_Div <= 1'b0;
+        dividend <= 'd0;
+        divisor <= 'd0;
+      end
+      else if (inv_stage == INV_RD && inv_stage_next == INV_S11) begin
+        init_Div <= 1'b1;
+        dividend <= S_11;
+        divisor  <= S_det;
+      end   
+      else if (inv_stage == INV_S11 && inv_stage_next == INV_S12) begin
+        init_Div <= 1'b1;
+        dividend <= S_21;
+        divisor  <= S_det;
+      end
+      else if (inv_stage == INV_S12 && inv_stage_next == INV_S22) begin
+        init_Div <= 1'b1;
+        dividend <= S_22;
+        divisor  <= S_det;
+      end
+      else begin
+        init_Div <= 1'b0;
+        dividend <= dividend;
+        divisor  <= divisor;
+      end
+    end
+  
+  always @(posedge clk) begin
+    if(sys_rst) begin
+      S_inv_11 <= 0;
+      S_inv_12 <= 0;
+      S_inv_22 <= 0;
+    end
+    else if(valid_Div) begin
+      case(inv_stage)
+        INV_S11: S_inv_11 <= quotient;
+        INV_S12: S_inv_12 <= quotient;
+        INV_S22: S_inv_22 <= quotient;
+      endcase
+    end
+  end
+
+/*
+  *************************B_cache_din*******************************
+*/
 
   always @(posedge clk) begin
     if(sys_rst)
@@ -221,46 +412,32 @@ localparam I_22 = 32'h8_0000;
             B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
             B_cache_din[3*RSA_DW +: RSA_DW] <= 0;
             case(seq_cnt_out)
-              'd3:begin
-                    S_11 <= C_B_cache_din[0 +: RSA_DW] + Q_11;    //加Q
-                  end
-              'd4:begin
-                    S_12 <= C_B_cache_din[0 +: RSA_DW];
-                    S_12_S_21 <= C_B_cache_din[0 +: RSA_DW] * C_B_cache_din[1*RSA_DW +: RSA_DW];
-                  end
-              'd5:begin
-                    S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
-                    S_11_S_22 <= S_11 * C_B_cache_din[1*RSA_DW +: RSA_DW];
-                  end
-              'd6:begin
-                    S_det <= S_11_S_22 - S_12_S_21;
-                  end
-              // 'd7:begin
-              //       B_cache_din[0 +: RSA_DW] <= S_11 / S_det;
-              //       B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
-              //     end  
-              // 'd8:begin
-              //       B_cache_din[0 +: RSA_DW] <= S_12 / S_det;
-              //       B_cache_din[1*RSA_DW +: RSA_DW] <= S_12 / S_det;
-              //     end
-              // 'd9:begin
-              //       B_cache_din[0 +: RSA_DW] <= 0;
-              //       B_cache_din[1*RSA_DW +: RSA_DW] <= S_22 / S_det;
-              //     end
-
-              /*temporary for test*/
-              'd7:begin
-                    B_cache_din[0 +: RSA_DW] <= (2 <<< 19);
+              'd1:begin
+                    B_cache_din[0 +: RSA_DW] <= S_inv_11;
                     B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
                   end  
-              'd8:begin
-                    B_cache_din[0 +: RSA_DW] <= (3 <<< 19);
-                    B_cache_din[1*RSA_DW +: RSA_DW] <= (3 <<< 19);
+              'd2:begin
+                    B_cache_din[0 +: RSA_DW] <= S_inv_12;
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= S_inv_12;
                   end
-              'd9:begin
+              'd3:begin
                     B_cache_din[0 +: RSA_DW] <= 0;
-                    B_cache_din[1*RSA_DW +: RSA_DW] <= (1 <<< 19);
+                    B_cache_din[1*RSA_DW +: RSA_DW] <= S_inv_22;
                   end
+
+              /*temporary for test*/
+              // 'd1:begin
+              //       B_cache_din[0 +: RSA_DW] <= (2 <<< 19);
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= 0;
+              //     end  
+              // 'd2:begin
+              //       B_cache_din[0 +: RSA_DW] <= (3 <<< 19);
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= (3 <<< 19);
+              //     end
+              // 'd3:begin
+              //       B_cache_din[0 +: RSA_DW] <= 0;
+              //       B_cache_din[1*RSA_DW +: RSA_DW] <= (1 <<< 19);
+              //     end
               default: begin
                     B_cache_din[0 +: RSA_DW] <= 0;
                     B_cache_din[1*RSA_DW +: RSA_DW] <= 0;

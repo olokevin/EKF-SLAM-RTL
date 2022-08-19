@@ -20,10 +20,10 @@ module RSA
   //handshake of stage change
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
-  //landmark numbers, 当前地图总坐标点数目
-    input   [ROW_LEN-1 : 0]  landmark_num,    
-  //当前地标编号
-    input   [ROW_LEN-1 : 0]  l_k,  
+  // //landmark numbers, 当前地图总坐标点数目
+  //   input   [ROW_LEN-1 : 0]  landmark_num,    
+  // //当前地标编号
+  //   input   [ROW_LEN-1 : 0]  l_k,  
 
 /****************** RSA -> PS **************************/
   //AXI BRAM
@@ -66,6 +66,9 @@ module RSA
 /*
   ************************* 当前状态量 ***********************
 */
+  wire   [ROW_LEN-1 : 0]  landmark_num;  //总地标数
+  wire   [ROW_LEN-1 : 0]  l_k;           //当前地标编号
+  
   wire l_k_0;
   assign l_k_0 = l_k[0];
 
@@ -74,7 +77,7 @@ module RSA
   wire [3 : 0]            prd_cur_out;
   wire [5 : 0]            new_cur_out;
   wire [5 :0]             upd_cur_out;
-  wire [4 :0]             assoc_cur_out;
+  wire [5 :0]             assoc_cur_out;
   //stage
   localparam      IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
@@ -636,7 +639,8 @@ endgenerate
 /*
   ********************** cache map ports **********************
 */
-
+wire        init_inv;
+wire        done_inv;
 
 B_cache_din_map 
 #(
@@ -671,6 +675,9 @@ u_B_cache_din_map(
   .Hxi_22         (Hxi_22         ),
   .vt_1           (vt_1           ),
   .vt_2           (vt_2           ),
+
+  .init_inv      (init_inv      ),
+  .done_inv      (done_inv      ),
   .B_cache_din    (B_cache_din    )
 );
 
@@ -1135,6 +1142,8 @@ u_PE_config(
   .B_cache_en    (B_cache_en    ),
   .B_cache_we    (B_cache_we    ),
   .B_cache_addr  (B_cache_addr  ),
+  .init_inv      (init_inv      ),
+  .done_inv      (done_inv      ),
 
   .seq_cnt_out   (seq_cnt_out   ),
   .stage_cur_out (stage_cur_out ),

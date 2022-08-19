@@ -4,7 +4,7 @@ module TB_dina_map #(
   parameter L = 4,
 
   parameter RSA_DW = 32,
-  parameter SEQ_CNT_DW = 10,
+  parameter SEQ_CNT_DW = 5,
   parameter TB_DINA_SEL_DW  = 5
 ) 
 (

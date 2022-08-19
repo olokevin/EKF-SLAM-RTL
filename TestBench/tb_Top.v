@@ -31,10 +31,10 @@ reg   sys_rst_n                            = 1 ;
 reg   [2:0]  stage_val                     = 0 ;
 reg   [ROW_LEN-1 : 0]  landmark_num        = 4 ;
 reg   [ROW_LEN-1 : 0]  l_k                 = 2 ;
-reg   [RSA_DW - 1 : 0]  vlr                = (2 <<< DATA_DEC_BIT);
-reg   [RSA_DW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
-reg   [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
-reg   [RSA_DW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
+reg   signed [RSA_DW - 1 : 0]  vlr                = (2 <<< DATA_DEC_BIT);
+reg   signed [RSA_DW - 1 : 0]  alpha              = (1 <<< (DATA_DEC_BIT-2));
+reg   signed [RSA_DW - 1 : 0]  rk                 = (4 <<< DATA_DEC_BIT);
+reg   signed [RSA_DW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
 // reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
 reg  [31:0]  PLB_dout;
 
@@ -131,10 +131,16 @@ end
 */
 initial begin
     #(PERIOD*RST_START*2)
-    stage_val = STAGE_ASSOC;
+    rk        <= 32'd10730636;
+    phi       <= -32'd359159;
+    stage_val <= STAGE_ASSOC;
     #(PERIOD * 2)
-    stage_val = 0;
+    stage_val <= 0;
 end
+
+//Round 2
+//10730636 15518183 25638967 15049531  6682245 12563146 12893941  6650043
+//-359159  -288242  -247064  -155559  -114381   -43465   125820   176148
 
 
 Top 
@@ -152,22 +158,24 @@ Top
     .clk                     ( clk                                      ),
     .sys_rst_n               ( sys_rst_n                                  ),
     .stage_val               ( stage_val               [2:0]            ),
-    .landmark_num            ( landmark_num            [ROW_LEN-1 : 0]  ),
-
-    .l_k                     ( l_k                     [ROW_LEN-1 : 0]  ),
-    .vlr                     ( vlr                     [RSA_DW - 1 : 0] ),
-    .alpha                   ( alpha                   [RSA_AW - 1 : 0] ),
-    .rk                      ( rk                      [RSA_DW - 1 : 0] ),
-    .phi                     ( phi                     [RSA_AW - 1 : 0] ),
-
-    .stage_rdy               ( stage_rdy               [2:0]            )
+    // .landmark_num            ( landmark_num            [ROW_LEN-1 : 0]  ),
+    // .l_k                     ( l_k                     [ROW_LEN-1 : 0]  ),
+    
     // .PLB_clk       (PLB_clk       ),
 	  // .PLB_rst       (PLB_rst       ),
 	  // .PLB_en        (PLB_en        ),
     // .PLB_we        (PLB_we        ),
     // .PLB_addr      (PLB_addr      ),
     // .PLB_din       (PLB_din       ),
-    // .PLB_dout      (PLB_dout      )
+    // .PLB_dout      (PLB_dout      ),
+
+    .vlr                     ( vlr                     [RSA_DW - 1 : 0] ),
+    .alpha                   ( alpha                   [RSA_DW - 1 : 0] ),
+    .rk                      ( rk                      [RSA_DW - 1 : 0] ),
+    .phi                     ( phi                     [RSA_DW - 1 : 0] ),
+
+    .stage_rdy               ( stage_rdy               [2:0]            )
+
 );
 
 endmodule

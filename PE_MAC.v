@@ -81,7 +81,7 @@ module PE_MAC
     wire signed [RSA_DW-1:0] product;
     reg signed [RSA_DW-1:0] partial_sum;
   // `ifdef USE_QUANT
-    assign product = {product_temp[2*RSA_DW-1], product_temp[DEC_BIT+RSA_DW-2 : DEC_BIT]};
+    assign product = {product_temp[63], product_temp[49 : 19]};
   // `else 
   //   assign product = product_temp[RSA_DW-1:0];
   // `endif

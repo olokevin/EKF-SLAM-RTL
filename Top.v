@@ -19,10 +19,20 @@ module Top
     input   [2:0]   stage_val,
     output  [2:0]   stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
-    input   [9 : 0]  landmark_num,    
+    // input   [9 : 0]  landmark_num,    
 
   //当前地标编号
-    input   [9 : 0]  l_k, 
+    // input   [9 : 0]  l_k, 
+  
+  //AXI BRAM
+    output          PLB_clk,
+    output          PLB_rst,
+
+    output          PLB_en,   
+    output          PLB_we,   
+    output  [9:0]   PLB_addr,
+    output  signed [31:0]  PLB_din,
+    input   signed [31:0]  PLB_dout,
 
   //预测步数据
     input signed [31 : 0] vlr,
@@ -31,17 +41,6 @@ module Top
   //更新步数据
     input signed [31 : 0] rk,
     input signed [31 : 0] phi
-
-  //AXI BRAM
-    // output          PLB_clk,
-    // output          PLB_rst,
-
-    // output          PLB_en,   
-    // output          PLB_we,   
-    // output  [9:0]   PLB_addr,
-    // output  signed [31:0]  PLB_din,
-    // input   signed [31:0]  PLB_dout
-
 );
 /******************PARAMETERS*********************/
   parameter X = 4;
@@ -60,28 +59,27 @@ module Top
   assign sys_rst = ~sys_rst_n;
 
 /******************RSA ->  PS*********************/
-  // assign PLB_clk = clk;
-  // assign PLB_rst = sys_rst;
+  assign PLB_clk = clk;
+  assign PLB_rst = sys_rst;
   
-  //PS-PL BRAM for simulation
+/******************PS-PL BRAM for simulation*********************/
+  // wire          PLB_clk;
+  // assign        PLB_clk = clk;
 
-  wire          PLB_clk;
-  assign        PLB_clk = clk;
+  // wire          PLB_en;   
+  // wire          PLB_we;   
+  // wire  [9:0]   PLB_addr;
+  // wire  signed [31:0]  PLB_din;
+  // wire  signed [31:0]  PLB_dout;
 
-  wire          PLB_en;   
-  wire          PLB_we;   
-  wire  [9:0]   PLB_addr;
-  wire  signed [31:0]  PLB_din;
-  wire  signed [31:0]  PLB_dout;
-
-  PLB u_PLB (
-    .clka(PLB_clk),    // input wire clka
-    .ena(PLB_en),      // input wire ena
-    .wea(PLB_we),      // input wire [0 : 0] wea
-    .addra(PLB_addr),  // input wire [9 : 0] addra
-    .dina(PLB_din),    // input wire [31 : 0] dina
-    .douta(PLB_dout)  // output wire [31 : 0] douta
-  );
+  // PLB u_PLB (
+  //   .clka(PLB_clk),    // input wire clka
+  //   .ena(PLB_en),      // input wire ena
+  //   .wea(PLB_we),      // input wire [0 : 0] wea
+  //   .addra(PLB_addr),  // input wire [9 : 0] addra
+  //   .dina(PLB_din),    // input wire [31 : 0] dina
+  //   .douta(PLB_dout)  // output wire [31 : 0] douta
+  // );
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
@@ -116,8 +114,8 @@ u_RSA(
 
   .stage_val    (stage_val    ),
   .stage_rdy    (stage_rdy    ),
-  .landmark_num (landmark_num ),
-  .l_k          (l_k          ),
+  // .landmark_num (landmark_num ),
+  // .l_k          (l_k          ),
 
   .PLB_en        (PLB_en        ),
   .PLB_we        (PLB_we        ),

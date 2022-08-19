@@ -27,8 +27,10 @@ module PE_config #(
   input sys_rst,
 
 //landmark numbers
-  input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
-  input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
+  // input   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
+  // input   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
+  output reg   [ROW_LEN-1 : 0]  landmark_num,  //总地标数
+  output reg   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
 //handshake of stage change
   input   [2:0]   stage_val,
   output  reg [2:0]   stage_rdy,
@@ -99,12 +101,16 @@ module PE_config #(
   output  [Y-1:0]         B_cache_we,
   output  [Y*3-1:0]       B_cache_addr,
 
+  output  reg  init_inv,
+  input        done_inv,
+
+//states
   output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
-  output [2:0]            stage_cur_out,
+  output [2:0]              stage_cur_out,
   output [3:0]              prd_cur_out,
   output [5:0]              new_cur_out,
   output [5:0]              upd_cur_out,
-  output [4:0]              assoc_cur_out,
+  output [5:0]              assoc_cur_out,
 
   input  [1:0]              assoc_status,
   input  [ROW_LEN-1 : 0]    assoc_l_k,
@@ -270,7 +276,7 @@ module PE_config #(
     localparam Bca_RD_B  = 4'b0010;
 
   //WR 首位为1
-    localparam Bca_WR_transpose = 4'b1001;
+    localparam Bca_WR_transpose = 4'b1000;
     localparam Bca_WR_inv     = 4'b1010;
     localparam Bca_WR_chi     = 4'b1011;
     
@@ -293,6 +299,12 @@ module PE_config #(
 //stage_rdy
   localparam BUSY  = 3'b000;
   localparam READY   = 3'b111;
+
+//ASSOC STATUS
+  localparam ASSOC_WAIT = 2'b00;
+  localparam ASSOC_NEW  = 2'b01;
+  localparam ASSOC_UPD  = 2'b10;
+  localparam ASSOC_FAIL = 2'b11;
 
 //SEQ_CNT_PARAM
   localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 5'd0;
@@ -442,19 +454,21 @@ module PE_config #(
     localparam UPD_IDLE      = 6'b000_0000_0000;
     localparam UPD_NL_SEND   = 6'b10_0001;
     localparam UPD_NL_WAIT   = 6'b10_0010;
-    localparam UPD_NL_RCV    = 6'b10_0100;
+    localparam UPD_NL_RCV    = 6'b10_0011;
     localparam UPD_1         = 6'b1;       
     localparam UPD_2         = 6'b10;
     localparam UPD_3         = 6'b11;
     localparam UPD_4         = 6'b100;
     localparam UPD_5         = 6'b101;
+    localparam UPD_HALT_56   = 6'b01_0101;
     localparam UPD_6         = 6'b110;
     localparam UPD_7         = 6'b111;
+    localparam UPD_INV       = 6'b01_0111;
     localparam UPD_8         = 6'b1000;
     localparam UPD_9         = 6'b1001;
-    localparam UPD_STATE     = 6'b1100;
+    localparam UPD_STATE     = 6'b01_1001;
     localparam UPD_10        = 6'b1010;
-    localparam UPD_HALT_56   = 6'b1101;
+    
     // localparam UPD_HALT_78   = 6'b1110;
     
 
@@ -467,8 +481,8 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] UPD_5_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_56_CNT_MAX  = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] UPD_6_CNT_MAX     = 'd11;
-    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd10; //HALT： 8
-    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd9;
+    localparam [SEQ_CNT_DW-1 : 0] UPD_7_CNT_MAX     = 'd11; //HALT： 8
+    localparam [SEQ_CNT_DW-1 : 0] UPD_8_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] UPD_9_CNT_MAX     = 'd3;
     localparam [SEQ_CNT_DW-1 : 0] UPD_10_CNT_MAX    = 'd7;
     // localparam [SEQ_CNT_DW-1 : 0] UPD_HALT_78_CNT_MAX  = 'd11;
@@ -519,20 +533,21 @@ module PE_config #(
     localparam [TB_AW-1 : 0] H_lv_H = 'd8;
     localparam [TB_AW-1 : 0] H_ll_H = 'd10;
   // ASSOC SERIES
-    localparam ASSOC_IDLE      = 5'b00000;
-    localparam ASSOC_NL_SEND   = 5'b10001;
-    localparam ASSOC_NL_WAIT   = 5'b10010;
-    localparam ASSOC_NL_RCV    = 5'b10011;
-    localparam ASSOC_1         = 5'b00001;       
-    localparam ASSOC_2         = 5'b00010;
-    localparam ASSOC_3         = 5'b00011;
-    localparam ASSOC_4         = 5'b00100;
-    localparam ASSOC_5         = 5'b00101;
-    localparam ASSOC_6         = 5'b00110;
-    localparam ASSOC_7         = 5'b00111;
-    localparam ASSOC_8         = 5'b01000;
-    localparam ASSOC_9         = 5'b01001;
-    localparam ASSOC_10        = 5'b01010;
+    localparam ASSOC_IDLE      = 6'b000000;
+    localparam ASSOC_NL_SEND   = 6'b100001;
+    localparam ASSOC_NL_WAIT   = 6'b100010;
+    localparam ASSOC_NL_RCV    = 6'b100011;
+    localparam ASSOC_1         = 6'b000001;       
+    localparam ASSOC_2         = 6'b000010;
+    localparam ASSOC_3         = 6'b000011;
+    localparam ASSOC_4         = 6'b000100;
+    localparam ASSOC_5         = 6'b000101;
+    localparam ASSOC_6         = 6'b000110;
+    localparam ASSOC_7         = 6'b000111;
+    localparam ASSOC_INV       = 6'b010111;
+    localparam ASSOC_8         = 6'b001000;
+    localparam ASSOC_9         = 6'b001001;
+    localparam ASSOC_10        = 6'b001010;
 
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_NL_RCV_CNT_MAX  = 'd10;
@@ -542,8 +557,8 @@ module PE_config #(
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_4_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_5_CNT_MAX     = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_6_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd10;
-    localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd9;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_7_CNT_MAX     = 'd8;
+    localparam [SEQ_CNT_DW-1 : 0] ASSOC_8_CNT_MAX     = 'd4;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_9_CNT_MAX     = 'd12;
     localparam [SEQ_CNT_DW-1 : 0] ASSOC_10_CNT_MAX    = 'd12;
 
@@ -713,7 +728,7 @@ module PE_config #(
   reg [3:0]   prd_cur;
   reg [5:0]   new_cur;
   reg [5:0]   upd_cur;
-  reg [4:0]   assoc_cur;
+  reg [5:0]   assoc_cur;
   reg [SEQ_CNT_DW-1:0]   seq_cnt;      //时序计数器
   reg [SEQ_CNT_DW-1:0]   seq_cnt_max;  //计数器上限
   reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
@@ -773,8 +788,15 @@ module PE_config #(
                       stage_cur <= STAGE_UPD;
                   end
         STAGE_ASSOC:begin
-                    if(assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max)
-                      stage_cur <= IDLE;
+                    //Finished ALL data associtaion
+                    if(assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num) begin
+                      case (assoc_status)
+                        ASSOC_NEW: stage_cur <= STAGE_NEW;
+                        ASSOC_UPD: stage_cur <= STAGE_UPD;
+                        ASSOC_FAIL: stage_cur <= IDLE;
+                        default: stage_cur <= STAGE_ASSOC;
+                      endcase
+                    end
                     else
                       stage_cur <= STAGE_ASSOC;
                   end
@@ -783,7 +805,7 @@ module PE_config #(
     end
   end
 
-  //(3) output: stage handshake
+//(3) output: stage handshake
   always @(posedge clk) begin
     if(sys_rst)
       stage_rdy <= READY;
@@ -792,6 +814,62 @@ module PE_config #(
     end
     else
       stage_rdy <= READY;
+  end
+
+//(4)output: calculate the landmark_num
+  always @(posedge clk) begin
+    if(sys_rst)
+      landmark_num <= 0;
+    else begin
+      //FOR SIMULATIOM
+        landmark_num <= 10'b111;
+      //FOR ITERATION
+        // if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+        //   landmark_num <= landmark_num + 1'b1;
+        // else 
+        //   landmark_num <= landmark_num;
+    end
+  end
+
+//(5)output: designate l_k
+  always @(posedge clk) begin
+    if(sys_rst)
+      l_k <= 0;
+    else begin
+      case (stage_cur)
+        IDLE: begin
+                case(stage_val & stage_rdy)
+                  IDLE:       l_k <= 0;
+                  STAGE_PRD:  l_k <= 0;
+                  STAGE_NEW:  l_k <= 10'd2;   //Simulation
+                  STAGE_UPD:  l_k <= 10'd2;   //Simulation
+                  STAGE_ASSOC:  l_k <= 10'd1; //From landmark no.1
+                  default: l_k <= 0; 
+                endcase
+              end
+        STAGE_PRD, STAGE_NEW, STAGE_UPD: begin
+          l_k <= l_k;
+        end
+        STAGE_ASSOC: begin
+            if(assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max) begin
+              if(l_k == landmark_num) begin
+                case(assoc_status)
+                  ASSOC_NEW: l_k <= landmark_num + 1'b1;
+                  ASSOC_UPD: l_k <= assoc_l_k;
+                  ASSOC_FAIL: l_k <= 0;
+                  default: l_k <= l_k;
+                endcase
+              end 
+              else begin
+                l_k <= l_k + 1'b1;
+              end
+            end
+        end
+        default: begin
+          l_k <= 0;
+        end
+      endcase
+    end
   end
 
 /*
@@ -895,7 +973,8 @@ assign test_stage = stage_val & stage_rdy;
       else  begin
         case(new_cur)
           NEW_IDLE: begin
-            if((stage_val & stage_rdy) == STAGE_NEW) begin
+            if(((stage_val & stage_rdy) == STAGE_NEW)
+            || (assoc_status == ASSOC_NEW && assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num)) begin
               new_cur <= NEW_NL_SEND;
             end
             else
@@ -990,7 +1069,8 @@ assign test_stage = stage_val & stage_rdy;
       else  begin
         case(upd_cur)
           UPD_IDLE: begin
-            if((stage_val & stage_rdy) == STAGE_UPD) begin
+            if(((stage_val & stage_rdy) == STAGE_UPD)
+            || (assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num && assoc_status == ASSOC_UPD)) begin
               upd_cur <= UPD_NL_SEND;
             end
             else
@@ -1088,21 +1168,21 @@ assign test_stage = stage_val & stage_rdy;
           end
           UPD_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_8;    
+              upd_cur <= UPD_INV;    
               // upd_cur <= UPD_HALT_78;  //220722 加入halt //220726 取消
             end
             else begin
               upd_cur <= UPD_7;
             end
           end
-          // UPD_HALT_78: begin
-          //   if(seq_cnt == seq_cnt_max) begin
-          //     upd_cur <= UPD_8;
-          //   end
-          //   else begin
-          //     upd_cur <= UPD_HALT_78;
-          //   end
-          // end
+          UPD_INV: begin
+            if(done_inv == 1'b1) begin
+              upd_cur <= UPD_8;
+            end
+            else begin
+              upd_cur <= UPD_INV;
+            end
+          end
           UPD_8: begin
             if(seq_cnt == seq_cnt_max) begin
               upd_cur <= UPD_9;
@@ -1240,10 +1320,18 @@ assign test_stage = stage_val & stage_rdy;
           end
           ASSOC_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_8;    
+              assoc_cur <= ASSOC_INV;    
             end
             else begin
               assoc_cur <= ASSOC_7;
+            end
+          end
+          ASSOC_INV: begin
+            if(done_inv == 1'b1) begin
+              assoc_cur <= ASSOC_8;
+            end
+            else begin
+              assoc_cur <= ASSOC_INV;
             end
           end
           ASSOC_8: begin
@@ -1264,7 +1352,12 @@ assign test_stage = stage_val & stage_rdy;
           end
           ASSOC_10: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_IDLE;
+              if(l_k == landmark_num) begin
+                assoc_cur <= ASSOC_IDLE;    //Finish data assocition
+              end
+              else begin
+                assoc_cur <= ASSOC_NL_SEND;       //Start another association
+              end
             end
             else begin
               assoc_cur <= ASSOC_10;
@@ -1275,6 +1368,19 @@ assign test_stage = stage_val & stage_rdy;
           end
         endcase
       end
+    end
+
+  //output: init_inv
+    always @(posedge clk) begin
+      if(sys_rst) begin
+        init_inv <= 0;
+      end
+      else if((upd_cur == UPD_7     && seq_cnt == seq_cnt_max)
+            ||(assoc_cur == ASSOC_7 && seq_cnt == seq_cnt_max)) begin
+              init_inv <= 1'b1;
+            end
+      else
+        init_inv <= 0;
     end
 
   /*
@@ -1300,24 +1406,7 @@ assign test_stage = stage_val & stage_rdy;
     //     nonlinear_m_val <= 0;  
     // end 
 
-  //(5)output: calculate the landmark number
-// `ifndef LANDMARK_NUM_IN
-//   reg [ROW_LEN-1 : 0]  landmark_num;
-//   always @(posedge clk) begin
-//     if(sys_rst)
-//       landmark_num <= 0;
-//     else begin
-//       if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
-//         landmark_num <= landmark_num + 1'b1;
-//       else 
-//         landmark_num <= landmark_num;
-//     end
-//   end
-// `endif
-
-// `ifndef L_K_IN
   // reg [ROW_LEN-1 : 0]  l_k = 'd3;
-// `endif
   /*
     ************************** calculate l_k group ******************8
   */
@@ -1448,10 +1537,10 @@ assign test_stage = stage_val & stage_rdy;
     if(sys_rst)
       v_group_cnt_max <= 0;
     else begin
-      case(stage_rdy & stage_val)
-        STAGE_PRD: v_group_cnt_max <= (landmark_num+1) >> 1;
-        STAGE_NEW: v_group_cnt_max <= (landmark_num+1) >> 1;
-        STAGE_UPD: v_group_cnt_max <= (landmark_num+1) >> 1;
+      case(stage_cur)
+        STAGE_PRD: v_group_cnt_max <= (landmark_num+1'b1) >> 1;
+        STAGE_NEW: v_group_cnt_max <= (landmark_num+1'b1) >> 1;
+        STAGE_UPD: v_group_cnt_max <= (landmark_num+1'b1) >> 1;
         default: v_group_cnt_max <= v_group_cnt_max;
       endcase  
     end
@@ -2854,17 +2943,39 @@ assign test_stage = stage_val & stage_rdy;
       case(stage_cur)
         STAGE_PRD: begin
                     case (prd_cur)
-                      PRD_NL_SEND:
-                            begin
-                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
-                            end
+                    /*STATE VECTOR move to PLB*/
+                      // PRD_NL_SEND:
+                      //       begin
+                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //       end
                       PRD_NL_RCV:
                             begin
                               PE_n = 3'b011;
                               B_cache_mode = Bca_WR_NL_PRD;
                               B_cache_base_addr_set = 0;
                               // TBa_mode = {TBa_NL_PRD,DIR_POS};
-                              CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
+                              // CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
+
+                              PE_m = 0;
+                              PE_k = 0;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_NONE;
+                              M_adder_mode_set = NONE;
+
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
                             end
                       PRD_1: begin
                               PE_m = PRD_1_M;
@@ -2977,9 +3088,9 @@ assign test_stage = stage_val & stage_rdy;
 
                                 CAL_mode = N_W;
 
-                                A_in_mode = A_TBa;   
-                                B_in_mode = B_TBb;
-                                M_in_mode = M_TBa;
+                                A_in_mode = A_NONE;   
+                                B_in_mode = B_NONE;
+                                M_in_mode = M_NONE;
                                 C_out_mode = C_CBb;
                                 M_adder_mode_set = NONE;
 
@@ -2993,24 +3104,46 @@ assign test_stage = stage_val & stage_rdy;
                                 M_TB_base_addr_set = 0;
                                 C_TB_base_addr_set = 0;
 
-                                B_cache_mode = Bca_IDLE;
-                                B_cache_base_addr_set = 0;
+                              B_cache_mode = Bca_IDLE;
+                              B_cache_base_addr_set = 0;
                               end
                     endcase
                   end
         STAGE_NEW: begin
                     case(new_cur)
-                      NEW_NL_SEND:
-                            begin
-                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
-                            end
+                    /*STATE VECTOR move to PLB*/
+                      // NEW_NL_SEND:
+                      //       begin
+                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //       end
                       NEW_NL_RCV:
                             begin
                               // TBa_mode = {TBa_NL_NEW,DIR_POS};
-                              CBb_mode = {CBb_lxly,CB_NL_lxly};
+                              // CBb_mode = {CBb_lxly,CB_NL_lxly};
                               PE_n = 3'b101;
                               B_cache_mode = Bca_WR_NL_NEW;
                               B_cache_base_addr_set = 0;    
+
+                              PE_m = 0;
+                              PE_k = 0;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_NONE;
+                              M_adder_mode_set = NONE;
+
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
                             end
                       NEW_1: begin
                             /*
@@ -3188,9 +3321,9 @@ assign test_stage = stage_val & stage_rdy;
 
                               CAL_mode = N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_TBb;
-                              M_in_mode = M_TBa;
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
                               C_out_mode = C_CBb;
                               M_adder_mode_set = NONE;
 
@@ -3211,17 +3344,37 @@ assign test_stage = stage_val & stage_rdy;
                   end
         STAGE_UPD: begin
                     case(upd_cur)
-                      UPD_NL_SEND:
-                            begin
-                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
-                            end
+                    /*STATE VECTOR move to PLB*/
+                      // UPD_NL_SEND:
+                      //       begin
+                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //       end
                       UPD_NL_RCV:
                             begin
-                              TBa_mode = {TBa_NL_UPD,DIR_POS};
-                              CBb_mode = CB_IDLE;  
+                              TBa_mode = {TBa_NL_UPD,DIR_POS}; //Write Vt
                               PE_n = 3'b111;
                               B_cache_mode = Bca_WR_NL_UPD;   //UPD中vt写入Bcache
                               B_cache_base_addr_set = 0; 
+
+                              PE_m = 0;
+                              PE_k = 0;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_NONE;
+                              M_adder_mode_set = NONE;
+
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
                             end
                       UPD_1: begin
                             /*
@@ -3486,34 +3639,34 @@ assign test_stage = stage_val & stage_rdy;
                               C_TB_base_addr_set = 0;
 
                               B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_base_addr_set = cov_HT_cache;
                             end
-                      // UPD_HALT_78: begin
-                      //         PE_m = UPD_7_M;
-                      //         PE_n = UPD_7_N;
-                      //         PE_k = UPD_7_K;
+                      UPD_INV: begin
+                              PE_m = 0;
+                              PE_n = 0;
+                              PE_k = 0;
 
-                      //         CAL_mode = N_W;
+                              CAL_mode = N_W;
 
-                      //         A_in_mode = A_NONE;   
-                      //         B_in_mode = B_NONE;
-                      //         M_in_mode = M_NONE;
-                      //         C_out_mode = C_TBb;
-                      //         M_adder_mode_set = ADD;
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_NONE;
+                              M_adder_mode_set = NONE;
 
-                      //         TBa_mode = TBa_IDLE;
-                      //         TBb_mode = {TBb_IDLE, DIR_POS};
-                      //         CBa_mode = CB_IDLE;
-                      //         CBb_mode = CB_IDLE;
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
 
-                      //         A_TB_base_addr_set = 0;
-                      //         B_TB_base_addr_set = 0;
-                      //         M_TB_base_addr_set = 0;
-                      //         C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
 
-                      //         B_cache_mode = Bca_IDLE;
-                      //         B_cache_base_addr_set = 0;
-                      //        end
+                              B_cache_mode = Bca_IDLE;
+                              B_cache_base_addr_set = 0;
+                             end
                       UPD_8: begin
                             /*
                               S_t inverse
@@ -3648,9 +3801,9 @@ assign test_stage = stage_val & stage_rdy;
 
                                 CAL_mode = N_W;
 
-                                A_in_mode = A_TBa;   
-                                B_in_mode = B_TBb;
-                                M_in_mode = M_TBa;
+                                A_in_mode = A_NONE;   
+                                B_in_mode = B_NONE;
+                                M_in_mode = M_NONE;
                                 C_out_mode = C_CBb;
                                 M_adder_mode_set = NONE;
 
@@ -3671,17 +3824,37 @@ assign test_stage = stage_val & stage_rdy;
                   end
         STAGE_ASSOC:begin
                     case(assoc_cur)
-                      ASSOC_NL_SEND:
-                            begin
-                              CBa_mode = {CBa_NL,CB_NL_xyxita};    
-                            end
-                      ASSOC_NL_RCV:
-                            begin
+                    /*STATE VECTOR move to PLB*/
+                      // ASSOC_NL_SEND:
+                      //       begin
+                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //       end
+                      ASSOC_NL_RCV:begin
+                        
                               TBa_mode = {TBa_NL_UPD,DIR_POS};    //ASSOC中vt写入TB
-                              CBb_mode = CB_IDLE;  
                               PE_n = 3'b111;
-                              B_cache_mode = Bca_WR_NL_ASSOC;     //ASSOC写入
+                              B_cache_mode = Bca_WR_NL_ASSOC;
                               B_cache_base_addr_set = 0; 
+
+                              PE_m = 0;
+                              PE_k = 0;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_TBa;   
+                              B_in_mode = B_TBb;
+                              M_in_mode = M_TBa;
+                              C_out_mode = C_CBb;
+                              M_adder_mode_set = NONE;
+
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
                             end
                       ASSOC_1: begin
                               PE_m = ASSOC_1_M;
@@ -3865,6 +4038,32 @@ assign test_stage = stage_val & stage_rdy;
                               B_cache_mode = Bca_RD_B;
                               B_cache_base_addr_set = I_cache; 
                           end
+                      ASSOC_INV: begin
+                              PE_m = 0;
+                              PE_n = 0;
+                              PE_k = 0;
+
+                              CAL_mode = N_W;
+
+                              A_in_mode = A_NONE;   
+                              B_in_mode = B_NONE;
+                              M_in_mode = M_NONE;
+                              C_out_mode = C_NONE;
+                              M_adder_mode_set = NONE;
+
+                              TBa_mode = TB_IDLE;
+                              TBb_mode = TB_IDLE;
+                              CBa_mode = CB_IDLE;
+                              CBb_mode = CB_IDLE;
+
+                              A_TB_base_addr_set = 0;
+                              B_TB_base_addr_set = 0;
+                              M_TB_base_addr_set = 0;
+                              C_TB_base_addr_set = 0;
+
+                              B_cache_mode = Bca_IDLE;
+                              B_cache_base_addr_set = 0;
+                             end
                       ASSOC_8: begin
                             /*
                               S_t inverse
@@ -3957,9 +4156,9 @@ assign test_stage = stage_val & stage_rdy;
 
                                 CAL_mode = N_W;
 
-                                A_in_mode = A_TBa;   
-                                B_in_mode = B_TBb;
-                                M_in_mode = M_TBa;
+                                A_in_mode = A_NONE;   
+                                B_in_mode = B_NONE;
+                                M_in_mode = M_NONE;
                                 C_out_mode = C_CBb;
                                 M_adder_mode_set = NONE;
 
@@ -3985,9 +4184,9 @@ assign test_stage = stage_val & stage_rdy;
 
                   CAL_mode = N_W;
 
-                  A_in_mode = A_TBa;   
-                  B_in_mode = B_TBb;
-                  M_in_mode = M_TBa;
+                  A_in_mode = A_NONE;   
+                  B_in_mode = B_NONE;
+                  M_in_mode = M_NONE;
                   C_out_mode = C_CBb;
                   M_adder_mode_set = NONE;
 
@@ -4000,6 +4199,9 @@ assign test_stage = stage_val & stage_rdy;
                   B_TB_base_addr_set = 0;
                   M_TB_base_addr_set = 0;
                   C_TB_base_addr_set = 0;
+
+                  B_cache_mode = Bca_IDLE;
+                  B_cache_base_addr_set = 0;
                 end
       endcase
     end  
@@ -4474,8 +4676,8 @@ assign test_stage = stage_val & stage_rdy;
     wire [2:0]   stage_cur_WR;
     wire [3:0]   prd_cur_WR;
     wire [5:0]   new_cur_WR;
-    wire [10:0]  upd_cur_WR;
-    wire [4:0]   assoc_cur_WR;
+    wire [5:0]   upd_cur_WR;
+    wire [5:0]   assoc_cur_WR;
     
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_WR;
     wire [SEQ_CNT_DW-1 : 0] seq_cnt_max_WR;
@@ -4622,7 +4824,7 @@ assign test_stage = stage_val & stage_rdy;
 
     dynamic_shreg 
     #(
-      .DW  (11  ),
+      .DW  (6  ),
       .AW  (4  )
     )
     upd_cur_shreg(
@@ -4635,7 +4837,7 @@ assign test_stage = stage_val & stage_rdy;
 
     dynamic_shreg 
     #(
-      .DW  (5  ),
+      .DW  (6  ),
       .AW  (4  )
     )
     assoc_cur_shreg(
@@ -5471,12 +5673,12 @@ assign test_stage = stage_val & stage_rdy;
         Bca_WR_inv: begin
                     B_cache_in_sel <= B_cache_mode;
                     case(seq_cnt)
-                      SEQ_6:begin
+                      SEQ_0:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= S_cache_0;
                         end
-                      SEQ_7:begin
+                      SEQ_1:begin
                           B_cache_en_new <= 1'b1;
                           B_cache_we_new <= 1'b1;
                           B_cache_addr_new <= S_cache_1;
@@ -5530,230 +5732,6 @@ assign test_stage = stage_val & stage_rdy;
     end
       
   end
-
-/*OLD B_cache_en*/
-  // always @(posedge clk) begin
-  //   if(sys_rst) begin
-  //     B_cache_en_new <= 0;
-  //     B_cache_we_new <= 0;
-  //     B_cache_addr_new <= 0;
-  //   end
-  //   else begin
-  //     case(stage_cur)
-  //       STAGE_UPD: begin
-  //         case(upd_cur)
-  //           UPD_1:begin
-  //                   case (seq_cnt)
-  //                     SEQ_0:begin
-  //                           if(v_group_cnt == 1'b1) begin
-  //                             B_cache_en_new <= 1'b1;
-  //                             B_cache_we_new <= 1'b1;
-  //                             B_cache_addr_new <= 3'b011;
-  //                           end
-  //                           else begin
-  //                             B_cache_en_new <= 0;
-  //                             B_cache_we_new <= 0;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                         end 
-  //                     SEQ_1:begin
-  //                           if(v_group_cnt == 1'b1) begin
-  //                             B_cache_en_new <= 1'b1;
-  //                             B_cache_we_new <= 1'b1;
-  //                             B_cache_addr_new <= 3'b100;
-  //                           end
-  //                           else begin
-  //                             B_cache_en_new <= 0;
-  //                             B_cache_we_new <= 0;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                         end 
-  //                     SEQ_2:begin
-  //                           if(v_group_cnt == 1'b0) begin
-  //                             B_cache_en_new <= 1'b1;
-  //                             B_cache_we_new <= 1'b1;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                           else begin
-  //                             B_cache_en_new <= 0;
-  //                             B_cache_we_new <= 0;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                         end 
-  //                     SEQ_3:begin
-  //                           if(v_group_cnt == 1'b0) begin
-  //                             B_cache_en_new <= 1'b1;
-  //                             B_cache_we_new <= 1'b1;
-  //                             B_cache_addr_new <= 3'b001;
-  //                           end
-  //                           else begin
-  //                             B_cache_en_new <= 0;
-  //                             B_cache_we_new <= 0;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                         end 
-  //                     SEQ_4:begin
-  //                           if(v_group_cnt == 1'b0) begin
-  //                             B_cache_en_new <= 1'b1;
-  //                             B_cache_we_new <= 1'b1;
-  //                             B_cache_addr_new <= 3'b010;
-  //                           end
-  //                           else begin
-  //                             B_cache_en_new <= 0;
-  //                             B_cache_we_new <= 0;
-  //                             B_cache_addr_new <= 0;
-  //                           end
-  //                         end
-  //                     default:begin
-  //                           B_cache_en_new <= 0;
-  //                           B_cache_we_new <= 0;
-  //                           B_cache_addr_new <= 0;
-  //                         end
-  //                   endcase
-  //                 end
-  //           UPD_2:begin
-  //                   B_cache_en_new <= 1'b1;
-  //                   B_cache_we_new <= 0;
-  //                   B_cache_addr_new <= seq_cnt;
-  //                 end
-  //           UPD_3:begin
-  //                   B_cache_en_new <= 1'b1;
-  //                   B_cache_we_new <= 0;
-  //                   B_cache_addr_new <= seq_cnt;
-  //                 end
-  //           UPD_4:begin
-  //                   case(seq_cnt)
-  //                     SEQ_0:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 3'b011;
-  //                       end
-  //                     SEQ_1:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 3'b100;
-  //                       end
-  //                     default:begin
-  //                         B_cache_en_new <= 0;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 0;
-  //                       end
-  //                   endcase
-  //                 end
-  //           UPD_5:begin
-  //                   case(seq_cnt)
-  //                     SEQ_0:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 3'b011;
-  //                       end
-  //                     SEQ_1:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 3'b100;
-  //                       end
-  //                     default:begin
-  //                         B_cache_en_new <= 0;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 0;
-  //                       end
-  //                   endcase
-  //                 end
-  //           UPD_6:begin
-  //                   case(seq_cnt)
-  //                     SEQ_3:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 1'b1;
-  //                         B_cache_addr_new <= 3'b000;
-  //                       end
-  //                     SEQ_4:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 1'b1;
-  //                         B_cache_addr_new <= 3'b001;
-  //                       end
-  //                     SEQ_5:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 1'b1;
-  //                         B_cache_addr_new <= 3'b010;
-  //                       end
-  //                     SEQ_7:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 1'b1;
-  //                         B_cache_addr_new <= 3'b011;
-  //                       end
-  //                     SEQ_8:begin
-  //                         B_cache_en_new <= 1'b1;
-  //                         B_cache_we_new <= 1'b1;
-  //                         B_cache_addr_new <= 3'b100;
-  //                       end
-  //                     default:begin
-  //                         B_cache_en_new <= 0;
-  //                         B_cache_we_new <= 0;
-  //                         B_cache_addr_new <= 0;
-  //                       end
-  //                   endcase
-  //                 end
-  //           UPD_7:begin
-  //                   if(seq_cnt < 'd5) begin
-  //                     B_cache_en_new <= 1'b1;
-  //                     B_cache_we_new <= 0;
-  //                     B_cache_addr_new <= seq_cnt;
-  //                   end
-  //                   else begin
-  //                     B_cache_en_new <= 0;
-  //                     B_cache_we_new <= 0;
-  //                     B_cache_addr_new <= 0;
-  //                   end
-  //                 end
-  //           UPD_8:begin
-  //                   case(seq_cnt)
-  //                     SEQ_6:begin
-  //                       B_cache_en_new <= 1'b1;
-  //                       B_cache_we_new <= 1'b1;
-  //                       B_cache_addr_new <= 0;
-  //                     end
-  //                     SEQ_7:begin
-  //                       B_cache_en_new <= 1'b1;
-  //                       B_cache_we_new <= 1'b1;
-  //                       B_cache_addr_new <= 1;
-  //                     end
-  //                     default:begin
-  //                       B_cache_en_new <= 0;
-  //                       B_cache_we_new <= 0;
-  //                       B_cache_addr_new <= 0;
-  //                     end
-  //                   endcase
-  //                 end
-  //           UPD_9:begin
-  //                   if(seq_cnt < 'd2) begin
-  //                     B_cache_en_new <= 1'b1;
-  //                     B_cache_we_new <= 0;
-  //                     B_cache_addr_new <= seq_cnt;
-  //                   end
-  //                   else begin
-  //                     B_cache_en_new <= 0;
-  //                     B_cache_we_new <= 0;
-  //                     B_cache_addr_new <= 0;
-  //                   end
-  //                 end
-  //           default:begin
-  //                     B_cache_en_new <= 0;
-  //                     B_cache_we_new <= 0;
-  //                     B_cache_addr_new <= 0;
-  //                   end
-  //         endcase
-  //       end 
-  //       default: begin
-  //         B_cache_en_new <= 0;
-  //         B_cache_we_new <= 0;
-  //         B_cache_addr_new <= 0;
-  //       end
-  //     endcase
-  //   end
-      
-  // end
-
-
 /*
   *****************************CB-portA READ*****************************
 */
@@ -5844,6 +5822,7 @@ assign test_stage = stage_val & stage_rdy;
         CB_cov:   begin
                     CB_wea_new <= 1'b0;
                     CBa_shift_dir <= DIR_POS;
+                    CB_douta_sel_new <= {CBa_mode[6:4],DIR_POS}; 
                     if(v_group_cnt == 0) begin
                       case(seq_cnt)
                         SEQ_3: begin
