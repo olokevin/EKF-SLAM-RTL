@@ -6,21 +6,76 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
     output reg done_predict, done_newlm, done_update,
     output reg signed [DW - 1 : 0] result_0, result_1, result_2, result_3, result_4, result_5       
 );
-
+/*
+  ****************** multiplier *******************
+*/
     reg signed [DW - 1 : 0] a, b;                                //the input of multiplier;
     wire signed [2 * DW - 1 : 0] c_temp;
     wire signed [DW - 1 : 0] c;                                  //the output of multiplier;
 
-    reg [DW - 1 : 0] dividend, divisor;
+    //implement a 32-bit signed (Q1.12.19) multiplier
+    assign c_temp = a * b;
+    assign c = {c_temp[63], c_temp[49 : 19]};
+
+/*
+  ****************** divider *******************
+*/
+    reg signed [DW - 1 : 0] dividend, divisor;
     reg init_Div; 
     wire [55 : 0] quotient_temp;
-    wire [DW - 1 : 0] quotient;
+    wire signed [DW - 1 : 0] quotient;
     wire valid_Div;
 
+    //Get the sign in advance
+    wire   quotient_sign;
+    assign quotient_sign = divisor[31] ^ dividend[31];
+    
+    //Calculate the result of abs
+    wire [DW-1 : 0] abs_dividend, abs_divisor, abs_quotient;
+    assign abs_dividend = dividend[31] ? (~dividend + 1) : dividend;
+    assign abs_divisor  = divisor[31] ? (~divisor + 1) : divisor;
+
+    //Transform the final quotient
+    assign abs_quotient = {1'b0, quotient_temp[31 : 20], quotient_temp[18 : 0]};
+    assign quotient= quotient_sign ? (~abs_quotient + 1) : abs_quotient;
+    
+    //implement a 32-bit unsigned (Q1.12.19) divider
+    div_gen_0 div_gen(
+        .aclk(clk),
+        .s_axis_divisor_tvalid(init_Div),
+        .s_axis_divisor_tdata(abs_divisor),
+        .s_axis_dividend_tvalid(init_Div),
+        .s_axis_dividend_tdata(abs_dividend),
+        
+        .m_axis_dout_tvalid(valid_Div),
+        .m_axis_dout_tdata(quotient_temp)
+    );
+
+
+/*
+  ****************** AR CORDIC *******************
+*/
     reg init_CORDIC, mode;
     reg signed [AW - 1 : 0] xin, yin, zin;
     wire signed [AW - 1 : 0] xout, yout, zout;
     wire done_CORDIC;
+
+    //inplement a 17-bit signed (Q1.1.15) CORDIC module for sin(alpha) and cos(alpha)
+    CORDIC_DualMode #(AW, AW, ITER) CORDIC_0(
+        .clk(clk), 
+        .rst(rst), 
+        .init(init_CORDIC),
+        .mode(mode),                    
+        .xin(xin),    
+        .yin(yin),     
+        .zin(zin),     
+        
+        .done(done_CORDIC),                        
+        .xout(xout),    
+        .yout(yout),   
+        .zout(zout)    
+    );
+
 
     //Q1.1.15
     //localparam H_L = 'd8799;  2^(-2)+2^(-6)+2^(-9)+2^(-10)
@@ -121,6 +176,41 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
     //output driving
     
     //---CORDIC
+    //patch when the input data of s_vector are larger than 1
+    wire signed [DW - 1 : 0] dinx_s_vector, diny_s_vector;
+    wire [DW - 1 : 0] abs_dinx_s_vector, abs_diny_s_vector;
+    wire [3 : 0] scale_dinx_s_vector, scale_diny_s_vector, scale_din_s_vector;
+    assign dinx_s_vector = lkx - xk;
+    assign diny_s_vector = lky - yk;
+    assign abs_dinx_s_vector = dinx_s_vector[31] ? (~dinx_s_vector + 1) : dinx_s_vector;
+    assign abs_diny_s_vector = diny_s_vector[31] ? (~diny_s_vector + 1) : diny_s_vector;
+    assign scale_dinx_s_vector = abs_dinx_s_vector[30]    ? 4'd12 : 
+                                    abs_dinx_s_vector[29] ? 4'd11 : 
+                                    abs_dinx_s_vector[28] ? 4'd10 : 
+                                    abs_dinx_s_vector[27] ? 4'd9 : 
+                                    abs_dinx_s_vector[26] ? 4'd8 : 
+                                    abs_dinx_s_vector[25] ? 4'd7 : 
+                                    abs_dinx_s_vector[24] ? 4'd6 : 
+                                    abs_dinx_s_vector[23] ? 4'd5 : 
+                                    abs_dinx_s_vector[22] ? 4'd4 : 
+                                    abs_dinx_s_vector[21] ? 4'd3 : 
+                                    abs_dinx_s_vector[20] ? 4'd2 : 
+                                    abs_dinx_s_vector[19] ? 4'd1 : 4'd0; 
+    assign scale_diny_s_vector = abs_diny_s_vector[30]    ? 4'd12 : 
+                                    abs_diny_s_vector[29] ? 4'd11 : 
+                                    abs_diny_s_vector[28] ? 4'd10 : 
+                                    abs_diny_s_vector[27] ? 4'd9 : 
+                                    abs_diny_s_vector[26] ? 4'd8 : 
+                                    abs_diny_s_vector[25] ? 4'd7 : 
+                                    abs_diny_s_vector[24] ? 4'd6 : 
+                                    abs_diny_s_vector[23] ? 4'd5 : 
+                                    abs_diny_s_vector[22] ? 4'd4 : 
+                                    abs_diny_s_vector[21] ? 4'd3 : 
+                                    abs_diny_s_vector[20] ? 4'd2 : 
+                                    abs_diny_s_vector[19] ? 4'd1 : 4'd0;
+    assign scale_din_s_vector = (scale_dinx_s_vector > scale_diny_s_vector) ? scale_dinx_s_vector : scale_diny_s_vector;
+    //end patch
+
     always@(posedge clk) begin
         if(rst) begin
             init_CORDIC <= 1'b0;
@@ -153,8 +243,12 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
         if(state == s_idle && state_nxt == s_vector) begin
             init_CORDIC <= 1'b1;
             mode <= 1'b1;
-            xin <= (lkx - xk) >>> 4;
-            yin <= (lky - yk) >>> 4;
+            //xin <= (lkx - xk) >>> 4;
+            //yin <= (lky - yk) >>> 4;
+            //patch
+            xin <= dinx_s_vector >>> (4 + scale_din_s_vector);
+            yin <= diny_s_vector >>> (4 + scale_din_s_vector);
+            //end patch
             zin <= 17'd0;
         end
         if(init_CORDIC) init_CORDIC <= 1'b0;
@@ -303,7 +397,10 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
         end
         //---update step
         if(state == s_vector) begin
-            result_0 <= xout <<< 4;
+            //result_0 <= xout <<< 4;
+            //patch
+            result_0 <= xout <<< (4 + scale_din_s_vector);  //输入移(4+scale)位, 开方输出移(2+scale/2)位 加法优先级高于移位
+            //end patch
             result_1 <= zout <<< 4;
         end
         if(state == s_d2) begin
@@ -329,38 +426,5 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
         done_newlm <= (state_nxt == s_result_newlm);
         done_update <= (state_nxt == s_result_update);
     end
-
-    //implement a 32-bit signed (Q1.12.19) multiplier
-    assign c_temp = a * b;
-    assign c = {c_temp[63], c_temp[49 : 19]};
-
-    //implement a 32-bit unsigned (Q1.12.19) divider
-    assign quotient = {quotient_temp[55], quotient_temp[31 : 20], quotient_temp[18 : 0]};
-    div_gen_0 div_gen(
-        .aclk(clk),
-        .s_axis_divisor_tvalid(init_Div),
-        .s_axis_divisor_tdata(divisor),
-        .s_axis_dividend_tvalid(init_Div),
-        .s_axis_dividend_tdata(dividend),
-        
-        .m_axis_dout_tvalid(valid_Div),
-        .m_axis_dout_tdata(quotient_temp)
-    );
-
-    //inplement a 17-bit signed (Q1.1.15) CORDIC module for sin(alpha) and cos(alpha)
-    CORDIC_DualMode #(AW, AW, ITER) CORDIC_0(
-        .clk(clk), 
-        .rst(rst), 
-        .init(init_CORDIC),
-        .mode(mode),                    
-        .xin(xin),    
-        .yin(yin),     
-        .zin(zin),     
-        
-        .done(done_CORDIC),                        
-        .xout(xout),    
-        .yout(yout),   
-        .zout(zout)    
-    );
 
 endmodule

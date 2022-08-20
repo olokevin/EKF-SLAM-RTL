@@ -717,6 +717,7 @@ module PE_config #(
   ******* variables of FSM of STAGE(IDLE PRD NEW UPD) *************
 */
 
+  reg [2:0]      stage_next ;   
   reg [2:0]      stage_cur ;   
   reg          stage_change_err;  
 
@@ -725,6 +726,11 @@ module PE_config #(
 /*
   **************** variables of Prediction(PRD) *********************
 */
+  reg [3:0]   prd_next;
+  reg [5:0]   new_next;
+  reg [5:0]   upd_next;
+  reg [5:0]   assoc_next;
+
   reg [3:0]   prd_cur;
   reg [5:0]   new_cur;
   reg [5:0]   upd_cur;
@@ -748,6 +754,7 @@ module PE_config #(
   ****************** FSM of STAGE(IDLE PRD NEW UPD) *******************
 */
   //(1)&(2) state switch
+
   always @(posedge clk) begin
     if(sys_rst) begin
       stage_cur <= IDLE;

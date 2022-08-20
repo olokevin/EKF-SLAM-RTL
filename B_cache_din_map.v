@@ -74,17 +74,28 @@ localparam I_22 = 32'h8_0000;
     reg signed [RSA_DW-1 : 0]  divisor;
     reg signed [RSA_DW-1 : 0]  dividend;
     wire                       valid_Div;
-    wire signed [55:0]          quotient_temp;
+    wire signed [55:0]         quotient_temp;
+    wire signed [RSA_DW-1 : 0] quotient;
 
-    wire [RSA_DW-1 : 0] quotient;
-    assign quotient = {quotient_temp[55], quotient_temp[31 : 20], quotient_temp[18 : 0]};
+    //Get the sign in advance
+    wire   quotient_sign;
+    assign quotient_sign = divisor[31] ^ dividend[31];
+    
+    //Calculate the result of abs
+    wire [RSA_DW-1 : 0] abs_dividend, abs_divisor, abs_quotient;
+    assign abs_dividend = dividend[31] ? (~dividend + 1) : dividend;
+    assign abs_divisor  = divisor[31] ? (~divisor + 1) : divisor;
+
+    //Transform the final quotient
+    assign abs_quotient = {1'b0, quotient_temp[31 : 20], quotient_temp[18 : 0]};
+    assign quotient= quotient_sign ? (~abs_quotient + 1) : abs_quotient;
 
     S_inv_div u_S_inv_div (
       .aclk(clk),                                      // input wire aclk
       .s_axis_divisor_tvalid(init_Div),    // input wire s_axis_divisor_tvalid
-      .s_axis_divisor_tdata(divisor),      // input wire [31 : 0] s_axis_divisor_tdata
+      .s_axis_divisor_tdata(abs_divisor),      // input wire [31 : 0] s_axis_divisor_tdata
       .s_axis_dividend_tvalid(init_Div),  // input wire s_axis_dividend_tvalid
-      .s_axis_dividend_tdata(dividend),    // input wire [31 : 0] s_axis_dividend_tdata
+      .s_axis_dividend_tdata(abs_dividend),    // input wire [31 : 0] s_axis_dividend_tdata
       .m_axis_dout_tvalid(valid_Div),          // output wire m_axis_dout_tvalid
       .m_axis_dout_tdata(quotient_temp)            // output wire [55 : 0] m_axis_dout_tdata
     );
