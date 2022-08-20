@@ -157,28 +157,32 @@ always @(posedge clk) begin
         SEQ_2: begin
               PLB_en   <= 1'b1;
               PLB_addr <= yk_ADDR;
-
-              xk <= PLB_dout;
         end 
         SEQ_3: begin
               PLB_en   <= 1'b1;
               PLB_addr <= xita_ADDR;
 
-              yk <= PLB_dout;
+              xk <= PLB_dout;
         end 
         SEQ_4: begin
               PLB_en   <= 1'b1;
               PLB_addr <= PLB_lk_base_addr ;
 
-              xita <= PLB_dout;
+              yk <= PLB_dout;
         end 
         SEQ_5: begin
               PLB_en   <= 1'b1;
               PLB_addr <= PLB_lk_base_addr + 1'b1 ;
 
-              lkx <= PLB_dout;
+              xita <= PLB_dout;
         end 
         SEQ_6: begin
+              PLB_en   <= 1'b0;
+              PLB_addr <= 0 ;
+
+              lkx <= PLB_dout;
+        end
+        SEQ_7: begin
               PLB_en   <= 1'b0;
               PLB_addr <= 0 ;
 

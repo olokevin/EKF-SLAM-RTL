@@ -20,6 +20,10 @@ module RSA
   //handshake of stage change
     input   [2:0]   stage_val,
     output          stage_rdy,
+
+  //更新步数据
+    input signed [31 : 0] rk,
+    input signed [31 : 0] phi,
   // //landmark numbers, 当前地图总坐标点数目
   //   input   [ROW_LEN-1 : 0]  landmark_num,    
   // //当前地标编号
@@ -249,8 +253,8 @@ module RSA
       Hz_12 <= result_5;
       Hz_21 <= -result_2;
       Hz_22 <= result_3;
-      vt_1 <= result_0;
-      vt_2 <= result_1;
+      vt_1 <= result_0 - rk;
+      vt_2 <= result_1 - phi;
     end
   end
 

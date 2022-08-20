@@ -975,7 +975,7 @@ module PE_config #(
     ************************ NEW state transfer **********************
   */ 
     always @(posedge clk) begin
-      if(stage_val == STAGE_NEW) begin
+      if(sys_rst) begin
         new_cur <= NEW_IDLE;
       end
       else  begin
@@ -1071,7 +1071,7 @@ module PE_config #(
     ************************ UPD state transfer **********************
   */
     always @(posedge clk) begin
-      if(stage_val == STAGE_UPD) begin
+      if(sys_rst) begin
         upd_cur <= UPD_IDLE;
       end
       else  begin
@@ -1247,7 +1247,7 @@ module PE_config #(
   ************************ ASSOC state transfer **********************
 */
     always @(posedge clk) begin
-      if(stage_val == STAGE_ASSOC) begin
+      if(sys_rst) begin
         assoc_cur <= ASSOC_IDLE;
       end
       else  begin
