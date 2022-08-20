@@ -882,7 +882,7 @@ module PE_config #(
                   ASSOC_NEW: l_k <= landmark_num + 1'b1;
                   ASSOC_UPD: l_k <= assoc_l_k;
                   ASSOC_FAIL: l_k <= 0;
-                  default: l_k <= l_k;
+                  default: l_k <= 0;
                 endcase
               end 
               else begin
@@ -955,7 +955,10 @@ module PE_config #(
           end
           PRD_2: begin
             if(seq_cnt == seq_cnt_max) begin
-              prd_next = PRD_3;
+              if(landmark_num == 0)
+                prd_next = PRD_3_HALT;
+              else
+                prd_next = PRD_3;
             end
             else begin
               prd_next = PRD_2;

@@ -99,9 +99,11 @@ end
 */
 // initial begin
 //     #(PERIOD*RST_START*2)
-//     stage_val = STAGE_PRD;
+//     stage_val <= STAGE_PRD;
+//     vlr <= 0;
+//     alpha <= 
 //     #(PERIOD * 2)
-//     stage_val = 0;
+//     stage_val <= 0;
 // end
 
 
@@ -132,7 +134,7 @@ end
 initial begin
     #(PERIOD*RST_START*2)
     rk        <= 32'd10730636;
-    phi       <= -32'd359159;
+    phi       <= -32'd359159;     //1+12+19
     stage_val <= STAGE_ASSOC;
     #(PERIOD * 2)
     stage_val <= 0;
