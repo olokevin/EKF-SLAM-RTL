@@ -33,7 +33,7 @@ module PE_config #(
   output reg   [ROW_LEN-1 : 0]  l_k,           //当前地标编号
 //handshake of stage change
   input   [2:0]   stage_val,
-  output  reg [2:0]   stage_rdy,
+  output  reg     stage_rdy,
 
 /*
   (OLD) handshake of nonlinear calculation start & complete
@@ -297,8 +297,8 @@ module PE_config #(
   // parameter      STAGE_INIT = 3'b111 ;
 
 //stage_rdy
-  localparam BUSY  = 3'b000;
-  localparam READY   = 3'b111;
+  // localparam BUSY  = 3'b000;
+  // localparam READY   = 3'b111;
 
 //ASSOC STATUS
   localparam ASSOC_WAIT = 2'b00;
@@ -755,7 +755,7 @@ module PE_config #(
     else begin
       case(stage_cur)
         IDLE: begin
-                case(stage_val & stage_rdy)
+                case(stage_val)
                   IDLE:       stage_cur <= IDLE;
                   STAGE_PRD:  stage_cur <= STAGE_PRD;
                   STAGE_NEW:  stage_cur <= STAGE_NEW;
@@ -806,14 +806,24 @@ module PE_config #(
   end
 
 //(3) output: stage handshake
+  // always @(posedge clk) begin
+  //   if(sys_rst)
+  //     stage_rdy <= READY;
+  //   else if(stage_cur != IDLE) begin
+  //     stage_rdy <= BUSY;
+  //   end
+  //   else
+  //     stage_rdy <= READY;
+  // end
+
   always @(posedge clk) begin
     if(sys_rst)
-      stage_rdy <= READY;
+      stage_rdy <= 1'b0;
     else if(stage_cur != IDLE) begin
-      stage_rdy <= BUSY;
+      stage_rdy <= 1'b1;
     end
     else
-      stage_rdy <= READY;
+      stage_rdy <= 1'b0;
   end
 
 //(4)output: calculate the landmark_num
@@ -838,7 +848,7 @@ module PE_config #(
     else begin
       case (stage_cur)
         IDLE: begin
-                case(stage_val & stage_rdy)
+                case(stage_val)
                   IDLE:       l_k <= 0;
                   STAGE_PRD:  l_k <= 0;
                   STAGE_NEW:  l_k <= 10'd2;   //Simulation
@@ -875,8 +885,6 @@ module PE_config #(
 /*
   ****************** 2nd FSM sequential stage transfer ***************
 */
-wire [2:0] test_stage;
-assign test_stage = stage_val & stage_rdy;
   /*
     ******************** PRD state transfer **************************
   */
@@ -887,7 +895,7 @@ assign test_stage = stage_val & stage_rdy;
       else  begin
         case(prd_cur)
           PRD_IDLE: begin
-            if((stage_val & stage_rdy) == STAGE_PRD) begin
+            if((stage_val) == STAGE_PRD) begin
               prd_cur <= PRD_NL_SEND;
             end
             else
@@ -967,13 +975,13 @@ assign test_stage = stage_val & stage_rdy;
     ************************ NEW state transfer **********************
   */ 
     always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_NEW) begin
+      if(stage_val == STAGE_NEW) begin
         new_cur <= NEW_IDLE;
       end
       else  begin
         case(new_cur)
           NEW_IDLE: begin
-            if(((stage_val & stage_rdy) == STAGE_NEW)
+            if(((stage_val) == STAGE_NEW)
             || (assoc_status == ASSOC_NEW && assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num)) begin
               new_cur <= NEW_NL_SEND;
             end
@@ -1063,13 +1071,13 @@ assign test_stage = stage_val & stage_rdy;
     ************************ UPD state transfer **********************
   */
     always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_UPD) begin
+      if(stage_val == STAGE_UPD) begin
         upd_cur <= UPD_IDLE;
       end
       else  begin
         case(upd_cur)
           UPD_IDLE: begin
-            if(((stage_val & stage_rdy) == STAGE_UPD)
+            if(((stage_val) == STAGE_UPD)
             || (assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num && assoc_status == ASSOC_UPD)) begin
               upd_cur <= UPD_NL_SEND;
             end
@@ -1239,13 +1247,13 @@ assign test_stage = stage_val & stage_rdy;
   ************************ ASSOC state transfer **********************
 */
     always @(posedge clk) begin
-      if(stage_val & stage_rdy == STAGE_ASSOC) begin
+      if(stage_val == STAGE_ASSOC) begin
         assoc_cur <= ASSOC_IDLE;
       end
       else  begin
         case(assoc_cur)
           ASSOC_IDLE: begin
-            if((stage_val & stage_rdy) == STAGE_ASSOC) begin
+            if((stage_val) == STAGE_ASSOC) begin
               assoc_cur <= ASSOC_NL_SEND;
             end
             else

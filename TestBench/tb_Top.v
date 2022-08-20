@@ -40,7 +40,7 @@ reg  [31:0]  PLB_dout;
 
 
 // Top Outputs
-wire  [2:0]  stage_rdy                     ;
+wire          stage_rdy                     ;
 
 wire          PLB_clk;
 wire          PLB_rst;
@@ -174,7 +174,7 @@ Top
     .rk                      ( rk                      [RSA_DW - 1 : 0] ),
     .phi                     ( phi                     [RSA_DW - 1 : 0] ),
 
-    .stage_rdy               ( stage_rdy               [2:0]            )
+    .stage_rdy               ( stage_rdy                           )
 
 );
 

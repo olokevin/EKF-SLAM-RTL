@@ -19,7 +19,7 @@ module RSA
 /****************** PS -> RSA **************************/
   //handshake of stage change
     input   [2:0]   stage_val,
-    output  [2:0]   stage_rdy,
+    output          stage_rdy,
   // //landmark numbers, 当前地图总坐标点数目
   //   input   [ROW_LEN-1 : 0]  landmark_num,    
   // //当前地标编号

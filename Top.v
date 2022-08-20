@@ -17,7 +17,7 @@ module Top
 
   //模式控制
     input   [2:0]   stage_val,
-    output  [2:0]   stage_rdy,
+    output          stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
     // input   [9 : 0]  landmark_num,    
 
