@@ -289,7 +289,7 @@ module PE_config #(
   ********************** params of FSMs *************************
 */
 //stage
-  localparam      IDLE       = 3'b000 ;
+  localparam      STAGE_IDLE = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
   localparam      STAGE_UPD  = 3'b011 ;
@@ -714,7 +714,7 @@ module PE_config #(
     assign l_k_0 = l_k[0];
 
 /*
-  ******* variables of FSM of STAGE(IDLE PRD NEW UPD) *************
+  ******* variables of FSM of STAGE(STAGE_IDLE PRD NEW UPD) *************
 */
 
   reg [2:0]      stage_next ;   
@@ -751,25 +751,33 @@ module PE_config #(
   
 
 /*
-  ****************** FSM of STAGE(IDLE PRD NEW UPD) *******************
+  ****************** FSM of STAGE(STAGE_IDLE PRD NEW UPD) *******************
 */
   //(1)&(2) state switch
 
   always @(posedge clk) begin
     if(sys_rst) begin
-      stage_cur <= IDLE;
+      stage_cur <= STAGE_IDLE;
+    end
+    else 
+      stage_cur <= stage_next;
+  end
+
+  always @(*) begin
+    if(sys_rst) begin
+      stage_next = STAGE_IDLE;
     end
     else begin
       case(stage_cur)
-        IDLE: begin
+        STAGE_IDLE: begin
                 case(stage_val)
-                  IDLE:       stage_cur <= IDLE;
-                  STAGE_PRD:  stage_cur <= STAGE_PRD;
-                  STAGE_NEW:  stage_cur <= STAGE_NEW;
-                  STAGE_UPD:  stage_cur <= STAGE_UPD;
-                  STAGE_ASSOC:  stage_cur <= STAGE_ASSOC;
+                  STAGE_IDLE: stage_next = STAGE_IDLE;
+                  STAGE_PRD:  stage_next = STAGE_PRD;
+                  STAGE_NEW:  stage_next = STAGE_NEW;
+                  STAGE_UPD:  stage_next = STAGE_UPD;
+                  STAGE_ASSOC:  stage_next = STAGE_ASSOC;
                   default: begin
-                    stage_cur <= IDLE;
+                    stage_next = STAGE_IDLE;
                     stage_change_err <= 1'b1;
                   end  
                 endcase
@@ -778,36 +786,36 @@ module PE_config #(
         STAGE_PRD:begin
                     // if(prd_cur == PRD_3 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max)
                     if(prd_cur == PRD_3_HALT && seq_cnt == seq_cnt_max)
-                      stage_cur <= IDLE;
+                      stage_next = STAGE_IDLE;
                     else
-                      stage_cur <= STAGE_PRD;
+                      stage_next = STAGE_PRD;
                   end
         STAGE_NEW:begin
                     if(new_cur == NEW_5 && seq_cnt == seq_cnt_max)
-                      stage_cur <= IDLE;
+                      stage_next = STAGE_IDLE;
                     else
-                      stage_cur <= STAGE_NEW;
+                      stage_next = STAGE_NEW;
                   end
         STAGE_UPD:begin
                     if(upd_cur == UPD_10 && seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max)
-                      stage_cur <= IDLE;
+                      stage_next = STAGE_IDLE;
                     else
-                      stage_cur <= STAGE_UPD;
+                      stage_next = STAGE_UPD;
                   end
         STAGE_ASSOC:begin
                     //Finished ALL data associtaion
                     if(assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num) begin
                       case (assoc_status)
-                        ASSOC_NEW: stage_cur <= STAGE_NEW;
-                        ASSOC_UPD: stage_cur <= STAGE_UPD;
-                        ASSOC_FAIL: stage_cur <= IDLE;
-                        default: stage_cur <= STAGE_ASSOC;
+                        ASSOC_NEW: stage_next = STAGE_NEW;
+                        ASSOC_UPD: stage_next = STAGE_UPD;
+                        ASSOC_FAIL: stage_next = STAGE_IDLE;
+                        default: stage_next = STAGE_ASSOC;
                       endcase
                     end
                     else
-                      stage_cur <= STAGE_ASSOC;
+                      stage_next = STAGE_ASSOC;
                   end
-        default: stage_cur <= IDLE;
+        default: stage_next = STAGE_IDLE;
       endcase
     end
   end
@@ -816,7 +824,7 @@ module PE_config #(
   // always @(posedge clk) begin
   //   if(sys_rst)
   //     stage_rdy <= READY;
-  //   else if(stage_cur != IDLE) begin
+  //   else if(stage_cur != STAGE_IDLE) begin
   //     stage_rdy <= BUSY;
   //   end
   //   else
@@ -826,7 +834,7 @@ module PE_config #(
   always @(posedge clk) begin
     if(sys_rst)
       stage_rdy <= 1'b0;
-    else if(stage_cur != IDLE) begin
+    else if((stage_next == STAGE_IDLE) && (stage_cur != STAGE_IDLE)) begin
       stage_rdy <= 1'b1;
     end
     else
@@ -848,17 +856,17 @@ module PE_config #(
     end
   end
 
-//(5)output: designate l_k
+//(5)designate l_k
   always @(posedge clk) begin
     if(sys_rst)
       l_k <= 0;
     else begin
       case (stage_cur)
-        IDLE: begin
+        STAGE_IDLE: begin
                 case(stage_val)
-                  IDLE:       l_k <= 0;
+                  STAGE_IDLE:       l_k <= 0;
                   STAGE_PRD:  l_k <= 0;
-                  STAGE_NEW:  l_k <= 10'd2;   //Simulation
+                  STAGE_NEW:  l_k <= landmark_num;
                   STAGE_UPD:  l_k <= 10'd2;   //Simulation
                   STAGE_ASSOC:  l_k <= 10'd1; //From landmark no.1
                   default: l_k <= 0; 
@@ -899,70 +907,78 @@ module PE_config #(
       if(sys_rst) begin
         prd_cur <= PRD_IDLE;
       end
+      else 
+        prd_cur <= prd_next;
+    end
+
+    always @(*) begin
+      if(sys_rst) begin
+        prd_next = PRD_IDLE;
+      end
       else  begin
         case(prd_cur)
           PRD_IDLE: begin
             if((stage_val) == STAGE_PRD) begin
-              prd_cur <= PRD_NL_SEND;
+              prd_next = PRD_NL_SEND;
             end
             else
-              prd_cur <= PRD_IDLE;
+              prd_next = PRD_IDLE;
           end
           PRD_NL_SEND: begin
-            if(init_predict == 1'b1) begin
-              prd_cur <= PRD_NL_WAIT;
+            if(seq_cnt == seq_cnt_max) begin
+              prd_next = PRD_NL_WAIT;
             end
             else
-              prd_cur <= PRD_NL_SEND;
+              prd_next = PRD_NL_SEND;
           end
           PRD_NL_WAIT: begin
             if(done_predict == 1'b1) begin
-              prd_cur <= PRD_NL_RCV;
+              prd_next = PRD_NL_RCV;
             end
             else
-              prd_cur <= PRD_NL_WAIT;
+              prd_next = PRD_NL_WAIT;
           end
           PRD_NL_RCV: begin
             if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_1;
+              prd_next = PRD_1;
             end
             else
-              prd_cur <= PRD_NL_RCV;
+              prd_next = PRD_NL_RCV;
           end
           PRD_1: begin
             if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_2;
+              prd_next = PRD_2;
             end
             else begin
-              prd_cur <= PRD_1;
+              prd_next = PRD_1;
             end
           end
           PRD_2: begin
             if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_3;
+              prd_next = PRD_3;
             end
             else begin
-              prd_cur <= PRD_2;
+              prd_next = PRD_2;
             end
           end
           PRD_3: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              prd_cur <= PRD_3_HALT;
+              prd_next = PRD_3_HALT;
             end
             else begin
-              prd_cur <= PRD_3;
+              prd_next = PRD_3;
             end
           end
           PRD_3_HALT: begin
             if(seq_cnt == seq_cnt_max) begin
-              prd_cur <= PRD_IDLE;
+              prd_next = PRD_IDLE;
             end
             else begin
-              prd_cur <= PRD_3_HALT;
+              prd_next = PRD_3_HALT;
             end
           end
           default: begin
-            prd_cur <= PRD_IDLE;
+            prd_next = PRD_IDLE;
           end
         endcase
       end
@@ -973,7 +989,7 @@ module PE_config #(
         if(sys_rst) begin
           init_predict <= 0;
         end
-        else if(stage_cur == STAGE_PRD && prd_cur == PRD_NL_SEND && seq_cnt == seq_cnt_max)
+        else if(prd_next == PRD_NL_WAIT && prd_cur == PRD_NL_SEND)
           init_predict <= 1'b1;
         else
           init_predict <= 0;
@@ -985,79 +1001,87 @@ module PE_config #(
       if(sys_rst) begin
         new_cur <= NEW_IDLE;
       end
+      else 
+        new_cur <= new_next;
+    end
+    
+    always @(*) begin
+      if(sys_rst) begin
+        new_next = NEW_IDLE;
+      end
       else  begin
         case(new_cur)
           NEW_IDLE: begin
             if(((stage_val) == STAGE_NEW)
             || (assoc_status == ASSOC_NEW && assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num)) begin
-              new_cur <= NEW_NL_SEND;
+              new_next = NEW_NL_SEND;
             end
             else
-              new_cur <= NEW_IDLE;
+              new_next = NEW_IDLE;
           end
           NEW_NL_SEND: begin
-            if(init_newlm == 1'b1) begin
-              new_cur <= NEW_NL_WAIT;
+            if(seq_cnt == seq_cnt_max) begin
+              new_next = NEW_NL_WAIT;
             end
             else
-              new_cur <= NEW_NL_SEND;
+              new_next = NEW_NL_SEND;
           end
           NEW_NL_WAIT: begin
             if(done_newlm == 1'b1) begin
-              new_cur <= NEW_NL_RCV;
+              new_next = NEW_NL_RCV;
             end
             else
-              new_cur <= NEW_NL_WAIT;
+              new_next = NEW_NL_WAIT;
           end
           NEW_NL_RCV: begin
             if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_1;
+              new_next = NEW_1;
             end
             else
-              new_cur <= NEW_NL_RCV;
+              new_next = NEW_NL_RCV;
           end
           NEW_1: begin
             if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_2;
+              new_next = NEW_2;
             end
             else begin
-              new_cur <= NEW_1;
+              new_next = NEW_1;
             end
           end
           NEW_2: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              new_cur <= NEW_3;
+              new_next = NEW_3;
             end
             else begin
-              new_cur <= NEW_2;
+              new_next = NEW_2;
             end
           end
           NEW_3: begin
             if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_4;
+              new_next = NEW_4;
             end
             else begin
-              new_cur <= NEW_3;
+              new_next = NEW_3;
             end
           end
           NEW_4: begin
             if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_5;
+              new_next = NEW_5;
             end
             else begin
-              new_cur <= NEW_4;
+              new_next = NEW_4;
             end
           end
           NEW_5: begin
             if(seq_cnt == seq_cnt_max) begin
-              new_cur <= NEW_IDLE;
+              new_next = NEW_IDLE;
             end
             else begin
-              new_cur <= NEW_5;
+              new_next = NEW_5;
             end
           end
           default: begin
-            new_cur <= NEW_IDLE;
+            new_next = NEW_IDLE;
           end
         endcase
       end
@@ -1068,7 +1092,7 @@ module PE_config #(
         if(sys_rst) begin
           init_newlm <= 0;
         end
-        else if(stage_cur == STAGE_NEW && new_cur == NEW_NL_SEND && seq_cnt == seq_cnt_max)
+        else if(new_next == NEW_NL_WAIT && new_cur == NEW_NL_SEND)
           init_newlm <= 1'b1;
         else
           init_newlm <= 0;
@@ -1081,158 +1105,166 @@ module PE_config #(
       if(sys_rst) begin
         upd_cur <= UPD_IDLE;
       end
+      else 
+        upd_cur <= upd_next;
+    end
+
+    always @(*) begin
+      if(sys_rst) begin
+        upd_next = UPD_IDLE;
+      end
       else  begin
         case(upd_cur)
           UPD_IDLE: begin
             if(((stage_val) == STAGE_UPD)
             || (assoc_cur == ASSOC_10 && seq_cnt == seq_cnt_max && l_k == landmark_num && assoc_status == ASSOC_UPD)) begin
-              upd_cur <= UPD_NL_SEND;
+              upd_next = UPD_NL_SEND;
             end
             else
-              upd_cur <= UPD_IDLE;
+              upd_next = UPD_IDLE;
           end
           UPD_NL_SEND: begin
-            if(init_update == 1'b1) begin
-              upd_cur <= UPD_NL_WAIT;
+            if(seq_cnt == seq_cnt_max) begin
+              upd_next = UPD_NL_WAIT;
             end
             else
-              upd_cur <= UPD_NL_SEND;
+              upd_next = UPD_NL_SEND;
           end
           UPD_NL_WAIT: begin
             if(done_update == 1'b1) begin
-              upd_cur <= UPD_NL_RCV;
+              upd_next = UPD_NL_RCV;
             end
             else
-              upd_cur <= UPD_NL_WAIT;
+              upd_next = UPD_NL_WAIT;
           end
           UPD_NL_RCV: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_1;
+              upd_next = UPD_1;
             end
             else
-              upd_cur <= UPD_NL_RCV;
+              upd_next = UPD_NL_RCV;
           end
           UPD_1: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == l_k_t_cov_l) begin
-              upd_cur <= UPD_2;
+              upd_next = UPD_2;
             end
             else begin
-              upd_cur <= UPD_1;
+              upd_next = UPD_1;
             end
           end
           UPD_2: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_4;
+              upd_next = UPD_4;
             end
             else begin
-              upd_cur <= UPD_2;
+              upd_next = UPD_2;
             end
           end
           UPD_3: begin
             if(seq_cnt == seq_cnt_max) begin
               if(v_group_cnt <= l_k_t_cov_l)
-                upd_cur <= UPD_4;
+                upd_next = UPD_4;
               else
-                upd_cur <= UPD_5;
+                upd_next = UPD_5;
             end
             else begin
-              upd_cur <= UPD_3;
+              upd_next = UPD_3;
             end
           end
           UPD_4: begin
             if(seq_cnt == seq_cnt_max) begin
               if(v_group_cnt == v_group_cnt_max)
-                upd_cur <= UPD_6;
+                upd_next = UPD_6;
               else
-                upd_cur <= UPD_3;
+                upd_next = UPD_3;
             end
             else begin
-              upd_cur <= UPD_4;
+              upd_next = UPD_4;
             end
           end
           UPD_5: begin
             if(seq_cnt == seq_cnt_max) begin
               if(v_group_cnt == v_group_cnt_max) begin
                 if(l_k_group == v_group_cnt_max)
-                  upd_cur <= UPD_HALT_56;
+                  upd_next = UPD_HALT_56;
                 else
-                  upd_cur <= UPD_6;
+                  upd_next = UPD_6;
               end
               else
-                upd_cur <= UPD_3;
+                upd_next = UPD_3;
             end
             else begin
-              upd_cur <= UPD_5;
+              upd_next = UPD_5;
             end
           end
           UPD_HALT_56: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_6;
+              upd_next = UPD_6;
             end
             else begin
-              upd_cur <= UPD_HALT_56;
+              upd_next = UPD_HALT_56;
             end
           end
           UPD_6: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_7;
+              upd_next = UPD_7;
             end
             else begin
-              upd_cur <= UPD_6;
+              upd_next = UPD_6;
             end
           end
           UPD_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_INV;    
-              // upd_cur <= UPD_HALT_78;  //220722 加入halt //220726 取消
+              upd_next = UPD_INV;    
+              // upd_next = UPD_HALT_78;  //220722 加入halt //220726 取消
             end
             else begin
-              upd_cur <= UPD_7;
+              upd_next = UPD_7;
             end
           end
           UPD_INV: begin
             if(done_inv == 1'b1) begin
-              upd_cur <= UPD_8;
+              upd_next = UPD_8;
             end
             else begin
-              upd_cur <= UPD_INV;
+              upd_next = UPD_INV;
             end
           end
           UPD_8: begin
             if(seq_cnt == seq_cnt_max) begin
-              upd_cur <= UPD_9;
+              upd_next = UPD_9;
             end
             else begin
-              upd_cur <= UPD_8;
+              upd_next = UPD_8;
             end
           end
           UPD_9: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              // upd_cur <= UPD_10;  //220722 加入halt
-              upd_cur <= UPD_STATE;
+              // upd_next = UPD_10;  //220722 加入halt
+              upd_next = UPD_STATE;
             end
             else begin
-              upd_cur <= UPD_9;
+              upd_next = UPD_9;
             end
           end
           UPD_STATE: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max) begin
-              upd_cur <= UPD_10;
+              upd_next = UPD_10;
             end
             else begin
-              upd_cur <= UPD_STATE;
+              upd_next = UPD_STATE;
             end
           end
           UPD_10: begin
             if(seq_cnt == seq_cnt_max && v_group_cnt == v_group_cnt_max && h_group_cnt == h_group_cnt_max) begin
-              upd_cur <= UPD_IDLE;
+              upd_next = UPD_IDLE;
             end
             else begin
-              upd_cur <= UPD_10;
+              upd_next = UPD_10;
             end
           end
           default: begin
-            upd_cur <= UPD_IDLE;
+            upd_next = UPD_IDLE;
           end
         endcase
       end
@@ -1243,8 +1275,8 @@ module PE_config #(
         if(sys_rst) begin
           init_update <= 0;
         end
-        else if((stage_cur == STAGE_UPD && upd_cur == UPD_NL_SEND && seq_cnt == seq_cnt_max)          //update
-                ||(stage_cur == STAGE_ASSOC && assoc_cur == ASSOC_NL_SEND && seq_cnt == seq_cnt_max)) //assoc
+        else if((upd_next == UPD_NL_WAIT && upd_cur == UPD_NL_SEND)          //update
+                ||(assoc_next == ASSOC_NL_WAIT && assoc_cur == ASSOC_NL_SEND)) //assoc
           init_update <= 1'b1;
         else
           init_update <= 0;
@@ -1257,129 +1289,137 @@ module PE_config #(
       if(sys_rst) begin
         assoc_cur <= ASSOC_IDLE;
       end
+      else 
+        assoc_cur <= assoc_next;
+    end
+    
+    always @(*) begin
+      if(sys_rst) begin
+        assoc_next = ASSOC_IDLE;
+      end
       else  begin
         case(assoc_cur)
           ASSOC_IDLE: begin
             if((stage_val) == STAGE_ASSOC) begin
-              assoc_cur <= ASSOC_NL_SEND;
+              assoc_next = ASSOC_NL_SEND;
             end
             else
-              assoc_cur <= ASSOC_IDLE;
+              assoc_next = ASSOC_IDLE;
           end
           ASSOC_NL_SEND: begin
-            if(init_update == 1'b1) begin       //复用update非线性
-              assoc_cur <= ASSOC_NL_WAIT;
+            if(seq_cnt == seq_cnt_max) begin       //复用update非线性
+              assoc_next = ASSOC_NL_WAIT;
             end
             else
-              assoc_cur <= ASSOC_NL_SEND;
+              assoc_next = ASSOC_NL_SEND;
           end
           ASSOC_NL_WAIT: begin
             if(done_update == 1'b1) begin       //复用update非线性
-              assoc_cur <= ASSOC_NL_RCV;
+              assoc_next = ASSOC_NL_RCV;
             end
             else
-              assoc_cur <= ASSOC_NL_WAIT;
+              assoc_next = ASSOC_NL_WAIT;
           end
           ASSOC_NL_RCV: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_1;
+              assoc_next = ASSOC_1;
             end
             else
-              assoc_cur <= ASSOC_NL_RCV;
+              assoc_next = ASSOC_NL_RCV;
           end
           ASSOC_1: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_2;
+              assoc_next = ASSOC_2;
             end
             else begin
-              assoc_cur <= ASSOC_1;
+              assoc_next = ASSOC_1;
             end
           end
           ASSOC_2: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_3;
+              assoc_next = ASSOC_3;
             end
             else begin
-              assoc_cur <= ASSOC_2;
+              assoc_next = ASSOC_2;
             end
           end
           ASSOC_3: begin
             if(seq_cnt == seq_cnt_max) begin
-                assoc_cur <= ASSOC_4;
+                assoc_next = ASSOC_4;
             end
             else begin
-              assoc_cur <= ASSOC_3;
+              assoc_next = ASSOC_3;
             end
           end
           ASSOC_4: begin
             if(seq_cnt == seq_cnt_max) 
-                assoc_cur <= ASSOC_5;
+                assoc_next = ASSOC_5;
             else
-              assoc_cur <= ASSOC_4;
+              assoc_next = ASSOC_4;
           end
           ASSOC_5: begin
             if(seq_cnt == seq_cnt_max) begin
-                assoc_cur <= ASSOC_6;
+                assoc_next = ASSOC_6;
             end
             else begin
-              assoc_cur <= ASSOC_5;
+              assoc_next = ASSOC_5;
             end
           end
           ASSOC_6: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_7;
+              assoc_next = ASSOC_7;
             end
             else begin
-              assoc_cur <= ASSOC_6;
+              assoc_next = ASSOC_6;
             end
           end
           ASSOC_7: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_INV;    
+              assoc_next = ASSOC_INV;    
             end
             else begin
-              assoc_cur <= ASSOC_7;
+              assoc_next = ASSOC_7;
             end
           end
           ASSOC_INV: begin
             if(done_inv == 1'b1) begin
-              assoc_cur <= ASSOC_8;
+              assoc_next = ASSOC_8;
             end
             else begin
-              assoc_cur <= ASSOC_INV;
+              assoc_next = ASSOC_INV;
             end
           end
           ASSOC_8: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_9;
+              assoc_next = ASSOC_9;
             end
             else begin
-              assoc_cur <= ASSOC_8;
+              assoc_next = ASSOC_8;
             end
           end
           ASSOC_9: begin
             if(seq_cnt == seq_cnt_max) begin
-              assoc_cur <= ASSOC_10;
+              assoc_next = ASSOC_10;
             end
             else begin
-              assoc_cur <= ASSOC_9;
+              assoc_next = ASSOC_9;
             end
           end
           ASSOC_10: begin
             if(seq_cnt == seq_cnt_max) begin
               if(l_k == landmark_num) begin
-                assoc_cur <= ASSOC_IDLE;    //Finish data assocition
+                assoc_next = ASSOC_IDLE;    //Finish data assocition
               end
               else begin
-                assoc_cur <= ASSOC_NL_SEND;       //Start another association
+                assoc_next = ASSOC_NL_SEND;       //Start another association
               end
             end
             else begin
-              assoc_cur <= ASSOC_10;
+              assoc_next = ASSOC_10;
             end
           end
           default: begin
-            assoc_cur <= ASSOC_IDLE;
+            assoc_next = ASSOC_IDLE;
           end
         endcase
       end
@@ -1744,1652 +1784,468 @@ module PE_config #(
   end
 
 /*
-  **************(try) sequential RSA work-mode Config ************************
+  ************* (using) sequential RSA work-mode Config *************
 */
-  // always @(posedge clk) begin
-  //     if(sys_rst) begin
-  //       PE_m <= 0;
-  //       PE_n <= 0;
-  //       PE_k <= 0;
-
-  //       CAL_mode <= N_W;
-
-  //       A_in_mode <= A_TBa;   
-  //       B_in_mode <= B_TBb;
-  //       M_in_mode <= M_TBa;
-  //       C_out_mode <= C_CBb;
-  //       M_adder_mode_set <= NONE;
-
-  //       TBa_mode <= TB_IDLE;
-  //       TBb_mode <= TB_IDLE;
-  //       CBa_mode <= CB_IDLE;
-  //       CBb_mode <= CB_IDLE;
-
-  //       A_TB_base_addr_set <= 0;
-  //       B_TB_base_addr_set <= 0;
-  //       M_TB_base_addr_set <= 0;
-  //       C_TB_base_addr_set <= 0;
-  //     end
-  //     else begin
-  //       case(stage_cur)
-  //         STAGE_PRD: begin
-  //                     case (prd_cur)
-  //                       PRD_NL_SEND:
-  //                             begin
-  //                               CBa_mode <= {CBa_NL,CB_NL_xyxita};    
-  //                             end
-  //                       PRD_NL_RCV:
-  //                             begin
-  //                               PE_n <= 3'b011;
-  //                               B_cache_mode <= Bca_WR_NL_PRD;
-  //                               B_cache_base_addr_set <= 0;
-  //                               // TBa_mode <= {TBa_NL_PRD,DIR_POS};
-  //                               CBb_mode <= {CBb_xyxita,CB_NL_xyxita};    
-  //                             end
-  //                       PRD_1: begin
-  //                               PE_m <= PRD_1_M;
-  //                               PE_n <= PRD_1_N;
-  //                               PE_k <= PRD_1_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_B,CB_cov_vv};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= F_cov;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       PRD_2: begin
-  //                               PE_m <= PRD_2_M;
-  //                               PE_n <= PRD_2_N;
-  //                               PE_k <= PRD_2_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= ADD;
-
-  //                               TBa_mode <= {TBa_AM,DIR_POS};
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= {CBb_C,CB_cov_vv};
-
-  //                               A_TB_base_addr_set <= F_cov;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= M_t;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       PRD_3: begin
-  //                               PE_m <= PRD_3_M;
-  //                               PE_n <= PRD_3_N;
-  //                               PE_k <= PRD_3_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= {CBa_A,CB_cov_mv};
-  //                               CBb_mode <= {CBb_C,CB_cov_mv};
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       PRD_3_HALT: begin
-  //                               PE_m <= PRD_3_M;
-  //                               PE_n <= PRD_3_N;
-  //                               PE_k <= PRD_3_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_NONE;   
-  //                               B_in_mode <= B_NONE;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_IDLE;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       default: begin
-  //                                 PE_m <= 0;
-  //                                 PE_n <= 0;
-  //                                 PE_k <= 0;
-
-  //                                 CAL_mode <= N_W;
-
-  //                                 A_in_mode <= A_TBa;   
-  //                                 B_in_mode <= B_TBb;
-  //                                 M_in_mode <= M_TBa;
-  //                                 C_out_mode <= C_CBb;
-  //                                 M_adder_mode_set <= NONE;
-
-  //                                 TBa_mode <= TB_IDLE;
-  //                                 TBb_mode <= TB_IDLE;
-  //                                 CBa_mode <= CB_IDLE;
-  //                                 CBb_mode <= CB_IDLE;
-
-  //                                 A_TB_base_addr_set <= 0;
-  //                                 B_TB_base_addr_set <= 0;
-  //                                 M_TB_base_addr_set <= 0;
-  //                                 C_TB_base_addr_set <= 0;
-
-  //                                 B_cache_mode <= Bca_IDLE;
-  //                                 B_cache_base_addr_set <= 0;
-  //                               end
-  //                     endcase
-  //                   end
-  //         STAGE_NEW: begin
-  //                     case(new_cur)
-  //                       NEW_NL_SEND:
-  //                             begin
-  //                               CBa_mode <= {CBa_NL,CB_NL_xyxita};    
-  //                             end
-  //                       NEW_NL_RCV:
-  //                             begin
-  //                               // TBa_mode <= {TBa_NL_NEW,DIR_POS};
-  //                               CBb_mode <= {CBb_lxly,CB_NL_lxly};
-  //                               PE_n <= 3'b101;
-  //                               B_cache_mode <= Bca_WR_NL_NEW;
-  //                               B_cache_base_addr_set <= 0;    
-  //                             end
-  //                       NEW_1: begin
-  //                             /*
-  //                               G_xi * t_cov <= cov_lm
-  //                               X=2 Y=2 N=3
-  //                               Ain: TB-A
-  //                               bin: CB-A
-  //                               Cout: CB-B
-  //                             */
-  //                               PE_m <= NEW_1_M;
-  //                               PE_n <= NEW_1_N;
-  //                               PE_k <= NEW_1_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= {CBa_B,CB_cov_vv};
-  //                               CBb_mode <= {CBb_C,CB_cov_lv};
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-                                
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0;  
-  //                             end
-  //                       NEW_2: begin
-  //                             /*
-  //                               G_xi * cov_mv <= cov_lv
-  //                               X=2 Y=4 N=3
-  //                               Ain: TB-A
-  //                               Bin: CB-A
-  //                               Min: 0
-  //                               Cout: CB-B
-  //                             */
-  //                               PE_m <= NEW_2_M;
-  //                               PE_n <= NEW_2_N;
-  //                               PE_k <= NEW_2_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= {CBa_B,CB_cov_mv};
-  //                               CBb_mode <= {CBb_C,CB_cov_lm};
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0; 
-  //                             end
-  //                       NEW_3: begin
-  //                               /*
-  //                                 cov_lv * G_xi_T <= lv_G_xi
-  //                                 X=2 Y=2 N=3
-  //                                 Ain: CB-A
-  //                                 Bin: TB-B
-  //                                 Min: NONE  
-  //                                 Cout: TB-B
-  //                               */
-  //                                 PE_m <= NEW_3_M;
-  //                                 PE_n <= NEW_3_N;
-  //                                 PE_k <= NEW_3_K;
-
-  //                                 CAL_mode <= N_W;
-
-  //                                 A_in_mode <= A_CBa;   
-  //                                 B_in_mode <= B_cache;
-  //                                 M_in_mode <= M_NONE;
-  //                                 C_out_mode <= C_TBb;
-  //                                 M_adder_mode_set <= NONE;
-
-  //                                 TBa_mode <= TB_IDLE;
-  //                                 TBb_mode <= {TBb_C,DIR_POS};
-  //                                 CBa_mode <= {CBa_A,CB_cov_lv};
-  //                                 CBb_mode <= CB_IDLE;
-
-  //                                 A_TB_base_addr_set <= 0;
-  //                                 B_TB_base_addr_set <= 0;
-  //                                 M_TB_base_addr_set <= 0;
-  //                                 C_TB_base_addr_set <= lv_G_xi;
-
-  //                                 B_cache_mode <= Bca_RD_B;
-  //                                 B_cache_base_addr_set <= 0; 
-  //                               end
-  //                       NEW_4: begin
-  //                             /*
-  //                               G_z * Q <= G_z_Q
-  //                               X=2 Y=2 N=2
-  //                               Ain: TB-A
-  //                               Bin: TB-B
-  //                               Min: NONE  
-  //                               Cout: TB-B
-  //                             */
-  //                               PE_m <= NEW_4_M;
-  //                               PE_n <= NEW_4_N;
-  //                               PE_k <= NEW_4_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_TBb;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_BC,DIR_POS};
-  //                               CBa_mode <= CB_IDLE; 
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= Q;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= G_z_Q;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 3'b011; 
-  //                             end
-  //                       NEW_5: begin
-  //                             /*
-  //                               G_z_Q * G_z_T + lv_G_xi <= cov_ll
-  //                               X=2 Y=2 N=2
-  //                               Ain: TB-A
-  //                               Bin: TB-B
-  //                               Min: TB-A  
-  //                               Cout: CB-B
-  //                             */
-  //                               PE_m <= NEW_5_M;
-  //                               PE_n <= NEW_5_N;
-  //                               PE_k <= NEW_5_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= ADD;
-
-  //                               TBa_mode <= {TBa_AM,DIR_POS};
-  //                               TBb_mode <= {TBb_IDLE,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= {CBb_C,CB_cov_ll};
-
-  //                               A_TB_base_addr_set <= G_z_Q;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= lv_G_xi;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 3'b011; 
-  //                             end
-  //                       default: begin
-  //                               PE_m <= 0;
-  //                               PE_n <= 0;
-  //                               PE_k <= 0;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_TBb;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_IDLE;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                     endcase
-  //                   end
-  //         STAGE_UPD: begin
-  //                     case(upd_cur)
-  //                       UPD_NL_SEND:
-  //                             begin
-  //                               CBa_mode <= {CBa_NL,CB_NL_xyxita};    
-  //                             end
-  //                       UPD_NL_RCV:
-  //                             begin
-  //                               TBa_mode <= {TBa_NL_UPD,DIR_POS};
-  //                               CBb_mode <= CB_IDLE;  
-  //                               PE_n <= 3'b101;
-  //                               B_cache_mode <= Bca_WR_NL_UPD;
-  //                               B_cache_base_addr_set <= 0; 
-  //                             end
-  //                       UPD_1: begin
-  //                             /*
-  //                               transfer
-  //                               H:    TB-B -> B_cache
-  //                               cov_l:CB-A -> TB-A
-  //                               X=0 Y=2 N=5
-  //                               Ain: 0
-  //                               bin: TB-B
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= UPD_1_M;
-  //                               PE_n <= UPD_1_N;
-  //                               PE_k <= UPD_1_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_TBb;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_CBa,DIR_POS};
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= {CBa_TBa, CB_cov_lm};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= t_cov_l;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_IDLE;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_2: begin
-  //                             /*
-  //                               cov_vv * H_T <= cov_HT
-  //                               X=3 Y=2 N=3
-  //                               Ain: CB-A
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: TB-B
-  //                             */
-                                
-  //                               PE_m <= UPD_2_M;
-  //                               PE_n <= UPD_2_N;
-  //                               PE_k <= UPD_2_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_A,CB_cov_vv};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= t_cov_l;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= cov_HT;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_3: begin
-  //                             /*
-  //                               cov_mv * H_T <= cov_HT
-  //                               X=4 Y=2 N=3
-  //                               Ain: CB-A
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: TB-B
-  //                             */
-                                
-  //                               PE_m <= UPD_3_M;
-  //                               PE_n <= UPD_3_N;
-  //                               PE_k <= UPD_3_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_IDLE,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_A,CB_cov_mv};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= t_cov_l;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= cov_HT;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_4: begin
-  //                             /*
-  //                               t_cov_l * H_T <= cov_HT
-  //                               X=4 Y=2 N=2
-  //                               Ain: TB-A
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= UPD_4_M;
-  //                               PE_n <= UPD_4_N;
-  //                               PE_k <= UPD_4_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_IDLE,DIR_POS};
-  //                               CBa_mode <= {CBa_A,CB_cov_IDLE}; //保证dir不改变
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= t_cov_l;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= cov_HT;  //保持一致
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 3'b011;
-  //                             end
-  //                       UPD_5: begin
-  //                             /*
-  //                               cov_ml * H_T <= cov_HT
-  //                               X=4 Y=2 N=2
-  //                               Ain: CB-A
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= UPD_5_M;
-  //                               PE_n <= UPD_5_N;
-  //                               PE_k <= UPD_5_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
-  //                               CBa_mode <= {CBa_A,CB_cov_ml}; 
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= t_cov_l;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= cov_HT;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 3'b011;
-  //                             end
-  //                       UPD_HALT_56: begin
-  //                               PE_m <= UPD_5_M;
-  //                               PE_n <= UPD_5_N;
-  //                               PE_k <= UPD_5_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_CBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
-  //                               CBa_mode <= CB_IDLE; 
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_IDLE;
-  //                               B_cache_base_addr_set <= 0;
-  //                       end
-  //                       UPD_6: begin
-  //                             /*
-  //                               cov_HT transpose
-  //                               Ain: 
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= UPD_6_M;
-  //                               PE_n <= UPD_6_N;
-  //                               PE_k <= UPD_6_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_NONE;   
-  //                               B_in_mode <= B_NONE;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_NONE;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_B_cache_transpose,DIR_POS}; //不依赖于N
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= cov_HT;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_WR_transpose;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_7: begin
-  //                             /*
-  //                               H_T * cov_HT + Q <= S
-  //                               X=2 Y=2 N=5
-  //                               Ain: TB-A
-  //                               Bin: B_cache
-  //                               Min: TB-A  
-  //                               Cout: TB-B
-  //                             */
-  //                               PE_m <= UPD_7_M;
-  //                               PE_n <= UPD_7_N;
-  //                               PE_k <= UPD_7_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_cache;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_C, DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       // UPD_HALT_78: begin
-  //                       //         PE_m <= UPD_7_M;
-  //                       //         PE_n <= UPD_7_N;
-  //                       //         PE_k <= UPD_7_K;
-
-  //                       //         CAL_mode <= N_W;
-
-  //                       //         A_in_mode <= A_NONE;   
-  //                       //         B_in_mode <= B_NONE;
-  //                       //         M_in_mode <= M_NONE;
-  //                       //         C_out_mode <= C_TBb;
-  //                       //         M_adder_mode_set <= ADD;
-
-  //                       //         TBa_mode <= TBa_IDLE;
-  //                       //         TBb_mode <= {TBb_IDLE, DIR_POS};
-  //                       //         CBa_mode <= CB_IDLE;
-  //                       //         CBb_mode <= CB_IDLE;
-
-  //                       //         A_TB_base_addr_set <= 0;
-  //                       //         B_TB_base_addr_set <= 0;
-  //                       //         M_TB_base_addr_set <= 0;
-  //                       //         C_TB_base_addr_set <= 0;
-
-  //                       //         B_cache_mode <= Bca_IDLE;
-  //                       //         B_cache_base_addr_set <= 0;
-  //                       //        end
-  //                       UPD_8: begin
-  //                             /*
-  //                               S_t inverse
-  //                               Ain: 0
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= UPD_8_M;
-  //                               PE_n <= UPD_8_N;
-  //                               PE_k <= UPD_8_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_NONE;   
-  //                               B_in_mode <= B_NONE;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_NONE;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_WR_inv;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_9: begin
-  //                             /*
-  //                               cov_HT * S <= K_t
-  //                               X=4 Y=2 N=2
-  //                               Ain: TB-A
-  //                               Bin: B_cache
-  //                               Min: 0
-  //                               Cout: TB-B
-  //                             */
-  //                               PE_m <= UPD_9_M;
-  //                               PE_n <= UPD_9_N;
-  //                               PE_k <= UPD_9_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= cov_HT;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= K_t;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       UPD_STATE: begin
-  //                                 PE_m <= UPD_9_M;
-  //                                 PE_n <= UPD_9_N;
-  //                                 PE_k <= UPD_9_K;
-
-  //                                 CAL_mode <= N_W;
-
-  //                                 A_in_mode <= A_NONE;   
-  //                                 B_in_mode <= B_NONE;
-  //                                 M_in_mode <= M_NONE;
-  //                                 C_out_mode <= C_TBb;
-  //                                 M_adder_mode_set <= NONE;
-
-  //                                 TBa_mode <= {TBa_IDLE,DIR_POS};
-  //                                 TBb_mode <= {TBb_IDLE,DIR_POS};
-  //                                 CBa_mode <= CB_IDLE;
-  //                                 CBb_mode <= CB_IDLE;
-
-  //                                 A_TB_base_addr_set <= 0;
-  //                                 B_TB_base_addr_set <= 0;
-  //                                 M_TB_base_addr_set <= 0;
-  //                                 C_TB_base_addr_set <= 0;
-
-  //                                 B_cache_mode <= Bca_IDLE;
-  //                                 B_cache_base_addr_set <= 0;
-  //                               end
-  //                       UPD_10: begin
-  //                             /*
-  //                               K_t * cov_HT <= cov
-  //                               X=4 Y=4 N=2
-  //                               Ain: TB-A
-  //                               Bin: TB-B
-  //                               Min: CB-A
-  //                               Cout: CB-B
-  //                             */
-  //                               PE_m <= UPD_10_M;
-  //                               PE_n <= UPD_10_N;
-  //                               PE_k <= UPD_10_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_TBb;
-  //                               M_in_mode <= M_CBa;
-  //                               C_out_mode <= C_CBb;
-  //                               M_adder_mode_set <= M_MINUS_C;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_B,DIR_POS};
-  //                               CBa_mode <= {CBa_M,CB_cov};
-  //                               CBb_mode <= {CBb_C,CB_cov};
-
-  //                               A_TB_base_addr_set <= K_t;
-  //                               B_TB_base_addr_set <= cov_HT;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_IDLE;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       default: begin
-  //                                 PE_m <= 0;
-  //                                 PE_n <= 0;
-  //                                 PE_k <= 0;
-
-  //                                 CAL_mode <= N_W;
-
-  //                                 A_in_mode <= A_TBa;   
-  //                                 B_in_mode <= B_TBb;
-  //                                 M_in_mode <= M_TBa;
-  //                                 C_out_mode <= C_CBb;
-  //                                 M_adder_mode_set <= NONE;
-
-  //                                 TBa_mode <= TB_IDLE;
-  //                                 TBb_mode <= TB_IDLE;
-  //                                 CBa_mode <= CB_IDLE;
-  //                                 CBb_mode <= CB_IDLE;
-
-  //                                 A_TB_base_addr_set <= 0;
-  //                                 B_TB_base_addr_set <= 0;
-  //                                 M_TB_base_addr_set <= 0;
-  //                                 C_TB_base_addr_set <= 0;
-
-  //                                 B_cache_mode <= Bca_IDLE;
-  //                                 B_cache_base_addr_set <= 0;
-  //                               end
-  //                     endcase
-  //                   end
-  //         STAGE_ASSOC:begin
-  //                     case(assoc_cur)
-  //                       ASSOC_NL_SEND:
-  //                             begin
-  //                               CBa_mode <= {CBa_NL,CB_NL_xyxita};    
-  //                             end
-  //                       ASSOC_NL_RCV:
-  //                             begin
-  //                               // TBa_mode <= {TBa_NL_UPD,DIR_POS};
-  //                               CBb_mode <= CB_IDLE;  
-  //                               PE_n <= 3'b101;
-  //                               B_cache_mode <= Bca_WR_NL_UPD;
-  //                               B_cache_base_addr_set <= 0; 
-  //                             end
-  //                       ASSOC_1: begin
-  //                               PE_m <= ASSOC_1_M;
-  //                               PE_n <= ASSOC_1_N;
-  //                               PE_k <= ASSOC_1_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_B, CB_cov_vv};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= H_vv;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0; 
-  //                           end
-  //                       ASSOC_2: begin
-  //                               PE_m <= ASSOC_2_M;
-  //                               PE_n <= ASSOC_2_N;
-  //                               PE_k <= ASSOC_2_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_B, CB_cov_lv};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= H_lv;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0; 
-  //                           end
-  //                       ASSOC_3: begin
-  //                               PE_m <= ASSOC_3_M;
-  //                               PE_n <= ASSOC_3_N;
-  //                               PE_k <= ASSOC_3_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_CBa;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= {CBa_B, CB_cov_ll};
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= H_ll;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 3'b011; 
-  //                           end
-  //                       ASSOC_4: begin
-  //                               PE_m <= ASSOC_4_M;
-  //                               PE_n <= ASSOC_4_N;
-  //                               PE_k <= ASSOC_4_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= H_lv;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= H_lv_H;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 3'b011; 
-  //                           end
-  //                        ASSOC_5: begin
-  //                               PE_m <= ASSOC_5_M;
-  //                               PE_n <= ASSOC_5_N;
-  //                               PE_k <= ASSOC_5_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= ADD;
-
-  //                               TBa_mode <= {TBa_AM,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= H_vv;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= H_lv_H;
-  //                               C_TB_base_addr_set <= H_vv_H;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 0; 
-  //                           end
-  //                       ASSOC_6: begin
-  //                               PE_m <= ASSOC_6_M;
-  //                               PE_n <= ASSOC_6_N;
-  //                               PE_k <= ASSOC_6_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_TBb;
-  //                               M_adder_mode_set <= ADD;
-
-  //                               TBa_mode <= {TBa_AM,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= H_ll;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= H_lv_H;
-  //                               C_TB_base_addr_set <= H_ll_H;
-
-  //                               B_cache_mode <= Bca_RD_B;
-  //                               B_cache_base_addr_set <= 3'b011; 
-  //                           end
-  //                       ASSOC_7: begin
-  //                               PE_m <= ASSOC_7_M;
-  //                               PE_n <= ASSOC_7_N;
-  //                               PE_k <= ASSOC_7_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_TBa;
-  //                               C_out_mode <= C_cache;
-  //                               M_adder_mode_set <= ADD;
-
-  //                               TBa_mode <= {TBa_AM,DIR_POS};
-  //                               TBb_mode <= {TBb_C,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= H_ll_H;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= H_vv_H;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_WR_inv;
-  //                               B_cache_base_addr_set <= 3'b101; 
-  //                           end
-  //                       ASSOC_8: begin
-  //                             /*
-  //                               S_t inverse
-  //                               Ain: 0
-  //                               Bin: B-cache
-  //                               Min: 0
-  //                               Cout: 0
-  //                             */
-  //                               PE_m <= ASSOC_8_M;
-  //                               PE_n <= ASSOC_8_N;
-  //                               PE_k <= ASSOC_8_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_NONE;   
-  //                               B_in_mode <= B_NONE;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_NONE;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_WR_inv;
-  //                               B_cache_base_addr_set <= 0;
-  //                             end
-  //                       ASSOC_9: begin
-  //                               PE_m <= ASSOC_9_M;
-  //                               PE_n <= ASSOC_9_N;
-  //                               PE_k <= ASSOC_9_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_TBa;   
-  //                               B_in_mode <= B_cache;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_cache;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= {TBa_A,DIR_POS};
-  //                               TBb_mode <= TB_IDLE;
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= v_t;
-  //                               B_TB_base_addr_set <= 0;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_WR_chi;
-  //                               B_cache_base_addr_set <= 0; 
-  //                           end
-  //                       ASSOC_10: begin
-  //                               PE_m <= ASSOC_10_M;
-  //                               PE_n <= ASSOC_10_N;
-  //                               PE_k <= ASSOC_10_K;
-
-  //                               CAL_mode <= N_W;
-
-  //                               A_in_mode <= A_cache;   
-  //                               B_in_mode <= B_TBb;
-  //                               M_in_mode <= M_NONE;
-  //                               C_out_mode <= C_PLB;
-  //                               M_adder_mode_set <= NONE;
-
-  //                               TBa_mode <= TB_IDLE;
-  //                               TBb_mode <= {TBb_B,DIR_POS};
-  //                               CBa_mode <= CB_IDLE;
-  //                               CBb_mode <= CB_IDLE;
-
-  //                               A_TB_base_addr_set <= 0;
-  //                               B_TB_base_addr_set <= v_t;
-  //                               M_TB_base_addr_set <= 0;
-  //                               C_TB_base_addr_set <= 0;
-
-  //                               B_cache_mode <= Bca_RD_A;
-  //                               B_cache_base_addr_set <= 0; 
-  //                           end
-  //                       default: begin
-  //                                 PE_m <= 0;
-  //                                 PE_n <= 0;
-  //                                 PE_k <= 0;
-
-  //                                 CAL_mode <= N_W;
-
-  //                                 A_in_mode <= A_TBa;   
-  //                                 B_in_mode <= B_TBb;
-  //                                 M_in_mode <= M_TBa;
-  //                                 C_out_mode <= C_CBb;
-  //                                 M_adder_mode_set <= NONE;
-
-  //                                 TBa_mode <= TB_IDLE;
-  //                                 TBb_mode <= TB_IDLE;
-  //                                 CBa_mode <= CB_IDLE;
-  //                                 CBb_mode <= CB_IDLE;
-
-  //                                 A_TB_base_addr_set <= 0;
-  //                                 B_TB_base_addr_set <= 0;
-  //                                 M_TB_base_addr_set <= 0;
-  //                                 C_TB_base_addr_set <= 0;
-
-  //                                 B_cache_mode <= Bca_IDLE;
-  //                                 B_cache_base_addr_set <= 0; 
-  //                               end
-  //                     endcase
-  //                  end
-  //         default: begin
-  //                   PE_m <= 0;
-  //                   PE_n <= 0;
-  //                   PE_k <= 0;
-
-  //                   CAL_mode <= N_W;
-
-  //                   A_in_mode <= A_TBa;   
-  //                   B_in_mode <= B_TBb;
-  //                   M_in_mode <= M_TBa;
-  //                   C_out_mode <= C_CBb;
-  //                   M_adder_mode_set <= NONE;
-
-  //                   TBa_mode <= TB_IDLE;
-  //                   TBb_mode <= TB_IDLE;
-  //                   CBa_mode <= CB_IDLE;
-  //                   CBb_mode <= CB_IDLE;
-
-  //                   A_TB_base_addr_set <= 0;
-  //                   B_TB_base_addr_set <= 0;
-  //                   M_TB_base_addr_set <= 0;
-  //                   C_TB_base_addr_set <= 0;
-  //                 end
-  //       endcase
-  //     end  
-  //   end
-
-/*
-  ************* (using) combinational RSA work-mode Config *************
-*/
-
-  always @(*) begin
+  always @(posedge clk) begin
     if(sys_rst) begin
-      PE_m = 0;
-      PE_n = 0;
-      PE_k = 0;
+      PE_m <= 0;
+      PE_n <= 0;
+      PE_k <= 0;
 
-      CAL_mode = N_W;
+      CAL_mode <= N_W;
 
-      A_in_mode = A_TBa;   
-      B_in_mode = B_TBb;
-      M_in_mode = M_TBa;
-      C_out_mode = C_CBb;
-      M_adder_mode_set = NONE;
+      A_in_mode <= A_TBa;   
+      B_in_mode <= B_TBb;
+      M_in_mode <= M_TBa;
+      C_out_mode <= C_CBb;
+      M_adder_mode_set <= NONE;
 
-      TBa_mode = TB_IDLE;
-      TBb_mode = TB_IDLE;
-      CBa_mode = CB_IDLE;
-      CBb_mode = CB_IDLE;
+      TBa_mode <= TB_IDLE;
+      TBb_mode <= TB_IDLE;
+      CBa_mode <= CB_IDLE;
+      CBb_mode <= CB_IDLE;
 
-      A_TB_base_addr_set = 0;
-      B_TB_base_addr_set = 0;
-      M_TB_base_addr_set = 0;
-      C_TB_base_addr_set = 0;
+      A_TB_base_addr_set <= 0;
+      B_TB_base_addr_set <= 0;
+      M_TB_base_addr_set <= 0;
+      C_TB_base_addr_set <= 0;
     end
     else begin
       case(stage_cur)
         STAGE_PRD: begin
-                    case (prd_cur)
+                    case (prd_next)
                     /*STATE VECTOR move to PLB*/
                       // PRD_NL_SEND:
                       //       begin
-                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //         CBa_mode <= {CBa_NL,CB_NL_xyxita};    
                       //       end
                       PRD_NL_RCV:
                             begin
-                              PE_n = 3'b011;
-                              B_cache_mode = Bca_WR_NL_PRD;
-                              B_cache_base_addr_set = 0;
-                              // TBa_mode = {TBa_NL_PRD,DIR_POS};
-                              // CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
+                              PE_n <= 3'b011;
+                              B_cache_mode <= Bca_WR_NL_PRD;
+                              B_cache_base_addr_set <= 0;
+                              // TBa_mode <= {TBa_NL_PRD,DIR_POS};
+                              // CBb_mode <= {CBb_xyxita,CB_NL_xyxita};    
 
-                              PE_m = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
                             end
                       PRD_1: begin
-                              PE_m = PRD_1_M;
-                              PE_n = PRD_1_N;
-                              PE_k = PRD_1_K;
+                              PE_m <= PRD_1_M;
+                              PE_n <= PRD_1_N;
+                              PE_k <= PRD_1_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_B,CB_cov_vv};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_B,CB_cov_vv};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = F_cov;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= F_cov;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= 0;
                             end
                       PRD_2: begin
-                              PE_m = PRD_2_M;
-                              PE_n = PRD_2_N;
-                              PE_k = PRD_2_K;
+                              PE_m <= PRD_2_M;
+                              PE_n <= PRD_2_N;
+                              PE_k <= PRD_2_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = ADD;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= ADD;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = {CBb_C,CB_cov_vv};
+                              TBa_mode <= {TBa_AM,DIR_POS};
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= {CBb_C,CB_cov_vv};
 
-                              A_TB_base_addr_set = F_cov;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = M_t;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= F_cov;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= M_t;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 0;
                             end
                       PRD_3: begin
-                              PE_m = PRD_3_M;
-                              PE_n = PRD_3_N;
-                              PE_k = PRD_3_K;
+                              PE_m <= PRD_3_M;
+                              PE_n <= PRD_3_N;
+                              PE_k <= PRD_3_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_CBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = {CBa_A,CB_cov_mv};
-                              CBb_mode = {CBb_C,CB_cov_mv};
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= {CBa_A,CB_cov_mv};
+                              CBb_mode <= {CBb_C,CB_cov_mv};
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 0;
                             end
                       PRD_3_HALT: begin
-                              PE_m = PRD_3_M;
-                              PE_n = PRD_3_N;
-                              PE_k = PRD_3_K;
+                              PE_m <= PRD_3_M;
+                              PE_n <= PRD_3_N;
+                              PE_k <= PRD_3_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                             end
                       default: begin
-                                PE_m = 0;
-                                PE_n = 0;
-                                PE_k = 0;
+                                PE_m <= 0;
+                                PE_n <= 0;
+                                PE_k <= 0;
 
-                                CAL_mode = N_W;
+                                CAL_mode <= N_W;
 
-                                A_in_mode = A_NONE;   
-                                B_in_mode = B_NONE;
-                                M_in_mode = M_NONE;
-                                C_out_mode = C_CBb;
-                                M_adder_mode_set = NONE;
+                                A_in_mode <= A_NONE;   
+                                B_in_mode <= B_NONE;
+                                M_in_mode <= M_NONE;
+                                C_out_mode <= C_CBb;
+                                M_adder_mode_set <= NONE;
 
-                                TBa_mode = TB_IDLE;
-                                TBb_mode = TB_IDLE;
-                                CBa_mode = CB_IDLE;
-                                CBb_mode = CB_IDLE;
+                                TBa_mode <= TB_IDLE;
+                                TBb_mode <= TB_IDLE;
+                                CBa_mode <= CB_IDLE;
+                                CBb_mode <= CB_IDLE;
 
-                                A_TB_base_addr_set = 0;
-                                B_TB_base_addr_set = 0;
-                                M_TB_base_addr_set = 0;
-                                C_TB_base_addr_set = 0;
+                                A_TB_base_addr_set <= 0;
+                                B_TB_base_addr_set <= 0;
+                                M_TB_base_addr_set <= 0;
+                                C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                               end
                     endcase
                   end
         STAGE_NEW: begin
-                    case(new_cur)
+                    case(new_next)
                     /*STATE VECTOR move to PLB*/
                       // NEW_NL_SEND:
                       //       begin
-                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //         CBa_mode <= {CBa_NL,CB_NL_xyxita};    
                       //       end
                       NEW_NL_RCV:
                             begin
-                              // TBa_mode = {TBa_NL_NEW,DIR_POS};
-                              // CBb_mode = {CBb_lxly,CB_NL_lxly};
-                              PE_n = 3'b101;
-                              B_cache_mode = Bca_WR_NL_NEW;
-                              B_cache_base_addr_set = 0;    
+                              // TBa_mode <= {TBa_NL_NEW,DIR_POS};
+                              // CBb_mode <= {CBb_lxly,CB_NL_lxly};
+                              PE_n <= 3'b101;
+                              B_cache_mode <= Bca_WR_NL_NEW;
+                              B_cache_base_addr_set <= 0;    
 
-                              PE_m = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
                             end
                       NEW_1: begin
                             /*
-                              G_xi * t_cov = cov_lm
+                              G_xi * t_cov <= cov_lm
                               X=2 Y=2 N=3
                               Ain: TB-A
                               bin: CB-A
                               Cout: CB-B
                             */
-                              PE_m = NEW_1_M;
-                              PE_n = NEW_1_N;
-                              PE_k = NEW_1_K;
+                              PE_m <= NEW_1_M;
+                              PE_n <= NEW_1_N;
+                              PE_k <= NEW_1_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = {CBa_B,CB_cov_vv};
-                              CBb_mode = {CBb_C,CB_cov_lv};
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= {CBa_B,CB_cov_vv};
+                              CBb_mode <= {CBb_C,CB_cov_lv};
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
                               
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0;  
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= 0;  
                             end
                       NEW_2: begin
                             /*
-                              G_xi * cov_mv = cov_lv
+                              G_xi * cov_mv <= cov_lv
                               X=2 Y=4 N=3
                               Ain: TB-A
                               Bin: CB-A
                               Min: 0
                               Cout: CB-B
                             */
-                              PE_m = NEW_2_M;
-                              PE_n = NEW_2_N;
-                              PE_k = NEW_2_K;
+                              PE_m <= NEW_2_M;
+                              PE_n <= NEW_2_N;
+                              PE_k <= NEW_2_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = {CBa_B,CB_cov_mv};
-                              CBb_mode = {CBb_C,CB_cov_lm};
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= {CBa_B,CB_cov_mv};
+                              CBb_mode <= {CBb_C,CB_cov_lm};
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 0; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= 0; 
                             end
                       NEW_3: begin
                               /*
-                                cov_lv * G_xi_T = lv_G_xi
+                                cov_lv * G_xi_T <= lv_G_xi
                                 X=2 Y=2 N=3
                                 Ain: CB-A
                                 Bin: TB-B
                                 Min: NONE  
                                 Cout: TB-B
                               */
-                                PE_m = NEW_3_M;
-                                PE_n = NEW_3_N;
-                                PE_k = NEW_3_K;
+                                PE_m <= NEW_3_M;
+                                PE_n <= NEW_3_N;
+                                PE_k <= NEW_3_K;
 
-                                CAL_mode = N_W;
+                                CAL_mode <= N_W;
 
-                                A_in_mode = A_CBa;   
-                                B_in_mode = B_cache;
-                                M_in_mode = M_NONE;
-                                C_out_mode = C_TBb;
-                                M_adder_mode_set = NONE;
+                                A_in_mode <= A_CBa;   
+                                B_in_mode <= B_cache;
+                                M_in_mode <= M_NONE;
+                                C_out_mode <= C_TBb;
+                                M_adder_mode_set <= NONE;
 
-                                TBa_mode = TB_IDLE;
-                                TBb_mode = {TBb_C,DIR_POS};
-                                CBa_mode = {CBa_A,CB_cov_lv};
-                                CBb_mode = CB_IDLE;
+                                TBa_mode <= TB_IDLE;
+                                TBb_mode <= {TBb_C,DIR_POS};
+                                CBa_mode <= {CBa_A,CB_cov_lv};
+                                CBb_mode <= CB_IDLE;
 
-                                A_TB_base_addr_set = 0;
-                                B_TB_base_addr_set = 0;
-                                M_TB_base_addr_set = 0;
-                                C_TB_base_addr_set = lv_G_xi;
+                                A_TB_base_addr_set <= 0;
+                                B_TB_base_addr_set <= 0;
+                                M_TB_base_addr_set <= 0;
+                                C_TB_base_addr_set <= lv_G_xi;
 
-                                B_cache_mode = Bca_RD_B;
-                                B_cache_base_addr_set = 0; 
+                                B_cache_mode <= Bca_RD_B;
+                                B_cache_base_addr_set <= 0; 
                               end
                       NEW_4: begin
                             /*
-                              G_z * Q = G_z_Q
+                              G_z * Q <= G_z_Q
                               X=2 Y=2 N=2
                               Ain: TB-A
                               Bin: TB-B
                               Min: NONE  
                               Cout: TB-B
                             */
-                              PE_m = NEW_4_M;
-                              PE_n = NEW_4_N;
-                              PE_k = NEW_4_K;
+                              PE_m <= NEW_4_M;
+                              PE_n <= NEW_4_N;
+                              PE_k <= NEW_4_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_TBb;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_TBb;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_BC,DIR_POS};
-                              CBa_mode = CB_IDLE; 
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_BC,DIR_POS};
+                              CBa_mode <= CB_IDLE; 
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = Q;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = G_z_Q;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= Q;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= G_z_Q;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = 3'b011; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= 3'b011; 
                             end
                       NEW_5: begin
                             /*
-                              G_z_Q * G_z_T + lv_G_xi = cov_ll
+                              G_z_Q * G_z_T + lv_G_xi <= cov_ll
                               X=2 Y=2 N=2
                               Ain: TB-A
                               Bin: TB-B
                               Min: TB-A  
                               Cout: CB-B
                             */
-                              PE_m = NEW_5_M;
-                              PE_n = NEW_5_N;
-                              PE_k = NEW_5_K;
+                              PE_m <= NEW_5_M;
+                              PE_n <= NEW_5_N;
+                              PE_k <= NEW_5_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = ADD;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= ADD;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = {TBb_IDLE,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = {CBb_C,CB_cov_ll};
+                              TBa_mode <= {TBa_AM,DIR_POS};
+                              TBb_mode <= {TBb_IDLE,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= {CBb_C,CB_cov_ll};
 
-                              A_TB_base_addr_set = G_z_Q;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = lv_G_xi;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= G_z_Q;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= lv_G_xi;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 3'b011; 
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 3'b011; 
                             end
                       default: begin
-                              PE_m = 0;
-                              PE_n = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_n <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                             end
                     endcase
                   end
         STAGE_UPD: begin
-                    case(upd_cur)
+                    case(upd_next)
                     /*STATE VECTOR move to PLB*/
                       // UPD_NL_SEND:
                       //       begin
-                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //         CBa_mode <= {CBa_NL,CB_NL_xyxita};    
                       //       end
                       UPD_NL_RCV:
                             begin
-                              TBa_mode = {TBa_NL_UPD,DIR_POS}; //Write Vt
-                              PE_n = 3'b111;
-                              B_cache_mode = Bca_WR_NL_UPD;   //UPD中vt写入Bcache
-                              B_cache_base_addr_set = 0; 
+                              TBa_mode <= {TBa_NL_UPD,DIR_POS}; //Write Vt
+                              PE_n <= 3'b111;
+                              B_cache_mode <= Bca_WR_NL_UPD;   //UPD中vt写入Bcache
+                              B_cache_base_addr_set <= 0; 
 
-                              PE_m = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
                             end
                       UPD_1: begin
                             /*
@@ -3400,34 +2256,34 @@ module PE_config #(
                               bin: TB-B
                               Cout: 0
                             */
-                              PE_m = UPD_1_M;
-                              PE_n = UPD_1_N;
-                              PE_k = UPD_1_K;
+                              PE_m <= UPD_1_M;
+                              PE_n <= UPD_1_N;
+                              PE_k <= UPD_1_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_CBa,DIR_POS};     //TB_dina直接接收即可
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = {CBa_TBa, CB_cov_lm};  //在CB_douta_map处理数据
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_CBa,DIR_POS};     //TB_dina直接接收即可
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= {CBa_TBa, CB_cov_lm};  //在CB_douta_map处理数据
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = t_cov_l;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= t_cov_l;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                             end
                       UPD_2: begin
                             /*
-                              cov_vv * H_T = cov_HT
+                              cov_vv * H_T <= cov_HT
                               X=3 Y=2 N=3
                               Ain: CB-A
                               Bin: B-cache
@@ -3435,34 +2291,34 @@ module PE_config #(
                               Cout: TB-B
                             */
                               
-                              PE_m = UPD_2_M;
-                              PE_n = UPD_2_N;
-                              PE_k = UPD_2_K;
+                              PE_m <= UPD_2_M;
+                              PE_n <= UPD_2_N;
+                              PE_k <= UPD_2_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_CBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_A,CB_cov_vv};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_A,CB_cov_vv};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = t_cov_l;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = cov_HT;
+                              A_TB_base_addr_set <= t_cov_l;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= cov_HT;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 0;
                             end
                       UPD_3: begin
                             /*
-                              cov_mv * H_T = cov_HT
+                              cov_mv * H_T <= cov_HT
                               X=4 Y=2 N=3
                               Ain: CB-A
                               Bin: B-cache
@@ -3470,124 +2326,124 @@ module PE_config #(
                               Cout: TB-B
                             */
                               
-                              PE_m = UPD_3_M;
-                              PE_n = UPD_3_N;
-                              PE_k = UPD_3_K;
+                              PE_m <= UPD_3_M;
+                              PE_n <= UPD_3_N;
+                              PE_k <= UPD_3_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_CBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_IDLE,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_A,CB_cov_mv};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_IDLE,DIR_POS};
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_A,CB_cov_mv};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = t_cov_l;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = cov_HT;
+                              A_TB_base_addr_set <= t_cov_l;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= cov_HT;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 0;
                             end
                       UPD_4: begin
                             /*
-                              t_cov_l * H_T = cov_HT
+                              t_cov_l * H_T <= cov_HT
                               X=4 Y=2 N=2
                               Ain: TB-A
                               Bin: B-cache
                               Min: 0
                               Cout: 0
                             */
-                              PE_m = UPD_4_M;
-                              PE_n = UPD_4_N;
-                              PE_k = UPD_4_K;
+                              PE_m <= UPD_4_M;
+                              PE_n <= UPD_4_N;
+                              PE_k <= UPD_4_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_IDLE,DIR_POS};
-                              CBa_mode = {CBa_A,CB_cov_IDLE}; //保证dir不改变
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_IDLE,DIR_POS};
+                              CBa_mode <= {CBa_A,CB_cov_IDLE}; //保证dir不改变
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = t_cov_l;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = cov_HT;  //保持一致
+                              A_TB_base_addr_set <= t_cov_l;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= cov_HT;  //保持一致
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 3'b011;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 3'b011;
                             end
                       UPD_5: begin
                             /*
-                              cov_ml * H_T = cov_HT
+                              cov_ml * H_T <= cov_HT
                               X=4 Y=2 N=2
                               Ain: CB-A
                               Bin: B-cache
                               Min: 0
                               Cout: 0
                             */
-                              PE_m = UPD_5_M;
-                              PE_n = UPD_5_N;
-                              PE_k = UPD_5_K;
+                              PE_m <= UPD_5_M;
+                              PE_n <= UPD_5_N;
+                              PE_k <= UPD_5_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_CBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
-                              CBa_mode = {CBa_A,CB_cov_ml}; 
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
+                              CBa_mode <= {CBa_A,CB_cov_ml}; 
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = t_cov_l;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = cov_HT;
+                              A_TB_base_addr_set <= t_cov_l;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= cov_HT;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = 3'b011;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= 3'b011;
                             end
                       UPD_HALT_56: begin
-                              PE_m = UPD_5_M;
-                              PE_n = UPD_5_N;
-                              PE_k = UPD_5_K;
+                              PE_m <= UPD_5_M;
+                              PE_n <= UPD_5_N;
+                              PE_k <= UPD_5_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_CBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_CBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
-                              CBa_mode = CB_IDLE; 
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
+                              CBa_mode <= CB_IDLE; 
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                       end
                       UPD_6: begin
                             /*
@@ -3597,90 +2453,90 @@ module PE_config #(
                               Min: 0
                               Cout: 0
                             */
-                              PE_m = UPD_6_M;
-                              PE_n = UPD_6_N;
-                              PE_k = UPD_6_K;
+                              PE_m <= UPD_6_M;
+                              PE_n <= UPD_6_N;
+                              PE_k <= UPD_6_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_B_cache_transpose,DIR_POS}; //不依赖于N
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_B_cache_transpose,DIR_POS}; //不依赖于N
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = cov_HT;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= cov_HT;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_WR_transpose;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_WR_transpose;
+                              B_cache_base_addr_set <= 0;
                             end
                       UPD_7: begin
                             /*
-                              H_T * cov_HT + Q = S
+                              H_T * cov_HT + Q <= S
                               X=2 Y=2 N=5
                               Ain: TB-A
                               Bin: B_cache
                               Min: TB-A  
                               Cout: TB-B
                             */
-                              PE_m = UPD_7_M;
-                              PE_n = UPD_7_N;
-                              PE_k = UPD_7_K;
+                              PE_m <= UPD_7_M;
+                              PE_n <= UPD_7_N;
+                              PE_k <= UPD_7_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_cache;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_cache;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_C, DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_C, DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = cov_HT_cache;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= cov_HT_cache;
                             end
                       UPD_INV: begin
-                              PE_m = 0;
-                              PE_n = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_n <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                              end
                       UPD_8: begin
                             /*
@@ -3690,394 +2546,394 @@ module PE_config #(
                               Min: 0
                               Cout: 0
                             */
-                              PE_m = UPD_8_M;
-                              PE_n = UPD_8_N;
-                              PE_k = UPD_8_K;
+                              PE_m <= UPD_8_M;
+                              PE_n <= UPD_8_N;
+                              PE_k <= UPD_8_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_WR_inv;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_WR_inv;
+                              B_cache_base_addr_set <= 0;
                             end
                       UPD_9: begin
                             /*
-                              cov_HT * S = K_t
+                              cov_HT * S <= K_t
                               X=4 Y=2 N=2
                               Ain: TB-A
                               Bin: B_cache
                               Min: 0
                               Cout: TB-B
                             */
-                              PE_m = UPD_9_M;
-                              PE_n = UPD_9_N;
-                              PE_k = UPD_9_K;
+                              PE_m <= UPD_9_M;
+                              PE_n <= UPD_9_N;
+                              PE_k <= UPD_9_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = cov_HT;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = K_t;
+                              A_TB_base_addr_set <= cov_HT;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= K_t;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = S_cache_0;
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= S_cache_0;
                             end
                       UPD_STATE: begin
-                                PE_m = 3'b100;
-                                PE_n = 3'b010;
-                                PE_k = 3'b001;
+                                PE_m <= 3'b100;
+                                PE_n <= 3'b010;
+                                PE_k <= 3'b001;
 
-                                CAL_mode = N_W;
+                                CAL_mode <= N_W;
 
-                                A_in_mode = A_TBa;   
-                                B_in_mode = B_cache;
-                                M_in_mode = M_NONE;
-                                C_out_mode = C_PLB;
-                                M_adder_mode_set = NONE;
+                                A_in_mode <= A_TBa;   
+                                B_in_mode <= B_cache;
+                                M_in_mode <= M_NONE;
+                                C_out_mode <= C_PLB;
+                                M_adder_mode_set <= NONE;
 
-                                TBa_mode = {TBa_A,DIR_POS};
-                                TBb_mode = {TBb_IDLE,DIR_POS};
-                                CBa_mode = CB_IDLE;
-                                CBb_mode = CB_IDLE;
+                                TBa_mode <= {TBa_A,DIR_POS};
+                                TBb_mode <= {TBb_IDLE,DIR_POS};
+                                CBa_mode <= CB_IDLE;
+                                CBb_mode <= CB_IDLE;
 
-                                A_TB_base_addr_set = K_t;
-                                B_TB_base_addr_set = 0;
-                                M_TB_base_addr_set = 0;
-                                C_TB_base_addr_set = 0;
+                                A_TB_base_addr_set <= K_t;
+                                B_TB_base_addr_set <= 0;
+                                M_TB_base_addr_set <= 0;
+                                C_TB_base_addr_set <= 0;
 
-                                B_cache_mode = Bca_RD_B;
-                                B_cache_base_addr_set = v_t_cache;
+                                B_cache_mode <= Bca_RD_B;
+                                B_cache_base_addr_set <= v_t_cache;
                               end
                       UPD_10: begin
                             /*
-                              K_t * cov_HT = cov
+                              K_t * cov_HT <= cov
                               X=4 Y=4 N=2
                               Ain: TB-A
                               Bin: TB-B
                               Min: CB-A
                               Cout: CB-B
                             */
-                              PE_m = UPD_10_M;
-                              PE_n = UPD_10_N;
-                              PE_k = UPD_10_K;
+                              PE_m <= UPD_10_M;
+                              PE_n <= UPD_10_N;
+                              PE_k <= UPD_10_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_TBb;
-                              M_in_mode = M_CBa;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = M_MINUS_C;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_TBb;
+                              M_in_mode <= M_CBa;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= M_MINUS_C;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_B,DIR_POS};
-                              CBa_mode = {CBa_M,CB_cov};
-                              CBb_mode = {CBb_C,CB_cov};
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_B,DIR_POS};
+                              CBa_mode <= {CBa_M,CB_cov};
+                              CBb_mode <= {CBb_C,CB_cov};
 
-                              A_TB_base_addr_set = K_t;
-                              B_TB_base_addr_set = cov_HT;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= K_t;
+                              B_TB_base_addr_set <= cov_HT;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                             end
                       default: begin
-                                PE_m = 0;
-                                PE_n = 0;
-                                PE_k = 0;
+                                PE_m <= 0;
+                                PE_n <= 0;
+                                PE_k <= 0;
 
-                                CAL_mode = N_W;
+                                CAL_mode <= N_W;
 
-                                A_in_mode = A_NONE;   
-                                B_in_mode = B_NONE;
-                                M_in_mode = M_NONE;
-                                C_out_mode = C_CBb;
-                                M_adder_mode_set = NONE;
+                                A_in_mode <= A_NONE;   
+                                B_in_mode <= B_NONE;
+                                M_in_mode <= M_NONE;
+                                C_out_mode <= C_CBb;
+                                M_adder_mode_set <= NONE;
 
-                                TBa_mode = TB_IDLE;
-                                TBb_mode = TB_IDLE;
-                                CBa_mode = CB_IDLE;
-                                CBb_mode = CB_IDLE;
+                                TBa_mode <= TB_IDLE;
+                                TBb_mode <= TB_IDLE;
+                                CBa_mode <= CB_IDLE;
+                                CBb_mode <= CB_IDLE;
 
-                                A_TB_base_addr_set = 0;
-                                B_TB_base_addr_set = 0;
-                                M_TB_base_addr_set = 0;
-                                C_TB_base_addr_set = 0;
+                                A_TB_base_addr_set <= 0;
+                                B_TB_base_addr_set <= 0;
+                                M_TB_base_addr_set <= 0;
+                                C_TB_base_addr_set <= 0;
 
-                                B_cache_mode = Bca_IDLE;
-                                B_cache_base_addr_set = 0;
+                                B_cache_mode <= Bca_IDLE;
+                                B_cache_base_addr_set <= 0;
                               end
                     endcase
                   end
         STAGE_ASSOC:begin
-                    case(assoc_cur)
+                    case(assoc_next)
                     /*STATE VECTOR move to PLB*/
                       // ASSOC_NL_SEND:
                       //       begin
-                      //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+                      //         CBa_mode <= {CBa_NL,CB_NL_xyxita};    
                       //       end
                       ASSOC_NL_RCV:begin
                         
-                              TBa_mode = {TBa_NL_UPD,DIR_POS};    //ASSOC中vt写入TB
-                              PE_n = 3'b111;
-                              B_cache_mode = Bca_WR_NL_ASSOC;
-                              B_cache_base_addr_set = 0; 
+                              TBa_mode <= {TBa_NL_UPD,DIR_POS};    //ASSOC中vt写入TB
+                              PE_n <= 3'b111;
+                              B_cache_mode <= Bca_WR_NL_ASSOC;
+                              B_cache_base_addr_set <= 0; 
 
-                              PE_m = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_TBb;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_CBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_TBb;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_CBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
                             end
                       ASSOC_1: begin
-                              PE_m = ASSOC_1_M;
-                              PE_n = ASSOC_1_N;
-                              PE_k = ASSOC_1_K;
+                              PE_m <= ASSOC_1_M;
+                              PE_n <= ASSOC_1_N;
+                              PE_k <= ASSOC_1_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_B, CB_cov_vv};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_B, CB_cov_vv};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = H_vv;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= H_vv;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = Hxi_cache; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= Hxi_cache; 
                           end
                       ASSOC_2: begin
-                              PE_m = ASSOC_2_M;
-                              PE_n = ASSOC_2_N;
-                              PE_k = ASSOC_2_K;
+                              PE_m <= ASSOC_2_M;
+                              PE_n <= ASSOC_2_N;
+                              PE_k <= ASSOC_2_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_B, CB_cov_lv};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_B, CB_cov_lv};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = H_lv;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= H_lv;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = Hxi_cache; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= Hxi_cache; 
                           end
                       ASSOC_3: begin
-                              PE_m = ASSOC_3_M;
-                              PE_n = ASSOC_3_N;
-                              PE_k = ASSOC_3_K;
+                              PE_m <= ASSOC_3_M;
+                              PE_n <= ASSOC_3_N;
+                              PE_k <= ASSOC_3_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_CBa;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_CBa;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = {CBa_B, CB_cov_ll};
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= {CBa_B, CB_cov_ll};
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = H_ll;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= H_ll;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = Hz_cache; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= Hz_cache; 
                           end
                       ASSOC_4: begin
-                              PE_m = ASSOC_4_M;
-                              PE_n = ASSOC_4_N;
-                              PE_k = ASSOC_4_K;
+                              PE_m <= ASSOC_4_M;
+                              PE_n <= ASSOC_4_N;
+                              PE_k <= ASSOC_4_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = H_lv;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = H_lv_H;
+                              A_TB_base_addr_set <= H_lv;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= H_lv_H;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = Hz_cache; 
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= Hz_cache; 
                           end
                        ASSOC_5: begin
-                              PE_m = ASSOC_5_M;
-                              PE_n = ASSOC_5_N;
-                              PE_k = ASSOC_5_K;
+                              PE_m <= ASSOC_5_M;
+                              PE_n <= ASSOC_5_N;
+                              PE_k <= ASSOC_5_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = ADD;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= ADD;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_AM,DIR_POS};
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = H_vv;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = H_lv_H;
-                              C_TB_base_addr_set = H_vv_H;
+                              A_TB_base_addr_set <= H_vv;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= H_lv_H;
+                              C_TB_base_addr_set <= H_vv_H;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = Hxi_cache; 
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= Hxi_cache; 
                           end
                       ASSOC_6: begin
-                              PE_m = ASSOC_6_M;
-                              PE_n = ASSOC_6_N;
-                              PE_k = ASSOC_6_K;
+                              PE_m <= ASSOC_6_M;
+                              PE_n <= ASSOC_6_N;
+                              PE_k <= ASSOC_6_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_TBb;
-                              M_adder_mode_set = ADD;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_TBb;
+                              M_adder_mode_set <= ADD;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = {TBb_C,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_AM,DIR_POS};
+                              TBb_mode <= {TBb_C,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = H_ll;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = H_lv_H;
-                              C_TB_base_addr_set = H_ll_H;
+                              A_TB_base_addr_set <= H_ll;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= H_lv_H;
+                              C_TB_base_addr_set <= H_ll_H;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = Hz_cache; 
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= Hz_cache; 
                           end
                       ASSOC_7: begin
-                              PE_m = ASSOC_7_M;
-                              PE_n = ASSOC_7_N;
-                              PE_k = ASSOC_7_K;
+                              PE_m <= ASSOC_7_M;
+                              PE_n <= ASSOC_7_N;
+                              PE_k <= ASSOC_7_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_TBa;
-                              C_out_mode = C_cache;
-                              M_adder_mode_set = ADD;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_TBa;
+                              C_out_mode <= C_cache;
+                              M_adder_mode_set <= ADD;
 
-                              TBa_mode = {TBa_AM,DIR_POS};
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_AM,DIR_POS};
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = H_ll_H;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = H_vv_H;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= H_ll_H;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= H_vv_H;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_B;
-                              B_cache_base_addr_set = I_cache; 
+                              B_cache_mode <= Bca_RD_B;
+                              B_cache_base_addr_set <= I_cache; 
                           end
                       ASSOC_INV: begin
-                              PE_m = 0;
-                              PE_n = 0;
-                              PE_k = 0;
+                              PE_m <= 0;
+                              PE_n <= 0;
+                              PE_k <= 0;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_IDLE;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
                              end
                       ASSOC_8: begin
                             /*
@@ -4087,140 +2943,1435 @@ module PE_config #(
                               Min: 0
                               Cout: 0
                             */
-                              PE_m = ASSOC_8_M;
-                              PE_n = ASSOC_8_N;
-                              PE_k = ASSOC_8_K;
+                              PE_m <= ASSOC_8_M;
+                              PE_n <= ASSOC_8_N;
+                              PE_k <= ASSOC_8_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_NONE;   
-                              B_in_mode = B_NONE;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_NONE;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_NONE;   
+                              B_in_mode <= B_NONE;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_NONE;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_WR_inv;
-                              B_cache_base_addr_set = 0;
+                              B_cache_mode <= Bca_WR_inv;
+                              B_cache_base_addr_set <= 0;
                             end
                       ASSOC_9: begin
-                              PE_m = ASSOC_9_M;
-                              PE_n = ASSOC_9_N;
-                              PE_k = ASSOC_9_K;
+                              PE_m <= ASSOC_9_M;
+                              PE_n <= ASSOC_9_N;
+                              PE_k <= ASSOC_9_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_TBa;   
-                              B_in_mode = B_cache;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_cache;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_TBa;   
+                              B_in_mode <= B_cache;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_cache;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = {TBa_A,DIR_POS};
-                              TBb_mode = TB_IDLE;
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= {TBa_A,DIR_POS};
+                              TBb_mode <= TB_IDLE;
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = v_t;
-                              B_TB_base_addr_set = 0;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= v_t;
+                              B_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_WR_chi;
-                              B_cache_base_addr_set = S_cache_0; 
+                              B_cache_mode <= Bca_WR_chi;
+                              B_cache_base_addr_set <= S_cache_0; 
                           end
                       ASSOC_10: begin
-                              PE_m = ASSOC_10_M;
-                              PE_n = ASSOC_10_N;
-                              PE_k = ASSOC_10_K;
+                              PE_m <= ASSOC_10_M;
+                              PE_n <= ASSOC_10_N;
+                              PE_k <= ASSOC_10_K;
 
-                              CAL_mode = N_W;
+                              CAL_mode <= N_W;
 
-                              A_in_mode = A_cache;   
-                              B_in_mode = B_TBb;
-                              M_in_mode = M_NONE;
-                              C_out_mode = C_PLB;
-                              M_adder_mode_set = NONE;
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_TBb;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_PLB;
+                              M_adder_mode_set <= NONE;
 
-                              TBa_mode = TB_IDLE;
-                              TBb_mode = {TBb_B,DIR_POS};
-                              CBa_mode = CB_IDLE;
-                              CBb_mode = CB_IDLE;
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_B,DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
 
-                              A_TB_base_addr_set = 0;
-                              B_TB_base_addr_set = v_t;
-                              M_TB_base_addr_set = 0;
-                              C_TB_base_addr_set = 0;
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= v_t;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
 
-                              B_cache_mode = Bca_RD_A;
-                              B_cache_base_addr_set = vt_S_inv_cache_0; 
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= vt_S_inv_cache_0; 
                           end
                       default: begin
-                                PE_m = 0;
-                                PE_n = 0;
-                                PE_k = 0;
+                                PE_m <= 0;
+                                PE_n <= 0;
+                                PE_k <= 0;
 
-                                CAL_mode = N_W;
+                                CAL_mode <= N_W;
 
-                                A_in_mode = A_NONE;   
-                                B_in_mode = B_NONE;
-                                M_in_mode = M_NONE;
-                                C_out_mode = C_CBb;
-                                M_adder_mode_set = NONE;
+                                A_in_mode <= A_NONE;   
+                                B_in_mode <= B_NONE;
+                                M_in_mode <= M_NONE;
+                                C_out_mode <= C_CBb;
+                                M_adder_mode_set <= NONE;
 
-                                TBa_mode = TB_IDLE;
-                                TBb_mode = TB_IDLE;
-                                CBa_mode = CB_IDLE;
-                                CBb_mode = CB_IDLE;
+                                TBa_mode <= TB_IDLE;
+                                TBb_mode <= TB_IDLE;
+                                CBa_mode <= CB_IDLE;
+                                CBb_mode <= CB_IDLE;
 
-                                A_TB_base_addr_set = 0;
-                                B_TB_base_addr_set = 0;
-                                M_TB_base_addr_set = 0;
-                                C_TB_base_addr_set = 0;
+                                A_TB_base_addr_set <= 0;
+                                B_TB_base_addr_set <= 0;
+                                M_TB_base_addr_set <= 0;
+                                C_TB_base_addr_set <= 0;
 
-                                B_cache_mode = Bca_IDLE;
-                                B_cache_base_addr_set = 0; 
+                                B_cache_mode <= Bca_IDLE;
+                                B_cache_base_addr_set <= 0; 
                               end
                     endcase
                  end
         default: begin
-                  PE_m = 0;
-                  PE_n = 0;
-                  PE_k = 0;
+                  PE_m <= 0;
+                  PE_n <= 0;
+                  PE_k <= 0;
 
-                  CAL_mode = N_W;
+                  CAL_mode <= N_W;
 
-                  A_in_mode = A_NONE;   
-                  B_in_mode = B_NONE;
-                  M_in_mode = M_NONE;
-                  C_out_mode = C_CBb;
-                  M_adder_mode_set = NONE;
+                  A_in_mode <= A_NONE;   
+                  B_in_mode <= B_NONE;
+                  M_in_mode <= M_NONE;
+                  C_out_mode <= C_CBb;
+                  M_adder_mode_set <= NONE;
 
-                  TBa_mode = TB_IDLE;
-                  TBb_mode = TB_IDLE;
-                  CBa_mode = CB_IDLE;
-                  CBb_mode = CB_IDLE;
+                  TBa_mode <= TB_IDLE;
+                  TBb_mode <= TB_IDLE;
+                  CBa_mode <= CB_IDLE;
+                  CBb_mode <= CB_IDLE;
 
-                  A_TB_base_addr_set = 0;
-                  B_TB_base_addr_set = 0;
-                  M_TB_base_addr_set = 0;
-                  C_TB_base_addr_set = 0;
+                  A_TB_base_addr_set <= 0;
+                  B_TB_base_addr_set <= 0;
+                  M_TB_base_addr_set <= 0;
+                  C_TB_base_addr_set <= 0;
 
-                  B_cache_mode = Bca_IDLE;
-                  B_cache_base_addr_set = 0;
+                  B_cache_mode <= Bca_IDLE;
+                  B_cache_base_addr_set <= 0;
                 end
       endcase
     end  
   end
+
+/*
+  ************* (disabled) combinational RSA work-mode Config *************
+*/
+  // always @(*) begin
+  //   if(sys_rst) begin
+  //     PE_m = 0;
+  //     PE_n = 0;
+  //     PE_k = 0;
+
+  //     CAL_mode = N_W;
+
+  //     A_in_mode = A_TBa;   
+  //     B_in_mode = B_TBb;
+  //     M_in_mode = M_TBa;
+  //     C_out_mode = C_CBb;
+  //     M_adder_mode_set = NONE;
+
+  //     TBa_mode = TB_IDLE;
+  //     TBb_mode = TB_IDLE;
+  //     CBa_mode = CB_IDLE;
+  //     CBb_mode = CB_IDLE;
+
+  //     A_TB_base_addr_set = 0;
+  //     B_TB_base_addr_set = 0;
+  //     M_TB_base_addr_set = 0;
+  //     C_TB_base_addr_set = 0;
+  //   end
+  //   else begin
+  //     case(stage_cur)
+  //       STAGE_PRD: begin
+  //                   case (prd_cur)
+  //                   /*STATE VECTOR move to PLB*/
+  //                     // PRD_NL_SEND:
+  //                     //       begin
+  //                     //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+  //                     //       end
+  //                     PRD_NL_RCV:
+  //                           begin
+  //                             PE_n = 3'b011;
+  //                             B_cache_mode = Bca_WR_NL_PRD;
+  //                             B_cache_base_addr_set = 0;
+  //                             // TBa_mode = {TBa_NL_PRD,DIR_POS};
+  //                             // CBb_mode = {CBb_xyxita,CB_NL_xyxita};    
+
+  //                             PE_m = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+  //                           end
+  //                     PRD_1: begin
+  //                             PE_m = PRD_1_M;
+  //                             PE_n = PRD_1_N;
+  //                             PE_k = PRD_1_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_B,CB_cov_vv};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = F_cov;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     PRD_2: begin
+  //                             PE_m = PRD_2_M;
+  //                             PE_n = PRD_2_N;
+  //                             PE_k = PRD_2_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = ADD;
+
+  //                             TBa_mode = {TBa_AM,DIR_POS};
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = {CBb_C,CB_cov_vv};
+
+  //                             A_TB_base_addr_set = F_cov;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = M_t;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     PRD_3: begin
+  //                             PE_m = PRD_3_M;
+  //                             PE_n = PRD_3_N;
+  //                             PE_k = PRD_3_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_CBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = {CBa_A,CB_cov_mv};
+  //                             CBb_mode = {CBb_C,CB_cov_mv};
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     PRD_3_HALT: begin
+  //                             PE_m = PRD_3_M;
+  //                             PE_n = PRD_3_N;
+  //                             PE_k = PRD_3_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     default: begin
+  //                               PE_m = 0;
+  //                               PE_n = 0;
+  //                               PE_k = 0;
+
+  //                               CAL_mode = N_W;
+
+  //                               A_in_mode = A_NONE;   
+  //                               B_in_mode = B_NONE;
+  //                               M_in_mode = M_NONE;
+  //                               C_out_mode = C_CBb;
+  //                               M_adder_mode_set = NONE;
+
+  //                               TBa_mode = TB_IDLE;
+  //                               TBb_mode = TB_IDLE;
+  //                               CBa_mode = CB_IDLE;
+  //                               CBb_mode = CB_IDLE;
+
+  //                               A_TB_base_addr_set = 0;
+  //                               B_TB_base_addr_set = 0;
+  //                               M_TB_base_addr_set = 0;
+  //                               C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                             end
+  //                   endcase
+  //                 end
+  //       STAGE_NEW: begin
+  //                   case(new_cur)
+  //                   /*STATE VECTOR move to PLB*/
+  //                     // NEW_NL_SEND:
+  //                     //       begin
+  //                     //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+  //                     //       end
+  //                     NEW_NL_RCV:
+  //                           begin
+  //                             // TBa_mode = {TBa_NL_NEW,DIR_POS};
+  //                             // CBb_mode = {CBb_lxly,CB_NL_lxly};
+  //                             PE_n = 3'b101;
+  //                             B_cache_mode = Bca_WR_NL_NEW;
+  //                             B_cache_base_addr_set = 0;    
+
+  //                             PE_m = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+  //                           end
+  //                     NEW_1: begin
+  //                           /*
+  //                             G_xi * t_cov = cov_lm
+  //                             X=2 Y=2 N=3
+  //                             Ain: TB-A
+  //                             bin: CB-A
+  //                             Cout: CB-B
+  //                           */
+  //                             PE_m = NEW_1_M;
+  //                             PE_n = NEW_1_N;
+  //                             PE_k = NEW_1_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = {CBa_B,CB_cov_vv};
+  //                             CBb_mode = {CBb_C,CB_cov_lv};
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+                              
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = 0;  
+  //                           end
+  //                     NEW_2: begin
+  //                           /*
+  //                             G_xi * cov_mv = cov_lv
+  //                             X=2 Y=4 N=3
+  //                             Ain: TB-A
+  //                             Bin: CB-A
+  //                             Min: 0
+  //                             Cout: CB-B
+  //                           */
+  //                             PE_m = NEW_2_M;
+  //                             PE_n = NEW_2_N;
+  //                             PE_k = NEW_2_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = {CBa_B,CB_cov_mv};
+  //                             CBb_mode = {CBb_C,CB_cov_lm};
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = 0; 
+  //                           end
+  //                     NEW_3: begin
+  //                             /*
+  //                               cov_lv * G_xi_T = lv_G_xi
+  //                               X=2 Y=2 N=3
+  //                               Ain: CB-A
+  //                               Bin: TB-B
+  //                               Min: NONE  
+  //                               Cout: TB-B
+  //                             */
+  //                               PE_m = NEW_3_M;
+  //                               PE_n = NEW_3_N;
+  //                               PE_k = NEW_3_K;
+
+  //                               CAL_mode = N_W;
+
+  //                               A_in_mode = A_CBa;   
+  //                               B_in_mode = B_cache;
+  //                               M_in_mode = M_NONE;
+  //                               C_out_mode = C_TBb;
+  //                               M_adder_mode_set = NONE;
+
+  //                               TBa_mode = TB_IDLE;
+  //                               TBb_mode = {TBb_C,DIR_POS};
+  //                               CBa_mode = {CBa_A,CB_cov_lv};
+  //                               CBb_mode = CB_IDLE;
+
+  //                               A_TB_base_addr_set = 0;
+  //                               B_TB_base_addr_set = 0;
+  //                               M_TB_base_addr_set = 0;
+  //                               C_TB_base_addr_set = lv_G_xi;
+
+  //                               B_cache_mode = Bca_RD_B;
+  //                               B_cache_base_addr_set = 0; 
+  //                             end
+  //                     NEW_4: begin
+  //                           /*
+  //                             G_z * Q = G_z_Q
+  //                             X=2 Y=2 N=2
+  //                             Ain: TB-A
+  //                             Bin: TB-B
+  //                             Min: NONE  
+  //                             Cout: TB-B
+  //                           */
+  //                             PE_m = NEW_4_M;
+  //                             PE_n = NEW_4_N;
+  //                             PE_k = NEW_4_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_TBb;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_BC,DIR_POS};
+  //                             CBa_mode = CB_IDLE; 
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = Q;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = G_z_Q;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = 3'b011; 
+  //                           end
+  //                     NEW_5: begin
+  //                           /*
+  //                             G_z_Q * G_z_T + lv_G_xi = cov_ll
+  //                             X=2 Y=2 N=2
+  //                             Ain: TB-A
+  //                             Bin: TB-B
+  //                             Min: TB-A  
+  //                             Cout: CB-B
+  //                           */
+  //                             PE_m = NEW_5_M;
+  //                             PE_n = NEW_5_N;
+  //                             PE_k = NEW_5_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = ADD;
+
+  //                             TBa_mode = {TBa_AM,DIR_POS};
+  //                             TBb_mode = {TBb_IDLE,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = {CBb_C,CB_cov_ll};
+
+  //                             A_TB_base_addr_set = G_z_Q;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = lv_G_xi;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 3'b011; 
+  //                           end
+  //                     default: begin
+  //                             PE_m = 0;
+  //                             PE_n = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                   endcase
+  //                 end
+  //       STAGE_UPD: begin
+  //                   case(upd_cur)
+  //                   /*STATE VECTOR move to PLB*/
+  //                     // UPD_NL_SEND:
+  //                     //       begin
+  //                     //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+  //                     //       end
+  //                     UPD_NL_RCV:
+  //                           begin
+  //                             TBa_mode = {TBa_NL_UPD,DIR_POS}; //Write Vt
+  //                             PE_n = 3'b111;
+  //                             B_cache_mode = Bca_WR_NL_UPD;   //UPD中vt写入Bcache
+  //                             B_cache_base_addr_set = 0; 
+
+  //                             PE_m = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+  //                           end
+  //                     UPD_1: begin
+  //                           /*
+  //                             transfer
+  //                             cov_l:CB-A -> TB-A
+  //                             X=0 Y=2 N=5
+  //                             Ain: 0
+  //                             bin: TB-B
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = UPD_1_M;
+  //                             PE_n = UPD_1_N;
+  //                             PE_k = UPD_1_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_CBa,DIR_POS};     //TB_dina直接接收即可
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = {CBa_TBa, CB_cov_lm};  //在CB_douta_map处理数据
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = t_cov_l;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     UPD_2: begin
+  //                           /*
+  //                             cov_vv * H_T = cov_HT
+  //                             X=3 Y=2 N=3
+  //                             Ain: CB-A
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: TB-B
+  //                           */
+                              
+  //                             PE_m = UPD_2_M;
+  //                             PE_n = UPD_2_N;
+  //                             PE_k = UPD_2_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_CBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_A,CB_cov_vv};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = t_cov_l;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = cov_HT;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     UPD_3: begin
+  //                           /*
+  //                             cov_mv * H_T = cov_HT
+  //                             X=4 Y=2 N=3
+  //                             Ain: CB-A
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: TB-B
+  //                           */
+                              
+  //                             PE_m = UPD_3_M;
+  //                             PE_n = UPD_3_N;
+  //                             PE_k = UPD_3_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_CBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_IDLE,DIR_POS};
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_A,CB_cov_mv};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = t_cov_l;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = cov_HT;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     UPD_4: begin
+  //                           /*
+  //                             t_cov_l * H_T = cov_HT
+  //                             X=4 Y=2 N=2
+  //                             Ain: TB-A
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = UPD_4_M;
+  //                             PE_n = UPD_4_N;
+  //                             PE_k = UPD_4_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_IDLE,DIR_POS};
+  //                             CBa_mode = {CBa_A,CB_cov_IDLE}; //保证dir不改变
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = t_cov_l;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = cov_HT;  //保持一致
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 3'b011;
+  //                           end
+  //                     UPD_5: begin
+  //                           /*
+  //                             cov_ml * H_T = cov_HT
+  //                             X=4 Y=2 N=2
+  //                             Ain: CB-A
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = UPD_5_M;
+  //                             PE_n = UPD_5_N;
+  //                             PE_k = UPD_5_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_CBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
+  //                             CBa_mode = {CBa_A,CB_cov_ml}; 
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = t_cov_l;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = cov_HT;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = 3'b011;
+  //                           end
+  //                     UPD_HALT_56: begin
+  //                             PE_m = UPD_5_M;
+  //                             PE_n = UPD_5_N;
+  //                             PE_k = UPD_5_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_CBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_IDLE,DIR_POS}; //for TB_addrb_shift_dir
+  //                             CBa_mode = CB_IDLE; 
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                     end
+  //                     UPD_6: begin
+  //                           /*
+  //                             cov_HT transpose
+  //                             Ain: 
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = UPD_6_M;
+  //                             PE_n = UPD_6_N;
+  //                             PE_k = UPD_6_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_B_cache_transpose,DIR_POS}; //不依赖于N
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = cov_HT;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_WR_transpose;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     UPD_7: begin
+  //                           /*
+  //                             H_T * cov_HT + Q = S
+  //                             X=2 Y=2 N=5
+  //                             Ain: TB-A
+  //                             Bin: B_cache
+  //                             Min: TB-A  
+  //                             Cout: TB-B
+  //                           */
+  //                             PE_m = UPD_7_M;
+  //                             PE_n = UPD_7_N;
+  //                             PE_k = UPD_7_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_cache;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_C, DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = cov_HT_cache;
+  //                           end
+  //                     UPD_INV: begin
+  //                             PE_m = 0;
+  //                             PE_n = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                            end
+  //                     UPD_8: begin
+  //                           /*
+  //                             S_t inverse
+  //                             Ain: 0
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = UPD_8_M;
+  //                             PE_n = UPD_8_N;
+  //                             PE_k = UPD_8_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_WR_inv;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     UPD_9: begin
+  //                           /*
+  //                             cov_HT * S = K_t
+  //                             X=4 Y=2 N=2
+  //                             Ain: TB-A
+  //                             Bin: B_cache
+  //                             Min: 0
+  //                             Cout: TB-B
+  //                           */
+  //                             PE_m = UPD_9_M;
+  //                             PE_n = UPD_9_N;
+  //                             PE_k = UPD_9_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = cov_HT;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = K_t;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = S_cache_0;
+  //                           end
+  //                     UPD_STATE: begin
+  //                               PE_m = 3'b100;
+  //                               PE_n = 3'b010;
+  //                               PE_k = 3'b001;
+
+  //                               CAL_mode = N_W;
+
+  //                               A_in_mode = A_TBa;   
+  //                               B_in_mode = B_cache;
+  //                               M_in_mode = M_NONE;
+  //                               C_out_mode = C_PLB;
+  //                               M_adder_mode_set = NONE;
+
+  //                               TBa_mode = {TBa_A,DIR_POS};
+  //                               TBb_mode = {TBb_IDLE,DIR_POS};
+  //                               CBa_mode = CB_IDLE;
+  //                               CBb_mode = CB_IDLE;
+
+  //                               A_TB_base_addr_set = K_t;
+  //                               B_TB_base_addr_set = 0;
+  //                               M_TB_base_addr_set = 0;
+  //                               C_TB_base_addr_set = 0;
+
+  //                               B_cache_mode = Bca_RD_B;
+  //                               B_cache_base_addr_set = v_t_cache;
+  //                             end
+  //                     UPD_10: begin
+  //                           /*
+  //                             K_t * cov_HT = cov
+  //                             X=4 Y=4 N=2
+  //                             Ain: TB-A
+  //                             Bin: TB-B
+  //                             Min: CB-A
+  //                             Cout: CB-B
+  //                           */
+  //                             PE_m = UPD_10_M;
+  //                             PE_n = UPD_10_N;
+  //                             PE_k = UPD_10_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_TBb;
+  //                             M_in_mode = M_CBa;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = M_MINUS_C;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_B,DIR_POS};
+  //                             CBa_mode = {CBa_M,CB_cov};
+  //                             CBb_mode = {CBb_C,CB_cov};
+
+  //                             A_TB_base_addr_set = K_t;
+  //                             B_TB_base_addr_set = cov_HT;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     default: begin
+  //                               PE_m = 0;
+  //                               PE_n = 0;
+  //                               PE_k = 0;
+
+  //                               CAL_mode = N_W;
+
+  //                               A_in_mode = A_NONE;   
+  //                               B_in_mode = B_NONE;
+  //                               M_in_mode = M_NONE;
+  //                               C_out_mode = C_CBb;
+  //                               M_adder_mode_set = NONE;
+
+  //                               TBa_mode = TB_IDLE;
+  //                               TBb_mode = TB_IDLE;
+  //                               CBa_mode = CB_IDLE;
+  //                               CBb_mode = CB_IDLE;
+
+  //                               A_TB_base_addr_set = 0;
+  //                               B_TB_base_addr_set = 0;
+  //                               M_TB_base_addr_set = 0;
+  //                               C_TB_base_addr_set = 0;
+
+  //                               B_cache_mode = Bca_IDLE;
+  //                               B_cache_base_addr_set = 0;
+  //                             end
+  //                   endcase
+  //                 end
+  //       STAGE_ASSOC:begin
+  //                   case(assoc_cur)
+  //                   /*STATE VECTOR move to PLB*/
+  //                     // ASSOC_NL_SEND:
+  //                     //       begin
+  //                     //         CBa_mode = {CBa_NL,CB_NL_xyxita};    
+  //                     //       end
+  //                     ASSOC_NL_RCV:begin
+                        
+  //                             TBa_mode = {TBa_NL_UPD,DIR_POS};    //ASSOC中vt写入TB
+  //                             PE_n = 3'b111;
+  //                             B_cache_mode = Bca_WR_NL_ASSOC;
+  //                             B_cache_base_addr_set = 0; 
+
+  //                             PE_m = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_TBb;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_CBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+  //                           end
+  //                     ASSOC_1: begin
+  //                             PE_m = ASSOC_1_M;
+  //                             PE_n = ASSOC_1_N;
+  //                             PE_k = ASSOC_1_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_B, CB_cov_vv};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = H_vv;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = Hxi_cache; 
+  //                         end
+  //                     ASSOC_2: begin
+  //                             PE_m = ASSOC_2_M;
+  //                             PE_n = ASSOC_2_N;
+  //                             PE_k = ASSOC_2_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_B, CB_cov_lv};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = H_lv;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = Hxi_cache; 
+  //                         end
+  //                     ASSOC_3: begin
+  //                             PE_m = ASSOC_3_M;
+  //                             PE_n = ASSOC_3_N;
+  //                             PE_k = ASSOC_3_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_CBa;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = {CBa_B, CB_cov_ll};
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = H_ll;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = Hz_cache; 
+  //                         end
+  //                     ASSOC_4: begin
+  //                             PE_m = ASSOC_4_M;
+  //                             PE_n = ASSOC_4_N;
+  //                             PE_k = ASSOC_4_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = H_lv;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = H_lv_H;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = Hz_cache; 
+  //                         end
+  //                      ASSOC_5: begin
+  //                             PE_m = ASSOC_5_M;
+  //                             PE_n = ASSOC_5_N;
+  //                             PE_k = ASSOC_5_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = ADD;
+
+  //                             TBa_mode = {TBa_AM,DIR_POS};
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = H_vv;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = H_lv_H;
+  //                             C_TB_base_addr_set = H_vv_H;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = Hxi_cache; 
+  //                         end
+  //                     ASSOC_6: begin
+  //                             PE_m = ASSOC_6_M;
+  //                             PE_n = ASSOC_6_N;
+  //                             PE_k = ASSOC_6_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_TBb;
+  //                             M_adder_mode_set = ADD;
+
+  //                             TBa_mode = {TBa_AM,DIR_POS};
+  //                             TBb_mode = {TBb_C,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = H_ll;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = H_lv_H;
+  //                             C_TB_base_addr_set = H_ll_H;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = Hz_cache; 
+  //                         end
+  //                     ASSOC_7: begin
+  //                             PE_m = ASSOC_7_M;
+  //                             PE_n = ASSOC_7_N;
+  //                             PE_k = ASSOC_7_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_TBa;
+  //                             C_out_mode = C_cache;
+  //                             M_adder_mode_set = ADD;
+
+  //                             TBa_mode = {TBa_AM,DIR_POS};
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = H_ll_H;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = H_vv_H;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_B;
+  //                             B_cache_base_addr_set = I_cache; 
+  //                         end
+  //                     ASSOC_INV: begin
+  //                             PE_m = 0;
+  //                             PE_n = 0;
+  //                             PE_k = 0;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_IDLE;
+  //                             B_cache_base_addr_set = 0;
+  //                            end
+  //                     ASSOC_8: begin
+  //                           /*
+  //                             S_t inverse
+  //                             Ain: 0
+  //                             Bin: B-cache
+  //                             Min: 0
+  //                             Cout: 0
+  //                           */
+  //                             PE_m = ASSOC_8_M;
+  //                             PE_n = ASSOC_8_N;
+  //                             PE_k = ASSOC_8_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_NONE;   
+  //                             B_in_mode = B_NONE;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_NONE;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_WR_inv;
+  //                             B_cache_base_addr_set = 0;
+  //                           end
+  //                     ASSOC_9: begin
+  //                             PE_m = ASSOC_9_M;
+  //                             PE_n = ASSOC_9_N;
+  //                             PE_k = ASSOC_9_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_TBa;   
+  //                             B_in_mode = B_cache;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_cache;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = {TBa_A,DIR_POS};
+  //                             TBb_mode = TB_IDLE;
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = v_t;
+  //                             B_TB_base_addr_set = 0;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_WR_chi;
+  //                             B_cache_base_addr_set = S_cache_0; 
+  //                         end
+  //                     ASSOC_10: begin
+  //                             PE_m = ASSOC_10_M;
+  //                             PE_n = ASSOC_10_N;
+  //                             PE_k = ASSOC_10_K;
+
+  //                             CAL_mode = N_W;
+
+  //                             A_in_mode = A_cache;   
+  //                             B_in_mode = B_TBb;
+  //                             M_in_mode = M_NONE;
+  //                             C_out_mode = C_PLB;
+  //                             M_adder_mode_set = NONE;
+
+  //                             TBa_mode = TB_IDLE;
+  //                             TBb_mode = {TBb_B,DIR_POS};
+  //                             CBa_mode = CB_IDLE;
+  //                             CBb_mode = CB_IDLE;
+
+  //                             A_TB_base_addr_set = 0;
+  //                             B_TB_base_addr_set = v_t;
+  //                             M_TB_base_addr_set = 0;
+  //                             C_TB_base_addr_set = 0;
+
+  //                             B_cache_mode = Bca_RD_A;
+  //                             B_cache_base_addr_set = vt_S_inv_cache_0; 
+  //                         end
+  //                     default: begin
+  //                               PE_m = 0;
+  //                               PE_n = 0;
+  //                               PE_k = 0;
+
+  //                               CAL_mode = N_W;
+
+  //                               A_in_mode = A_NONE;   
+  //                               B_in_mode = B_NONE;
+  //                               M_in_mode = M_NONE;
+  //                               C_out_mode = C_CBb;
+  //                               M_adder_mode_set = NONE;
+
+  //                               TBa_mode = TB_IDLE;
+  //                               TBb_mode = TB_IDLE;
+  //                               CBa_mode = CB_IDLE;
+  //                               CBb_mode = CB_IDLE;
+
+  //                               A_TB_base_addr_set = 0;
+  //                               B_TB_base_addr_set = 0;
+  //                               M_TB_base_addr_set = 0;
+  //                               C_TB_base_addr_set = 0;
+
+  //                               B_cache_mode = Bca_IDLE;
+  //                               B_cache_base_addr_set = 0; 
+  //                             end
+  //                   endcase
+  //                end
+  //       default: begin
+  //                 PE_m = 0;
+  //                 PE_n = 0;
+  //                 PE_k = 0;
+
+  //                 CAL_mode = N_W;
+
+  //                 A_in_mode = A_NONE;   
+  //                 B_in_mode = B_NONE;
+  //                 M_in_mode = M_NONE;
+  //                 C_out_mode = C_CBb;
+  //                 M_adder_mode_set = NONE;
+
+  //                 TBa_mode = TB_IDLE;
+  //                 TBb_mode = TB_IDLE;
+  //                 CBa_mode = CB_IDLE;
+  //                 CBb_mode = CB_IDLE;
+
+  //                 A_TB_base_addr_set = 0;
+  //                 B_TB_base_addr_set = 0;
+  //                 M_TB_base_addr_set = 0;
+  //                 C_TB_base_addr_set = 0;
+
+  //                 B_cache_mode = Bca_IDLE;
+  //                 B_cache_base_addr_set = 0;
+  //               end
+  //     endcase
+  //   end  
+  // end
 
 /*
   ********************** PE array mode config *********************

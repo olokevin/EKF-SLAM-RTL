@@ -20,7 +20,7 @@ module CB_dina_map #(
 );
 
 //stage
-  localparam  IDLE            = 2'b00 ;
+  localparam  CB_dina_IDLE            = 2'b00 ;
   localparam  CB_DINA_xyxita  = 2'b10 ;
   localparam  CB_DINA_lxly    = 2'b11 ;
 

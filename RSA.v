@@ -83,7 +83,7 @@ module RSA
   wire [5 :0]             upd_cur_out;
   wire [5 :0]             assoc_cur_out;
   //stage
-  localparam      IDLE       = 3'b000 ;
+  localparam      STAGE_IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
   localparam      STAGE_UPD  = 3'b011 ;

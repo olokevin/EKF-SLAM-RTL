@@ -55,7 +55,7 @@ module Top
   parameter ROW_LEN = 10;
 
   //stage
-  localparam      IDLE       = 3'b000 ;
+  localparam      STAGE_IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
   localparam      STAGE_UPD  = 3'b011 ;
@@ -111,7 +111,7 @@ module Top
         vlr_reg <= 0;
         alpha_reg <= 0;
       end
-      else if(stage_val == STAGE_PRD && stage_val_reg == IDLE) begin
+      else if(stage_val == STAGE_PRD && stage_val_reg == STAGE_IDLE) begin
           vlr_reg <= vlr;
           alpha_reg <= alpha;
       end 
@@ -129,7 +129,7 @@ module Top
       else if(((stage_val == STAGE_ASSOC) ||
                (stage_val == STAGE_NEW)   ||
                (stage_val == STAGE_UPD)     ) 
-            &&(stage_val_reg == IDLE)) begin
+            &&(stage_val_reg == STAGE_IDLE)) begin
         rk_reg <= rk;
         phi_reg <= phi;
       end

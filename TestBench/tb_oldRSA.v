@@ -29,7 +29,7 @@ wire  [2:0]  nonlinear_m_rdy               ;
 wire  [2:0]  nonlinear_m_val               ;
 
 //stage
-  localparam      IDLE     = 3'b000 ;
+  localparam      STAGE_IDLE     = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
   localparam      STAGE_UPD  = 3'b100 ;

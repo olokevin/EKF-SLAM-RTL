@@ -28,7 +28,7 @@ module CB_douta_map #(
 //
 /*
   CB_douta_sel[4:2]
-    000: IDLE
+    000: CBa_IDLE
     001: A
     010: B
     011: M

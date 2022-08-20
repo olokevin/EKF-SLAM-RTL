@@ -59,7 +59,7 @@ wire  [RSA_DW-1 : 0]  lkx                  ;
 wire  [RSA_DW-1 : 0]  lky                  ;
 
 //stage
-  localparam      IDLE       = 3'b000 ;
+  localparam      STAGE_IDLE       = 3'b000 ;
   localparam      STAGE_PRD  = 3'b001 ;
   localparam      STAGE_NEW  = 3'b010 ;
   localparam      STAGE_UPD  = 3'b011 ;
