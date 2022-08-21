@@ -79,6 +79,26 @@ generate
         .adder_C (mulres_out[i_h*RSA_DW +: RSA_DW] ),
         .sum     (C_data[RSA_DW*i_h +: RSA_DW]     )
       );
+
+    // //输入 inout接口
+    // assign  h_data[i_h*(Y+1)*RSA_DW+RSA_DW-1 : i_h*(Y+1)*RSA_DW]         = A_data[i_h*RSA_DW+RSA_DW-1 : i_h*RSA_DW];
+    // assign  h_data[((i_h+1)*(Y+1)-1)*RSA_DW+RSA_DW-1 : ((i_h+1)*(Y+1)-1)*RSA_DW] = {RSA_DW{1'bz}};
+    // //输出 直接接到
+    // assign  mulres_val_out[i_h]                  = mulres_val[i_h*(Y+1)];
+    // assign  mulres_out[i_h*RSA_DW+RSA_DW-1 : i_h*RSA_DW]     = mulres[i_h*(Y+1)*RSA_DW+RSA_DW-1 : i_h*(Y+1)*RSA_DW];
+
+    // sync_adder 
+    //   #(
+    //       .RSA_DW (RSA_DW )
+    //   )
+    //   MC_adder(
+    //     .clk     (clk     ),
+    //     .sys_rst (sys_rst ),
+    //     .mode    (M_adder_mode[2*i_h+1 : 2*i_h]     ),
+    //     .adder_M (M_data[RSA_DW*i_h+RSA_DW-1 : RSA_DW*i_h] ),
+    //     .adder_C (mulres_out[RSA_DW*i_h+RSA_DW-1 : RSA_DW*i_h] ),
+    //     .sum     (C_data[RSA_DW*i_h+RSA_DW-1 : RSA_DW*i_h]     )
+    //   );
   end
 endgenerate
 
@@ -91,6 +111,13 @@ generate
     assign  cal_en[(X*(Y+1)+j_v)]                   = 1'bz;
     assign  cal_done[j_v]                           = new_cal_done[j_v];
     assign  cal_done[(X*(Y+1)+j_v)]                 = 1'bz;
+
+    // assign  v_data[j_v*RSA_DW+RSA_DW-1 : j_v*RSA_DW]            = B_data[j_v*RSA_DW+RSA_DW-1 : j_v*RSA_DW];
+    // assign  v_data[(X*(Y+1)+j_v)*RSA_DW+RSA_DW-1 : (X*(Y+1)+j_v)*RSA_DW]  = {RSA_DW{1'bz}};
+    // assign  cal_en[j_v]                             = new_cal_en[j_v];
+    // assign  cal_en[(X*(Y+1)+j_v)]                   = 1'bz;
+    // assign  cal_done[j_v]                           = new_cal_done[j_v];
+    // assign  cal_done[(X*(Y+1)+j_v)]                 = 1'bz;
   end
 endgenerate
 
@@ -130,6 +157,28 @@ endgenerate
             .mulres_W     (mulres[(i*(Y+1)+j)*RSA_DW +: RSA_DW]     ),
             .mulres_E     (mulres[(i*(Y+1)+j+1)*RSA_DW +: RSA_DW]     )
           );
+
+          // PE_MAC 
+          // #(
+          //   .RSA_DW (RSA_DW )
+          // )
+          // u_PE_MAC(
+          //   .clk          (clk          ),
+          //   .sys_rst      (sys_rst      ),
+          //   .PE_mode      (PE_mode      ),
+          //   .cal_en_N     (cal_en[i*(Y+1)+j]    ),
+          //   .cal_en_S     (cal_en[(i+1)*(Y+1)+j]      ),
+          //   .cal_done_N   (cal_done[i*(Y+1)+j]   ),
+          //   .cal_done_S   (cal_done[(i+1)*(Y+1)+j]   ),
+          //   .v_data_N     (v_data[(i*(Y+1)+j)*RSA_DW+RSA_DW-1 : (i*(Y+1)+j)*RSA_DW]     ),
+          //   .v_data_S     (v_data[((i+1)*(Y+1)+j)*RSA_DW+RSA_DW-1 : ((i+1)*(Y+1)+j)*RSA_DW]     ),
+          //   .h_data_W     (h_data[(i*(Y+1)+j)*RSA_DW+RSA_DW-1 : (i*(Y+1)+j)*RSA_DW]     ),
+          //   .h_data_E     (h_data[(i*(Y+1)+j+1)*RSA_DW+RSA_DW-1 : (i*(Y+1)+j+1)*RSA_DW]     ),
+          //   .mulres_val_W (mulres_val[i*(Y+1)+j] ),
+          //   .mulres_val_E (mulres_val[i*(Y+1)+j+1] ),
+          //   .mulres_W     (mulres[(i*(Y+1)+j)*RSA_DW+RSA_DW-1 : (i*(Y+1)+j)*RSA_DW]     ),
+          //   .mulres_E     (mulres[(i*(Y+1)+j+1)*RSA_DW+RSA_DW-1 : (i*(Y+1)+j+1)*RSA_DW]     )
+          // );
         end
       end
   endgenerate

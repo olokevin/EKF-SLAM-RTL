@@ -531,6 +531,54 @@ wire signed [X*RSA_DW-1 : 0]    B_cache_dout_M;
 generate 
   genvar i_X;
     for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
+      // regMUX_sel2 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // A_regMUX_sel2(
+      // 	.clk     (clk     ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (A_in_en[i_X]      ),
+      //   .sel     (A_in_sel[2*i_X+2 : 2*i_X]     ),
+      //   .din_00  (A_TB_douta[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]  ),
+      //   .din_01  (B_cache_dout_A[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] ),
+      //   .din_10  (A_CB_douta[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]  ),
+      //   .din_11  (0  ),
+      //   .dout    (A_data[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]    )
+      // );
+
+      // regMUX_sel2 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // M_regMUX_sel2(
+      // 	.clk     (clk     ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (M_in_en[i_X]      ),
+      //   .sel     (M_in_sel[2*i_X+2 : 2*i_X]     ),
+      //   .din_00  (M_TB_douta[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]  ),
+      //   .din_01  (B_cache_dout_M[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] ),
+      //   .din_10  (M_CB_douta[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]  ),
+      //   .din_11  (0  ),
+      //   .dout    (M_data[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]    )
+      // );
+
+      // regdeMUX_sel2 
+      // #(
+      //   .RSA_DW (RSA_DW )
+      // )
+      // C_regdeMUX_sel2(
+      // 	.clk     (clk     ),
+      //   .sys_rst (sys_rst ),
+      //   .en      (C_out_en[i_X]      ),
+      //   .sel     (C_out_sel[2*i_X+2 : 2*i_X]     ),
+      //   .din     (C_data[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X]     ),
+      //   .dout_00 (C_TB_dinb[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] ),
+      //   .dout_01 (C_B_cache_din[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] ),
+      //   .dout_10 (C_CB_dinb[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] ),
+      //   .dout_11 (C_PLB_din[RSA_DW*i_X+RSA_DW-1 : RSA_DW*i_X] )
+      // );
+      
       regMUX_sel2 
       #(
         .RSA_DW (RSA_DW )
@@ -609,6 +657,37 @@ wire [3:0]   B_cache_out_sel;  //out_map
 generate
   genvar i_Y;
   for(i_Y=0; i_Y<=Y-1; i_Y=i_Y+1) begin: DATA_Y
+    // t_ram 
+    // #(
+    //   .DW (RSA_DW ),
+    //   .AW (3 )
+    // )
+    // B_cache_ram(
+    // 	.clk     (clk     ),
+    //   .sys_rst (sys_rst ),
+    //   .en      (B_cache_en[i_Y]      ),
+    //   .we      (B_cache_we[i_Y]      ),
+    //   .addr    (B_cache_addr[3*i_Y+3 : 3*i_Y]    ),
+    //   .din     (B_cache_din[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]     ),
+    //   .dout    (B_cache_dout[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]    )
+    // );
+    
+    // regMUX_sel2 
+    // #(
+    //   .RSA_DW (RSA_DW )
+    // )
+    // B_regMUX_sel2(
+    //   .clk     (clk   ),
+    //   .sys_rst (sys_rst ),
+    //   .en      (B_in_en[i_Y]  ),
+    //   .sel     (B_in_sel[2*i_Y+2 : 2*i_Y]   ),
+    //   .din_00  (B_TB_doutb[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]  ),
+    //   .din_01  (B_cache_dout_B[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]  ),
+    //   .din_10  (B_CB_douta[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]  ),
+    //   .din_11  (0   ),
+    //   .dout    (B_data[RSA_DW*i_Y +RSA_DW-1 : RSA_DW*i_Y ]  )
+    // );
+
     t_ram 
     #(
       .DW (RSA_DW ),
