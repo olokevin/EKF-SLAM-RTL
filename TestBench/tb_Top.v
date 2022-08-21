@@ -72,38 +72,69 @@ end
 /*
     ************* test *****************
 */
+//读取文件
+// localparam INT = 12;
+// localparam DEC = 19;
+
+// integer  odometry_fd, odometry_time;
+// real    f_vlr, f_alpha, f_odometry_time;
+// integer i_vlr, i_alpha, i_odometry_time;
+
+// integer odometry_time;
+
 // initial begin
-//     #(PERIOD*RST_START*2)
-//     stage_val <= STAGE_PRD;
-//     #(PERIOD * 2)
-//     stage_val <= 0;
-
-//     #(PERIOD*PRD_WORK)
-//     stage_val <= STAGE_NEW;
-//     #(PERIOD * 2)
-//     stage_val <= 0;
-
-//     #(PERIOD*NEW_WORK)
-//     stage_val <= STAGE_UPD;
-//     #(PERIOD * 2)
-//     stage_val <= 0;
-
-//     #(PERIOD*UPD_WORK)
-//     stage_val <= STAGE_ASSOC;
-//     #(PERIOD * 2)
-//     stage_val <= 0;
+//     odometry_fd = $fopen("D:/Top_EKF_sim/data/odometry.txt", "r");
+//     if (!odometry_fd)
+//         $display("odometry open error");
+//     $fscanf(odometry_fd, "%f %f %f", f_vlr, f_alpha, f_odometry_time);
+//     vlr   = $rtoi(f_vlr * $pow(2, 19));
+//     alpha = $rtoi(f_vlr * $pow(2, 19));
+//     odometry_time = $rtoi(f_odometry_time);
 // end
 
+// integer  observation_fd;
+// initial begin
+//     observation_fd = $fopen("D:/Top_EKF_sim/data/observation.txt", "r");
+//     if (!observation_fd)
+//         $display("observation open error");
+// end
+
+integer i_stage = 0;
 /*
     ************* PRD *****************
 */
+
+initial begin
+    #(PERIOD*RST_START*2)
+    stage_val <= STAGE_PRD;
+    vlr <= 0;
+    alpha <= -32'd2221;
+    #(PERIOD * 2)
+    stage_val <= 0;
+end
+
 // initial begin
 //     #(PERIOD*RST_START*2)
 //     stage_val <= STAGE_PRD;
 //     vlr <= 0;
-//     alpha <= 
+//     alpha <= -32'd2221;
 //     #(PERIOD * 2)
 //     stage_val <= 0;
+
+//     while(i_stage < 100) begin
+//       if(stage_rdy == 1'b1) begin
+//         i_stage <= i_stage + 1;
+//         if(i_stage % 10 == 0) begin
+//           if(i_stage == 10) begin
+//             //1st round new landmark initialization
+
+//           end
+//           else begin
+//             //data association
+//           end
+//         end
+//       end
+//     end
 // end
 
 
@@ -131,14 +162,14 @@ end
 /*
     ************* ASSOC *****************
 */
-initial begin
-    #(PERIOD*RST_START*2)
-    rk        <= 32'd10730636;
-    phi       <= -32'd359159;     //1+12+19
-    stage_val <= STAGE_ASSOC;
-    #(PERIOD * 2)
-    stage_val <= 0;
-end
+// initial begin
+//     #(PERIOD*RST_START*2)
+//     rk        <= 32'd10730636;
+//     phi       <= -32'd359159;     //1+12+19
+//     stage_val <= STAGE_ASSOC;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
+// end
 
 //Round 2
 //10730636 15518183 25638967 15049531  6682245 12563146 12893941  6650043
