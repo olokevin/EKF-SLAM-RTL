@@ -31,8 +31,8 @@ module B_cache_din_map #(
 
 localparam Bca_IDLE       = 4'b0000;
 
-localparam Bca_WR_transpose = 4'b1000;
-localparam Bca_RD_B_WR_S       = 4'b1010;
+localparam Bca_WR_cov_HT = 4'b1000;
+localparam Bca_WR_H_lv_H  = 4'b1001;
 localparam Bca_WR_inv     = 4'b1010;
 localparam Bca_WR_chi     = 4'b1011;
 
@@ -416,7 +416,7 @@ localparam I_22 = 32'h8_0000;
                       end
                   endcase
                 end
-        Bca_WR_transpose: begin
+        Bca_WR_cov_HT, Bca_WR_H_lv_H: begin
           B_cache_din <= B_cache_TB_doutb;
         end
         Bca_WR_inv: begin

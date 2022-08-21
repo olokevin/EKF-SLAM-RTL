@@ -523,6 +523,11 @@ wire [X-1 : 0]          C_out_en;
 wire signed [L*RSA_DW-1 : 0]   TB_dina_CB_douta;
 wire signed [L*RSA_DW-1 : 0]   TB_dina_non_linear;
 
+//B_cache -> ABCM
+wire signed [X*RSA_DW-1 : 0]    B_cache_dout_A;
+wire signed [Y*RSA_DW-1 : 0]    B_cache_dout_B;
+wire signed [X*RSA_DW-1 : 0]    B_cache_dout_M;
+
 generate 
   genvar i_X;
     for(i_X=0; i_X<=X-1; i_X=i_X+1) begin: DATA_X
@@ -552,7 +557,7 @@ generate
         .en      (M_in_en[i_X]      ),
         .sel     (M_in_sel[2*i_X +: 2]     ),
         .din_00  (M_TB_douta[RSA_DW*i_X +: RSA_DW]  ),
-        .din_01  (0  ),
+        .din_01  (B_cache_dout_M[RSA_DW*i_X +: RSA_DW] ),
         .din_10  (M_CB_douta[RSA_DW*i_X +: RSA_DW]  ),
         .din_11  (0  ),
         .dout    (M_data[RSA_DW*i_X +: RSA_DW]    )
@@ -587,9 +592,6 @@ wire signed [Y*RSA_DW-1:0] B_cache_din;
 wire signed [Y*RSA_DW-1:0] B_cache_TB_doutb; //TB_doutb -> B_cache
 
 wire signed [Y*RSA_DW-1:0] B_cache_dout; 
-wire signed [X*RSA_DW-1 : 0]    B_cache_dout_A;
-wire signed [Y*RSA_DW-1 : 0]    B_cache_dout_B;
-
 
 wire [3:0]   B_cache_in_sel;   //in_map
 wire [3:0]   B_cache_out_sel;  //out_map
@@ -699,7 +701,8 @@ u_B_cache_dout_map(
   .B_cache_out_sel (B_cache_out_sel ),
   .B_cache_dout    (B_cache_dout    ),
   .B_cache_dout_A  (B_cache_dout_A  ),
-  .B_cache_dout_B  (B_cache_dout_B  )
+  .B_cache_dout_B  (B_cache_dout_B  ),
+  .B_cache_dout_M  (B_cache_dout_M  )
 );
 
 /*

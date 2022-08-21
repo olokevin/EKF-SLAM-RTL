@@ -37,8 +37,9 @@ localparam TBb_IDLE = 3'b000;
 localparam TBb_B = 3'b001;
 // localparam TBb_B_cache = 3'b100;
 localparam TBb_B_cache_IDLE = 3'b100;
-localparam TBb_B_cache_trnsfer = 3'b101;
-localparam TBb_B_cache_transpose = 3'b110;
+// localparam TBb_B_cache_trnsfer = 3'b101;
+localparam TBb_H_lv_H_transpose = 3'b101;
+localparam TBb_cov_HT_transpose = 3'b110;
 localparam TBb_B_cache_inv = 3'b111;
 
 
@@ -137,7 +138,29 @@ always @(posedge clk) begin
           //   B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
           //   B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;   
           // end
-          TBb_B_cache_transpose : begin
+          TBb_H_lv_H_transpose:begin
+            B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
+            B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;   
+            case (seq_cnt_out)
+              'd12:begin
+                    B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[0 +: RSA_DW];
+                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;  
+                  end
+              'd13:begin
+                    B_cache_TB_doutb[0 +: RSA_DW]        <= TB_doutb[1*RSA_DW +: RSA_DW];
+                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[0 +: RSA_DW];   
+                  end
+              'd14:begin
+                    B_cache_TB_doutb[0 +: RSA_DW]        <= 0;
+                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= TB_doutb[1*RSA_DW +: RSA_DW];
+                  end
+              default: begin
+                    B_cache_TB_doutb[0 +: RSA_DW]        <= 0;
+                    B_cache_TB_doutb[1*RSA_DW +: RSA_DW] <= 0;
+                  end
+            endcase
+          end
+          TBb_cov_HT_transpose : begin
             B_cache_TB_doutb[2*RSA_DW +: RSA_DW] <= 0;
             B_cache_TB_doutb[3*RSA_DW +: RSA_DW] <= 0;
             case (seq_cnt_out)

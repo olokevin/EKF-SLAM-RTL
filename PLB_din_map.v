@@ -55,10 +55,10 @@ localparam NEW_NL_RCV    = 6'b100011;
 localparam UPD_NL_RCV    = 6'b10_0011;
 localparam ASSOC_NL_RCV    = 6'b100011;
 
-localparam UPD_STATE     = 6'b01_1001;
+localparam UPD_STATE     = 6'b1100;
 
 localparam ASSOC_IDLE      = 6'b000000;
-localparam ASSOC_10        = 6'b001010;
+localparam ASSOC_10        = 6'b001100;
 
 //SEQ_CNT_PARAM
   localparam [SEQ_CNT_DW-1 : 0] SEQ_0 = 5'd0;

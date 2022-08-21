@@ -173,42 +173,42 @@ endtask
 integer i_stage = 0;
 integer i_assoc = 0;
 
-initial begin
-    //First odometry has beem read
-    #(PERIOD*RST_START*2)
-    wait(odometry_fd && observation_fd);
-    vlr   = int_vlr;
-    alpha = int_alpha;
-    stage_val = STAGE_PRD;
-    #(PERIOD * 2)
-    stage_val = 0;
+// initial begin
+//     //First odometry has beem read
+//     #(PERIOD*RST_START*2)
+//     wait(odometry_fd && observation_fd);
+//     vlr   = int_vlr;
+//     alpha = int_alpha;
+//     stage_val = STAGE_PRD;
+//     #(PERIOD * 2)
+//     stage_val = 0;
 
-    while(i_stage < 100) begin
-      wait(stage_rdy == 1'b1);  
-      i_stage = i_stage + 1;
-      //data association
-      if(observation_time - odometry_time <= 20) begin
-        for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
-          rk  = int_rk[i_assoc];
-          phi = int_phi[i_assoc];
-          stage_val = STAGE_ASSOC;
-          #(PERIOD * 2)
-          stage_val = 0;
-          wait(stage_rdy == 1'b1);  
-        end
-        observation_read(); //read next observation
-      end
-      //Continue Predict
-      else begin
-        odometry_read();
-        vlr   = int_vlr;
-        alpha = int_alpha;
-        stage_val = STAGE_PRD;
-        #(PERIOD * 2)
-        stage_val = 0;
-      end
-    end
-end
+//     while(i_stage < 100) begin
+//       wait(stage_rdy == 1'b1);  
+//       i_stage = i_stage + 1;
+//       //data association
+//       if(observation_time - odometry_time <= 20) begin
+//         for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
+//           rk  = int_rk[i_assoc];
+//           phi = int_phi[i_assoc];
+//           stage_val = STAGE_ASSOC;
+//           #(PERIOD * 2)
+//           stage_val = 0;
+//           wait(stage_rdy == 1'b1);  
+//         end
+//         observation_read(); //read next observation
+//       end
+//       //Continue Predict
+//       else begin
+//         odometry_read();
+//         vlr   = int_vlr;
+//         alpha = int_alpha;
+//         stage_val = STAGE_PRD;
+//         #(PERIOD * 2)
+//         stage_val = 0;
+//       end
+//     end
+// end
 
 // initial begin
 //     #(PERIOD*RST_START*2)
@@ -243,14 +243,14 @@ end
 /*
     ************* ASSOC *****************
 */
-// initial begin
-//     #(PERIOD*RST_START*2)
-//     rk        <= 32'd10730636;
-//     phi       <= -32'd359159;     //1+12+19
-//     stage_val <= STAGE_ASSOC;
-//     #(PERIOD * 2)
-//     stage_val <= 0;
-// end
+initial begin
+    #(PERIOD*RST_START*2)
+    rk        <= 32'd10730636;
+    phi       <= -32'd359159;     //1+12+19
+    stage_val <= STAGE_ASSOC;
+    #(PERIOD * 2)
+    stage_val <= 0;
+end
 
 //Round 2
 //10730636 15518183 25638967 15049531  6682245 12563146 12893941  6650043
