@@ -451,7 +451,7 @@ module PE_config #(
     localparam [TB_AW-1 : 0] t_cov_l       = 'd16;
     localparam [TB_AW-1 : 0] K_t           = 'd16;
   // UPDATE SERIES
-    localparam UPD_IDLE      = 6'b000_0000_0000;
+    localparam UPD_IDLE      = 6'b00_0000;
     localparam UPD_NL_SEND   = 6'b10_0001;
     localparam UPD_NL_WAIT   = 6'b10_0010;
     localparam UPD_NL_RCV    = 6'b10_0011;
@@ -460,14 +460,14 @@ module PE_config #(
     localparam UPD_3         = 6'b11;
     localparam UPD_4         = 6'b100;
     localparam UPD_5         = 6'b101;
-    localparam UPD_HALT_56   = 6'b01_0101;
-    localparam UPD_6         = 6'b110;
-    localparam UPD_7         = 6'b111;
-    localparam UPD_INV       = 6'b01_0111;
-    localparam UPD_8         = 6'b1000;
-    localparam UPD_9         = 6'b1001;
-    localparam UPD_STATE     = 6'b01_1001;
-    localparam UPD_10        = 6'b1010;
+    localparam UPD_HALT_56   = 6'b110;
+    localparam UPD_6         = 6'b111;
+    localparam UPD_7         = 6'b1000;
+    localparam UPD_INV       = 6'b1001;
+    localparam UPD_8         = 6'b1010;
+    localparam UPD_9         = 6'b1011;
+    localparam UPD_STATE     = 6'b1100;
+    localparam UPD_10        = 6'b1101;
     
     // localparam UPD_HALT_78   = 6'b1110;
     
@@ -768,6 +768,7 @@ module PE_config #(
       stage_next = STAGE_IDLE;
     end
     else begin
+      stage_next = stage_cur;
       case(stage_cur)
         STAGE_IDLE: begin
                 case(stage_val)
@@ -916,6 +917,7 @@ module PE_config #(
         prd_next = PRD_IDLE;
       end
       else  begin
+        prd_next = prd_cur;
         case(prd_cur)
           PRD_IDLE: begin
             if((stage_val) == STAGE_PRD) begin
@@ -1013,6 +1015,7 @@ module PE_config #(
         new_next = NEW_IDLE;
       end
       else  begin
+        new_next = new_cur;
         case(new_cur)
           NEW_IDLE: begin
             if(((stage_val) == STAGE_NEW)
@@ -1117,6 +1120,7 @@ module PE_config #(
         upd_next = UPD_IDLE;
       end
       else  begin
+        upd_next = upd_cur;
         case(upd_cur)
           UPD_IDLE: begin
             if(((stage_val) == STAGE_UPD)
@@ -1301,6 +1305,7 @@ module PE_config #(
         assoc_next = ASSOC_IDLE;
       end
       else  begin
+        assoc_next = assoc_cur;
         case(assoc_cur)
           ASSOC_IDLE: begin
             if((stage_val) == STAGE_ASSOC) begin
