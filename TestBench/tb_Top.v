@@ -69,48 +69,145 @@ begin
     #(PERIOD*2) sys_rst_n  =  1;
 end
 
+localparam INT = 12;
+localparam DEC = 19;
+// localparam frontCut = 63 - 2*DEC - INT;
+// localparam ultimaCut = DEC + frontCut;
+
 /*
-    ************* test *****************
+    *********************** odometry ***************************
 */
-//读取文件
-// localparam INT = 12;
-// localparam DEC = 19;
+integer  odometry_fd;
+real     f_vlr, f_alpha, f_odometry_time;
+reg signed [31:0] int_vlr, int_alpha;
+integer odometry_time;
 
-// integer  odometry_fd, odometry_time;
-// real    f_vlr, f_alpha, f_odometry_time;
-// integer i_vlr, i_alpha, i_odometry_time;
+/*open odometry.txt*/
+  initial begin
+    odometry_fd = $fopen("D:/Top_EKF_sim/data/odometry.txt", "r");
+    if (!odometry_fd)
+      $display("odometry open error");
+    else begin
+      $display("odometry open OK");
+      odometry_read();
+    end
+  end
 
-// integer odometry_time;
+/*odometry read task*/
+  task odometry_read();
+  begin
+    $fscanf(odometry_fd, "%f %f %f", f_vlr, f_alpha, f_odometry_time);
+    int_vlr   = $rtoi(f_vlr * $pow(2, 19));
+    int_alpha = $rtoi(f_vlr * $pow(2, 19));
+    odometry_time = $rtoi(f_odometry_time);
 
-// initial begin
-//     odometry_fd = $fopen("D:/Top_EKF_sim/data/odometry.txt", "r");
-//     if (!odometry_fd)
-//         $display("odometry open error");
-//     $fscanf(odometry_fd, "%f %f %f", f_vlr, f_alpha, f_odometry_time);
-//     vlr   = $rtoi(f_vlr * $pow(2, 19));
-//     alpha = $rtoi(f_vlr * $pow(2, 19));
-//     odometry_time = $rtoi(f_odometry_time);
-// end
+    $display("vlr = %d",int_vlr);
+    $display("alpha = %d",int_alpha);
+    $display("odometry_time = %d",odometry_time);
+  end
+  endtask
 
-// integer  observation_fd;
-// initial begin
-//     observation_fd = $fopen("D:/Top_EKF_sim/data/observation.txt", "r");
-//     if (!observation_fd)
-//         $display("observation open error");
-// end
+/*
+    *********************** observation ***************************
+*/
 
-integer i_stage = 0;
+integer  observation_fd;
+real    f_rk, f_phi, f_observation_time, f_zero;
+reg signed [31:0] int_rk[1:20], int_phi[1:20];
+integer feature_cnt = 0;    //本轮观测到的特征数量
+integer i_feature = 0;
+
+integer code;
+reg [999:0]   line_buf;
+
+integer observation_time;
+
+/*open observation.txt*/
+  initial begin
+    observation_fd = $fopen("D:/Top_EKF_sim/data/observation.txt", "r");
+    if (!observation_fd)
+      $display("observation open error");
+    else begin
+      $display("observation open OK");
+      observation_read();
+    end
+
+  end
+
+task observation_read();
+  begin
+  /*read observation starts*/
+    $fscanf(observation_fd, "%f",f_observation_time);
+    observation_time = $rtoi(f_observation_time);
+    $display("observation_time = %d",observation_time);
+
+    $fscanf(observation_fd, "%f",f_rk);
+    $display("f_rk = %f", f_rk);
+    while(f_rk > 0) begin
+      feature_cnt = feature_cnt + 1;
+      int_rk[feature_cnt] = $rtoi(f_rk * $pow(2, 19));
+      $display("int_rk[%d] = %d", feature_cnt, int_rk[feature_cnt]);
+      $fscanf(observation_fd, "%f",f_rk);
+      $display("f_rk = %f", f_rk);
+    end
+
+    code = $fgets(line_buf, observation_fd) ;  //读完一行
+    $display("line_buf = %s", line_buf);
+    $fscanf(observation_fd, "%f",f_zero);      //读角度的第一个
+    
+    for(i_feature=1; i_feature<=feature_cnt; i_feature=i_feature+1) begin
+      $fscanf(observation_fd, "%f",f_phi);
+      $display("f_phi = %f", f_phi);
+      int_phi[i_feature] = $rtoi(f_phi * $pow(2, 19));
+      $display("int_phi[%d] = %d", i_feature, int_phi[i_feature]);
+    end
+
+    code = $fgets(line_buf, observation_fd) ;  //读完一行
+  /*read observation ends*/
+  end
+endtask
+
 /*
     ************* PRD *****************
 */
+integer i_stage = 0;
+integer i_assoc = 0;
 
 initial begin
+    //First odometry has beem read
     #(PERIOD*RST_START*2)
-    stage_val <= STAGE_PRD;
-    vlr <= 0;
-    alpha <= -32'd2221;
+    wait(odometry_fd && observation_fd);
+    vlr   = int_vlr;
+    alpha = int_alpha;
+    stage_val = STAGE_PRD;
     #(PERIOD * 2)
-    stage_val <= 0;
+    stage_val = 0;
+
+    while(i_stage < 100) begin
+      wait(stage_rdy == 1'b1);  
+      i_stage = i_stage + 1;
+      //data association
+      if(observation_time - odometry_time <= 20) begin
+        for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
+          rk  = int_rk[i_assoc];
+          phi = int_phi[i_assoc];
+          stage_val = STAGE_ASSOC;
+          #(PERIOD * 2)
+          stage_val = 0;
+          wait(stage_rdy == 1'b1);  
+        end
+        observation_read(); //read next observation
+      end
+      //Continue Predict
+      else begin
+        odometry_read();
+        vlr   = int_vlr;
+        alpha = int_alpha;
+        stage_val = STAGE_PRD;
+        #(PERIOD * 2)
+        stage_val = 0;
+      end
+    end
 end
 
 // initial begin
@@ -120,23 +217,7 @@ end
 //     alpha <= -32'd2221;
 //     #(PERIOD * 2)
 //     stage_val <= 0;
-
-//     while(i_stage < 100) begin
-//       if(stage_rdy == 1'b1) begin
-//         i_stage <= i_stage + 1;
-//         if(i_stage % 10 == 0) begin
-//           if(i_stage == 10) begin
-//             //1st round new landmark initialization
-
-//           end
-//           else begin
-//             //data association
-//           end
-//         end
-//       end
-//     end
 // end
-
 
 /*
     ************* NEW *****************

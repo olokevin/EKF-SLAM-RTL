@@ -4895,7 +4895,7 @@ module PE_config #(
     dynamic_shreg 
     #(
       .DW    (3    ),
-      .AW    (3    )
+      .AW    (4    )
     )
     PE_k_dynamic_shreg(
       .clk  (clk  ),
