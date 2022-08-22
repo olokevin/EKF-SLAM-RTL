@@ -379,8 +379,8 @@ module PE_config #(
 
     localparam [SEQ_CNT_DW-1 : 0] PRD_NL_SEND_CNT_MAX = 'd11;
     localparam [SEQ_CNT_DW-1 : 0] PRD_NL_RCV_CNT_MAX  = 'd6;
-    localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd17;
-    localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd5;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_1_CNT_MAX = 'd15;
+    localparam [SEQ_CNT_DW-1 : 0] PRD_2_CNT_MAX = 'd10;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_CNT_MAX = 'd5;
     localparam [SEQ_CNT_DW-1 : 0] PRD_3_HALT_CNT_MAX = 'd7;
 
@@ -857,12 +857,12 @@ module PE_config #(
       landmark_num <= 0;
     else begin
       //FOR SIMULATIOM
-        landmark_num <= 10'b111;
+        // landmark_num <= 10'b111;
       //FOR ITERATION
-        // if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
-        //   landmark_num <= landmark_num + 1'b1;
-        // else 
-        //   landmark_num <= landmark_num;
+        if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+          landmark_num <= landmark_num + 1'b1;
+        else 
+          landmark_num <= landmark_num;
     end
   end
 

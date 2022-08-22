@@ -89,7 +89,6 @@ integer odometry_time;
       $display("odometry open error");
     else begin
       $display("odometry open OK");
-      odometry_read();
     end
   end
 
@@ -97,8 +96,11 @@ integer odometry_time;
   task odometry_read();
   begin
     $fscanf(odometry_fd, "%f %f %f", f_vlr, f_alpha, f_odometry_time);
+    $display("f_vlr = %f",f_vlr);
+    $display("f_alpha = %f",f_alpha);
+    
     int_vlr   = $rtoi(f_vlr * $pow(2, 19));
-    int_alpha = $rtoi(f_vlr * $pow(2, 19));
+    int_alpha = $rtoi(f_alpha * $pow(2, 19));
     odometry_time = $rtoi(f_odometry_time);
 
     $display("vlr = %d",int_vlr);
@@ -129,7 +131,6 @@ integer observation_time;
       $display("observation open error");
     else begin
       $display("observation open OK");
-      observation_read();
     end
 
   end
@@ -137,6 +138,7 @@ integer observation_time;
 task observation_read();
   begin
   /*read observation starts*/
+    feature_cnt = 0;
     $fscanf(observation_fd, "%f",f_observation_time);
     observation_time = $rtoi(f_observation_time);
     $display("observation_time = %d",observation_time);
@@ -152,14 +154,14 @@ task observation_read();
     end
 
     code = $fgets(line_buf, observation_fd) ;  //读完一行
-    $display("line_buf = %s", line_buf);
+    // $display("line_buf = %s", line_buf);
     $fscanf(observation_fd, "%f",f_zero);      //读角度的第一个
     
     for(i_feature=1; i_feature<=feature_cnt; i_feature=i_feature+1) begin
       $fscanf(observation_fd, "%f",f_phi);
       $display("f_phi = %f", f_phi);
       int_phi[i_feature] = $rtoi(f_phi * $pow(2, 19));
-      $display("int_phi[%d] = %d", i_feature, int_phi[i_feature]);
+      // $display("int_phi[%d] = %d", i_feature, int_phi[i_feature]);
     end
 
     code = $fgets(line_buf, observation_fd) ;  //读完一行
@@ -173,42 +175,69 @@ endtask
 integer i_stage = 0;
 integer i_assoc = 0;
 
-// initial begin
-//     //First odometry has beem read
-//     #(PERIOD*RST_START*2)
-//     wait(odometry_fd && observation_fd);
-//     vlr   = int_vlr;
-//     alpha = int_alpha;
-//     stage_val = STAGE_PRD;
-//     #(PERIOD * 2)
-//     stage_val = 0;
+integer init_flag = 1;
+integer assoc_flag = 1;  //Now data associating
 
-//     while(i_stage < 100) begin
-//       wait(stage_rdy == 1'b1);  
-//       i_stage = i_stage + 1;
-//       //data association
-//       if(observation_time - odometry_time <= 20) begin
-//         for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
-//           rk  = int_rk[i_assoc];
-//           phi = int_phi[i_assoc];
-//           stage_val = STAGE_ASSOC;
-//           #(PERIOD * 2)
-//           stage_val = 0;
-//           wait(stage_rdy == 1'b1);  
-//         end
-//         observation_read(); //read next observation
-//       end
-//       //Continue Predict
-//       else begin
-//         odometry_read();
-//         vlr   = int_vlr;
-//         alpha = int_alpha;
-//         stage_val = STAGE_PRD;
-//         #(PERIOD * 2)
-//         stage_val = 0;
-//       end
-//     end
-// end
+initial begin
+    //First odometry has beem read
+    #(PERIOD*RST_START*2)
+    wait(odometry_fd && observation_fd);
+    
+    odometry_read();
+    //   vlr   = int_vlr;
+    //   alpha = int_alpha;
+    //   stage_val = STAGE_PRD;
+    //   #(PERIOD * 2)
+    //   stage_val = 0;
+    // odometry_read();  //buffer one frame
+
+    observation_read();
+
+    // wait(stage_rdy == 1'b1);  //wait for 1st prediction
+
+    while(i_stage < 100) begin
+      i_stage = i_stage + 1;
+      //Predicition
+        vlr   = int_vlr;    //output buffered data
+        alpha = int_alpha;
+        stage_val = STAGE_PRD;
+        #(PERIOD * 2)
+        stage_val = 0;    
+        odometry_read();    //buffer one frame
+      
+      wait(stage_rdy == 1'b1);  //wait for prediction
+      //data association
+      if(observation_time - odometry_time <= 20) begin
+        if(init_flag == 1) begin
+          $display("new landmark initialization");
+          for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
+            rk  = int_rk[i_assoc];
+            phi = int_phi[i_assoc];
+            $display("rk = %d", rk);
+            $display("phi = %d", phi);
+            stage_val = STAGE_NEW;
+            #(PERIOD * 2)
+            stage_val = 0;
+            wait(stage_rdy == 1'b1);  
+          end
+          init_flag = 0;
+          observation_read(); //read next observation
+        end
+        else begin
+          $display("data association");
+          for(i_assoc=1; i_assoc<=feature_cnt; i_assoc=i_assoc+1) begin
+            rk  = int_rk[i_assoc];
+            phi = int_phi[i_assoc];
+            stage_val = STAGE_ASSOC;
+            #(PERIOD * 2)
+            stage_val = 0;
+            wait(stage_rdy == 1'b1);  
+          end
+          observation_read(); //read next observation
+        end
+      end
+    end
+end
 
 /*
     ************* PRD *****************
@@ -247,14 +276,14 @@ integer i_assoc = 0;
 /*
     ************* ASSOC *****************
 */
-initial begin
-    #(PERIOD*RST_START*2)
-    rk        <= 32'd10730636;
-    phi       <= -32'd359159;     //1+12+19
-    stage_val <= STAGE_ASSOC;
-    #(PERIOD * 2)
-    stage_val <= 0;
-end
+// initial begin
+//     #(PERIOD*RST_START*2)
+//     rk        <= 32'd10730636;
+//     phi       <= -32'd359159;     //1+12+19
+//     stage_val <= STAGE_ASSOC;
+//     #(PERIOD * 2)
+//     stage_val <= 0;
+// end
 
 //Round 2
 //10730636 15518183 25638967 15049531  6682245 12563146 12893941  6650043
