@@ -401,7 +401,7 @@ module NonLinear #(parameter DW = 32, AW = 17, ITER = 4)(
             //patch
             result_0 <= xout <<< (4 + scale_din_s_vector);  //输入移(4+scale)位, 开方输出移(2+scale/2)位 加法优先级高于移位
             //end patch
-            result_1 <= zout <<< 4;
+            result_1 <= (zout - xita) <<< 4;    //输出为arctan - xita(机器人位姿)
         end
         if(state == s_d2) begin
             result_2 <= c;

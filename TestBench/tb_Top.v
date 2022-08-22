@@ -168,7 +168,7 @@ task observation_read();
 endtask
 
 /*
-    ************* PRD *****************
+    ************************ From time 0 **************************
 */
 integer i_stage = 0;
 integer i_assoc = 0;
@@ -209,6 +209,10 @@ integer i_assoc = 0;
 //       end
 //     end
 // end
+
+/*
+    ************* PRD *****************
+*/
 
 // initial begin
 //     #(PERIOD*RST_START*2)

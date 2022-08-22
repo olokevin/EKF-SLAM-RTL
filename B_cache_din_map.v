@@ -41,8 +41,8 @@ localparam Bca_WR_NL_ASSOC= 4'b1101;
 localparam Bca_WR_NL_NEW  = 4'b1110;
 localparam Bca_WR_NL_UPD  = 4'b1111; 
 
-localparam Q_11 = 32'h8_0000;   //定点量化
-localparam Q_22 = 32'h8_0000;
+localparam Q_11 = 32'd131072;   //定点量化
+localparam Q_22 = 32'd3992;
 
 localparam I_11 = 32'h8_0000;  
 localparam I_22 = 32'h8_0000;   
@@ -182,10 +182,10 @@ localparam I_22 = 32'h8_0000;
                 S_12_S_21 <= mul_c;
               end
           'd4:begin
-                S_22 <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
+                S_22  <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
                 
                 mul_a <=  S_11;
-                mul_b <=  C_B_cache_din[1*RSA_DW +: RSA_DW];
+                mul_b <= C_B_cache_din[1*RSA_DW +: RSA_DW] + Q_22;
               end
           'd5:begin
                 S_11_S_22 <= mul_c;
@@ -218,17 +218,17 @@ localparam I_22 = 32'h8_0000;
       end
       else if (inv_stage == INV_RD && inv_stage_next == INV_S11) begin
         init_Div <= 1'b1;
-        dividend <= S_11;
+        dividend <= S_22;
         divisor  <= S_det;
       end   
       else if (inv_stage == INV_S11 && inv_stage_next == INV_S12) begin
         init_Div <= 1'b1;
-        dividend <= S_21;
+        dividend <= - S_21;
         divisor  <= S_det;
       end
       else if (inv_stage == INV_S12 && inv_stage_next == INV_S22) begin
         init_Div <= 1'b1;
-        dividend <= S_22;
+        dividend <= S_11;
         divisor  <= S_det;
       end
       else begin
