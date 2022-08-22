@@ -365,7 +365,7 @@ reg        [RSA_DW-1 : 0] temp_chi;
       else if(assoc_cur_out == ASSOC_10) begin
         case(seq_cnt_out)
           SEQ_10: begin
-              temp_chi <= {1'b0, C_PLB_din[RSA_DW-2 : 0]};
+              temp_chi <= C_PLB_din[RSA_DW] ? (- C_PLB_din[RSA_DW-1 : 0]) : C_PLB_din[RSA_DW-1 : 0];
           end
           SEQ_11: begin
             if(l_k == 32'b1) begin
