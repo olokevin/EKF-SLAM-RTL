@@ -255,8 +255,6 @@ wire [9:0] state_vector_len;
 reg signed [31:0] r_state_vector [0:1023];
 assign  state_vector_len = 4 + landmark_num << 2;
 
-real f_state_vector;
-
 always @(posedge clk) begin
   if(!sys_rst_n) begin
     i_state_vector = 0;
@@ -276,12 +274,14 @@ always @(posedge clk) begin
 end
 
 reg signed [31:0] reg_temp;
+real f_state_vector;
+
 initial begin
   wait(i_state_vector == state_vector_len);
   for(i_state_vector=0; i_state_vector<state_vector_len; i_state_vector = i_state_vector + 1) begin
-    reg_temp = r_state_vector[i_state_vector] >>> 19;
+    reg_temp = r_state_vector[i_state_vector] * $pow(2,-19);
     f_state_vector = $bitstoreal(reg_temp);
-    $display("%f", f_state_vector);
+    $display("%f", real_temp);
   end
 end
 
