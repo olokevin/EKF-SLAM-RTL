@@ -135,12 +135,12 @@ module RSA
     else if(done_newlm == 1'b1) begin
       lkx_hat <= lkx + result_3;
       lky_hat <= lky + result_2;
-      Gxi_13 <= -result_2;
+      Gxi_13 <= result_2;
       Gxi_23 <= result_3;
-      Gz_11 <= result_0;
-      Gz_12 <= -result_2;
-      Gz_21 <= result_1;
-      Gz_22 <= result_3;
+      Gz_11  <= result_0;
+      Gz_12  <= result_2;
+      Gz_21  <= result_1;
+      Gz_22  <= result_3;
     end
   end
 
