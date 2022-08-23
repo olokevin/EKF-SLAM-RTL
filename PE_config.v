@@ -206,15 +206,16 @@ module PE_config #(
     localparam TBa_AM = 3'b011;
   //TBa WR
     localparam TBa_CBa     = 3'b100;
-    localparam TBa_NL_PRD  = 3'b101;
-    localparam TBa_NL_NEW  = 3'b110;
+    localparam TBa_TBb     = 3'b101;
+    // localparam TBa_NL_PRD  = 3'b101;
+    // localparam TBa_NL_NEW  = 3'b110;
     localparam TBa_NL_UPD  = 3'b111;
 
   //TBb RD
     localparam TBb_IDLE = 3'b000;
     localparam TBb_B = 3'b001;
     // localparam TBb_B_cache = 3'b100;
-    localparam TBb_B_cache_IDLE = 3'b100;
+    // localparam TBb_B_cache_IDLE = 3'b100;
     // localparam TBb_B_cache_trnsfer = 3'b101;
     localparam TBb_H_lv_H_transpose = 3'b101;
     localparam TBb_cov_HT_transpose = 3'b110;
@@ -276,11 +277,11 @@ module PE_config #(
   //RD 首位为0
     localparam Bca_RD_A  = 4'b0001;
     localparam Bca_RD_B  = 4'b0010;
-    localparam Bca_RD_BM = 4'b0100;
+    // localparam Bca_RD_BM = 4'b0100;
 
   //WR 首位为1
-    localparam Bca_WR_cov_HT  = 4'b1000;
-    localparam Bca_WR_H_lv_H  = 4'b1001;
+    // localparam Bca_WR_cov_HT  = 4'b1000;
+    // localparam Bca_WR_H_lv_H  = 4'b1001;
     localparam Bca_WR_inv     = 4'b1010;
     localparam Bca_WR_chi     = 4'b1011;
     
@@ -453,6 +454,7 @@ module PE_config #(
     // localparam [TB_AW-1 : 0] S_t           = 'd31;
     // localparam [TB_AW-1 : 0] t_cov_HT      = 'd33;
     // localparam [TB_AW-1 : 0] cov_HT        = 'd38;
+    localparam [TB_AW-1 : 0] t_cov_HT      = 'd5;     //transposed cov_HT
     localparam [TB_AW-1 : 0] cov_HT        = 'd14;
     localparam [TB_AW-1 : 0] v_t           = 'd12;
     localparam [TB_AW-1 : 0] t_cov_l       = 'd16;
@@ -535,9 +537,11 @@ module PE_config #(
   // TEMP BANK offsets of ASSOC
     localparam [TB_AW-1 : 0] H_vv = 'd5;
     localparam [TB_AW-1 : 0] H_lv = 'd8;
+    localparam [TB_AW-1 : 0] H_vl = 'd8;
     localparam [TB_AW-1 : 0] H_ll = 'd10;
     localparam [TB_AW-1 : 0] H_vv_H = 'd5;
     localparam [TB_AW-1 : 0] H_lv_H = 'd8;
+    localparam [TB_AW-1 : 0] H_vl_H = 'd8;    // OK to cover
     localparam [TB_AW-1 : 0] H_ll_H = 'd10;
   // ASSOC SERIES
     localparam ASSOC_IDLE      = 6'b000000;
@@ -1205,7 +1209,7 @@ module PE_config #(
             if(seq_cnt == seq_cnt_max) begin
               if(v_group_cnt == v_group_cnt_max) begin
                 if(l_k_group == v_group_cnt_max)
-                  upd_next = UPD_HALT_56;
+                  upd_next = UPD_HALT_56;   //只有最后一组可能产生冲突
                 else
                   upd_next = UPD_6;
               end
@@ -1516,13 +1520,14 @@ module PE_config #(
       end
     end
 
+    //Transfer from CB to TB
     always @(posedge clk) begin
       if(sys_rst) begin
         l_k_t_cov_l <= 0;
       end
       else begin
         if(l_k == 1'b1)
-          l_k_t_cov_l <= 1'b1;      //保证H_T能读完
+          l_k_t_cov_l <= 1'b0;      //保证H_T能读完
         else
           l_k_t_cov_l <= l_k >> 1;      
       end
@@ -2477,10 +2482,7 @@ module PE_config #(
                       UPD_6: begin
                             /*
                               cov_HT transpose
-                              Ain: 
-                              Bin: B-cache
-                              Min: 0
-                              Cout: 0
+                              TBb -> TBa
                             */
                               PE_m <= UPD_6_M;
                               PE_n <= UPD_6_N;
@@ -2494,42 +2496,8 @@ module PE_config #(
                               C_out_mode <= C_NONE;
                               M_adder_mode_set <= NONE;
 
-                              TBa_mode <= TB_IDLE;
+                              TBa_mode <= {TBa_TBb, DIR_POS};
                               TBb_mode <= {TBb_cov_HT_transpose,DIR_POS}; //不依赖于N
-                              CBa_mode <= CB_IDLE;
-                              CBb_mode <= CB_IDLE;
-
-                              A_TB_base_addr_set <= 0;
-                              B_TB_base_addr_set <= cov_HT;
-                              M_TB_base_addr_set <= 0;
-                              C_TB_base_addr_set <= 0;
-
-                              B_cache_mode <= Bca_WR_cov_HT;
-                              B_cache_base_addr_set <= 0;
-                            end
-                      UPD_7: begin
-                            /*
-                              H_T * cov_HT + Q <= S
-                              X=2 Y=2 N=5
-                              Ain: TB-A
-                              Bin: B_cache
-                              Min: TB-A  
-                              Cout: TB-B
-                            */
-                              PE_m <= UPD_7_M;
-                              PE_n <= UPD_7_N;
-                              PE_k <= UPD_7_K;
-
-                              CAL_mode <= N_W;
-
-                              A_in_mode <= A_TBa;   
-                              B_in_mode <= B_cache;
-                              M_in_mode <= M_NONE;
-                              C_out_mode <= C_cache;
-                              M_adder_mode_set <= NONE;
-
-                              TBa_mode <= {TBa_A,DIR_POS};
-                              TBb_mode <= {TBb_C, DIR_POS};
                               CBa_mode <= CB_IDLE;
                               CBb_mode <= CB_IDLE;
 
@@ -2538,8 +2506,42 @@ module PE_config #(
                               M_TB_base_addr_set <= 0;
                               C_TB_base_addr_set <= 0;
 
-                              B_cache_mode <= Bca_RD_B;
-                              B_cache_base_addr_set <= cov_HT_cache;
+                              B_cache_mode <= Bca_IDLE;
+                              B_cache_base_addr_set <= 0;
+                            end
+                      UPD_7: begin
+                            /*
+                              H_T * cov_HT + Q <= S
+                              X=2 Y=2 N=5
+                              Ain: B_cache
+                              Bin: TB-B
+                              Min:  
+                              Cout: C_cache 
+                            */
+                              PE_m <= UPD_7_M;
+                              PE_n <= UPD_7_N;
+                              PE_k <= UPD_7_K;
+
+                              CAL_mode <= N_W;
+
+                              A_in_mode <= A_cache;   
+                              B_in_mode <= B_TBb;
+                              M_in_mode <= M_NONE;
+                              C_out_mode <= C_cache;
+                              M_adder_mode_set <= NONE;
+
+                              TBa_mode <= TB_IDLE;
+                              TBb_mode <= {TBb_B, DIR_POS};
+                              CBa_mode <= CB_IDLE;
+                              CBb_mode <= CB_IDLE;
+
+                              A_TB_base_addr_set <= 0;
+                              B_TB_base_addr_set <= t_cov_HT;
+                              M_TB_base_addr_set <= 0;
+                              C_TB_base_addr_set <= 0;
+
+                              B_cache_mode <= Bca_RD_A;
+                              B_cache_base_addr_set <= Hxi_cache;
                             end
                       UPD_INV: begin
                               PE_m <= 0;
@@ -2906,17 +2908,17 @@ module PE_config #(
                               C_out_mode <= C_NONE;
                               M_adder_mode_set <= NONE;
 
-                              TBa_mode <= TB_IDLE;
+                              TBa_mode <= {TBa_TBb,DIR_POS};
                               TBb_mode <= {TBb_H_lv_H_transpose,DIR_POS}; //不依赖于N
                               CBa_mode <= CB_IDLE;
                               CBb_mode <= CB_IDLE;
 
                               A_TB_base_addr_set <= 0;
-                              B_TB_base_addr_set <= H_lv_H;
+                              B_TB_base_addr_set <= 0;
                               M_TB_base_addr_set <= 0;
                               C_TB_base_addr_set <= 0;
 
-                              B_cache_mode <= Bca_WR_H_lv_H;
+                              B_cache_mode <= Bca_IDLE;
                               B_cache_base_addr_set <= 0;
                             end
                       ASSOC_6: begin
@@ -2928,7 +2930,7 @@ module PE_config #(
 
                               A_in_mode <= A_TBa;   
                               B_in_mode <= B_cache;
-                              M_in_mode <= M_cache;
+                              M_in_mode <= M_TBa;
                               C_out_mode <= C_TBb;
                               M_adder_mode_set <= ADD;
 
@@ -2939,10 +2941,10 @@ module PE_config #(
 
                               A_TB_base_addr_set <= H_ll;
                               B_TB_base_addr_set <= 0;
-                              M_TB_base_addr_set <= 0;
+                              M_TB_base_addr_set <= H_vl_H;
                               C_TB_base_addr_set <= H_ll_H;
 
-                              B_cache_mode <= Bca_RD_BM;
+                              B_cache_mode <= Bca_RD_B;
                               B_cache_base_addr_set <= Hz_cache; 
                           end
                       ASSOC_7: begin
@@ -3960,6 +3962,73 @@ module PE_config #(
                         end
                       endcase
                     end  
+        TBa_TBb: begin
+          case(TBb_mode[4:2])
+            TBb_H_lv_H_transpose: begin
+                    case(seq_cnt)
+                      SEQ_12:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= H_vl_H;
+                        end
+                      SEQ_13:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= TB_addra_new + 1'b1;
+                        end
+                      default:begin
+                          TB_ena_new <= 0;
+                          TB_wea_new <= 0;
+                          TB_addra_new <= 0;
+                        end
+                    endcase
+                  end
+            TBb_cov_HT_transpose: begin
+                    case(seq_cnt)
+                      SEQ_4:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= t_cov_HT;
+                        end
+                      SEQ_5:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= TB_addra_new + 1'b1;
+                        end
+                      SEQ_6:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= TB_addra_new + 1'b1;
+                        end
+                      SEQ_7:begin
+                          TB_ena_new <= 1'b0;
+                          TB_wea_new <= 1'b0;
+                          TB_addra_new <= TB_addra_new;
+                        end
+                      SEQ_8:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= TB_addra_new + 1'b1;
+                        end
+                      SEQ_9:begin
+                          TB_ena_new <= 1'b1;
+                          TB_wea_new <= 1'b1;
+                          TB_addra_new <= TB_addra_new + 1'b1;
+                        end
+                      default:begin
+                          TB_ena_new <= 0;
+                          TB_wea_new <= 0;
+                          TB_addra_new <= 0;
+                        end
+                    endcase
+                  end
+            default: begin
+              TB_ena_new <= 0;
+              TB_wea_new <= 0;
+              TB_addra_new <= 0;
+            end
+          endcase
+        end
         TBa_NL_UPD: begin       //只写vt
                   case(seq_cnt)
                     SEQ_0: begin
@@ -4139,14 +4208,18 @@ module PE_config #(
               TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_CBa;
               TB_dina_sel_new[1:0] <= TBa_mode[1:0]; 
             end 
-            TBa_NL_PRD: begin
-              TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_PRD;
-              TB_dina_sel_new[1:0] <= TBa_mode[1:0];
-            end
-            TBa_NL_NEW: begin
-              TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_NEW;
-              TB_dina_sel_new[1:0] <= TBa_mode[1:0];
-            end
+            TBa_TBb: begin
+              TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_TBb;
+              TB_dina_sel_new[1:0] <= TBa_mode[1:0]; 
+            end 
+            // TBa_NL_PRD: begin
+            //   TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_PRD;
+            //   TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+            // end
+            // TBa_NL_NEW: begin
+            //   TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_NEW;
+            //   TB_dina_sel_new[1:0] <= TBa_mode[1:0];
+            // end
             TBa_NL_UPD: begin
               TB_dina_sel_new[TB_DINA_SEL_DW-1 : 2] <= TBa_NL_UPD;
               TB_dina_sel_new[1:0] <= TBa_mode[1:0];
@@ -4438,26 +4511,6 @@ module PE_config #(
                       B_cache_addr_new <= 0;
                     end
                   end
-        Bca_RD_BM: begin
-                    B_cache_we_new <= 0;
-                    B_cache_out_sel <= B_cache_mode;
-                    if(seq_cnt < PE_n) begin
-                      B_cache_en_new <= 1'b1;
-                      B_cache_addr_new <= B_cache_base_addr_set + seq_cnt;
-                    end
-                    else if(seq_cnt == PE_n + 1'b1) begin
-                      B_cache_en_new <= 1'b1;
-                      B_cache_addr_new <= H_vl_H_cache_0;
-                    end
-                    else if(seq_cnt == PE_n + 2'b11) begin
-                      B_cache_en_new <= 1'b1;
-                      B_cache_addr_new <= H_vl_H_cache_1;
-                    end
-                    else begin
-                      B_cache_en_new <= 0;
-                      B_cache_addr_new <= 0;
-                    end
-                  end
         Bca_WR_NL_PRD,Bca_WR_NL_NEW,Bca_WR_NL_UPD,Bca_WR_NL_ASSOC: begin
                     B_cache_in_sel <= B_cache_mode;
                     if(seq_cnt < PE_n) begin
@@ -4471,61 +4524,61 @@ module PE_config #(
                       B_cache_addr_new <= 0;
                     end
                   end
-        Bca_WR_H_lv_H: begin
-                    B_cache_in_sel <= B_cache_mode;
-                    case(seq_cnt)
-                      SEQ_12:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= H_vl_H_cache_0;
-                        end
-                      SEQ_13:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= H_vl_H_cache_1;
-                        end
-                      default:begin
-                          B_cache_en_new <= 0;
-                          B_cache_we_new <= 0;
-                          B_cache_addr_new <= 0;
-                        end
-                    endcase
-                  end
-        Bca_WR_cov_HT: begin
-                    B_cache_in_sel <= B_cache_mode;
-                    case(seq_cnt)
-                      SEQ_4:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= 3'b000;
-                        end
-                      SEQ_5:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= 3'b001;
-                        end
-                      SEQ_6:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= 3'b010;
-                        end
-                      SEQ_8:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= 3'b011;
-                        end
-                      SEQ_9:begin
-                          B_cache_en_new <= 1'b1;
-                          B_cache_we_new <= 1'b1;
-                          B_cache_addr_new <= 3'b100;
-                        end
-                      default:begin
-                          B_cache_en_new <= 0;
-                          B_cache_we_new <= 0;
-                          B_cache_addr_new <= 0;
-                        end
-                    endcase
-                  end
+        // Bca_WR_H_lv_H: begin
+        //             B_cache_in_sel <= B_cache_mode;
+        //             case(seq_cnt)
+        //               SEQ_12:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= H_vl_H_cache_0;
+        //                 end
+        //               SEQ_13:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= H_vl_H_cache_1;
+        //                 end
+        //               default:begin
+        //                   B_cache_en_new <= 0;
+        //                   B_cache_we_new <= 0;
+        //                   B_cache_addr_new <= 0;
+        //                 end
+        //             endcase
+        //           end
+        // Bca_WR_cov_HT: begin
+        //             B_cache_in_sel <= B_cache_mode;
+        //             case(seq_cnt)
+        //               SEQ_4:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= 3'b000;
+        //                 end
+        //               SEQ_5:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= 3'b001;
+        //                 end
+        //               SEQ_6:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= 3'b010;
+        //                 end
+        //               SEQ_8:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= 3'b011;
+        //                 end
+        //               SEQ_9:begin
+        //                   B_cache_en_new <= 1'b1;
+        //                   B_cache_we_new <= 1'b1;
+        //                   B_cache_addr_new <= 3'b100;
+        //                 end
+        //               default:begin
+        //                   B_cache_en_new <= 0;
+        //                   B_cache_we_new <= 0;
+        //                   B_cache_addr_new <= 0;
+        //                 end
+        //             endcase
+        //           end
         Bca_WR_inv: begin
                     B_cache_in_sel <= B_cache_mode;
                     case(seq_cnt)
@@ -4743,7 +4796,8 @@ module PE_config #(
                         CBa_shift_dir <= DIR_NEW; //0-POS 1-NEG
                         CB_ena_new <= 1'b1;
                         if(v_group_cnt == 0)
-                          CB_addra_new <= l_k_base_addr_RD + 3'b100;
+                          // CB_addra_new <= l_k_base_addr_RD + 3'b100;
+                          CB_addra_new <= l_k_base_addr_RD;
                         else
                           CB_addra_new <= CB_addra_new + 1'b1;
                       end     

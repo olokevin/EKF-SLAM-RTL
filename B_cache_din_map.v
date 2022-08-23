@@ -14,7 +14,7 @@ module B_cache_din_map #(
 
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
-  input   signed [Y*RSA_DW-1:0] B_cache_TB_doutb,
+  // input   signed [Y*RSA_DW-1:0] B_cache_TB_doutb,
   input   signed [X*RSA_DW-1:0] C_B_cache_din,
 
   input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
@@ -31,8 +31,8 @@ module B_cache_din_map #(
 
 localparam Bca_IDLE       = 4'b0000;
 
-localparam Bca_WR_cov_HT = 4'b1000;
-localparam Bca_WR_H_lv_H  = 4'b1001;
+// localparam Bca_WR_cov_HT = 4'b1000;
+// localparam Bca_WR_H_lv_H  = 4'b1001;
 localparam Bca_WR_inv     = 4'b1010;
 localparam Bca_WR_chi     = 4'b1011;
 
@@ -416,9 +416,9 @@ localparam I_22 = 32'h8_0000;
                       end
                   endcase
                 end
-        Bca_WR_cov_HT, Bca_WR_H_lv_H: begin
-          B_cache_din <= B_cache_TB_doutb;
-        end
+        // Bca_WR_cov_HT, Bca_WR_H_lv_H: begin
+        //   B_cache_din <= B_cache_TB_doutb;
+        // end
         Bca_WR_inv: begin
             B_cache_din[2*RSA_DW +: RSA_DW] <= 0;
             B_cache_din[3*RSA_DW +: RSA_DW] <= 0;

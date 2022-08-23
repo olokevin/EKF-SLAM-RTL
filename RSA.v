@@ -550,7 +550,7 @@ wire [Y-1:0] B_cache_we;
 wire [Y*3-1:0] B_cache_addr;
 
 wire signed [Y*RSA_DW-1:0] B_cache_din; 
-wire signed [Y*RSA_DW-1:0] B_cache_TB_doutb; //TB_doutb -> B_cache
+wire signed [Y*RSA_DW-1:0] TB_doutb_TB_dina; //TB_doutb -> TB_dina
 
 wire signed [Y*RSA_DW-1:0] B_cache_dout; 
 
@@ -653,7 +653,7 @@ u_B_cache_din_map(
   .sys_rst        (sys_rst        ),
   .B_cache_in_sel (B_cache_in_sel ),
   .seq_cnt_out    (seq_cnt_out    ),
-  .B_cache_TB_doutb (B_cache_TB_doutb),
+  // .B_cache_TB_doutb (B_cache_TB_doutb),
   .C_B_cache_din  (C_B_cache_din  ),
   .Fxi_13         (Fxi_13         ),
   .Fxi_23         (Fxi_23         ),
@@ -812,6 +812,7 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .seq_cnt_out        (seq_cnt_out        ),
 
     .TB_dina_CB_douta   (TB_dina_CB_douta   ),
+    .TB_doutb_TB_dina   (TB_doutb_TB_dina   ),
 
     // .Fxi_13             (Fxi_13           ),
     // .Fxi_23             (Fxi_23           ),
@@ -888,7 +889,7 @@ wire signed [L*RSA_DW-1 : 0] CB_doutb;
     .seq_cnt_out (seq_cnt_out),
     .TB_doutb        (TB_doutb        ),
     .B_TB_doutb      (B_TB_doutb      ),
-    .B_cache_TB_doutb (B_cache_TB_doutb )
+    .TB_doutb_TB_dina (TB_doutb_TB_dina )
   );
 
 //COV BANK data MUX and deMUX

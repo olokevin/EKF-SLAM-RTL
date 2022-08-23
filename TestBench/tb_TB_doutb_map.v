@@ -20,7 +20,7 @@ reg   [L*RSA_DW-1 : 0]  TB_doutb           = 0 ;
 
 // TB_doutb_map Outputs
 wire  [Y*RSA_DW-1 : 0]  B_TB_doutb         ;
-wire  [Y*RSA_DW-1 : 0]  B_cache_TB_doutb   ;
+wire  [Y*RSA_DW-1 : 0]  TB_doutb_TB_dina   ;
 
 
 initial
@@ -49,7 +49,7 @@ TB_doutb_map #(
     .TB_doutb                ( TB_doutb          [L*RSA_DW-1 : 0]   ),
 
     .B_TB_doutb              ( B_TB_doutb        [Y*RSA_DW-1 : 0]   ),
-    .B_cache_TB_doutb        ( B_cache_TB_doutb  [Y*RSA_DW-1 : 0]   )
+    .TB_doutb_TB_dina        ( TB_doutb_TB_dina  [Y*RSA_DW-1 : 0]   )
 );
 
 endmodule

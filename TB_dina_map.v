@@ -17,6 +17,7 @@ module TB_dina_map #(
   input   [SEQ_CNT_DW-1 : 0] seq_cnt_out,
 
   input   signed [L*RSA_DW-1 : 0]         TB_dina_CB_douta,
+  input   signed [Y*RSA_DW-1 : 0]         TB_doutb_TB_dina,
   // input   signed [RSA_DW - 1 : 0]         Fxi_13, Fxi_23,
   // input   signed [RSA_DW - 1 : 0]         Gxi_13, Gxi_23, Gz_11, Gz_12, Gz_21, Gz_22,
   // input   signed [RSA_DW - 1 : 0]         Hz_11, Hz_12, Hz_21, Hz_22,
@@ -40,8 +41,9 @@ module TB_dina_map #(
 */
 
 localparam TBa_CBa     = 3'b100;
-localparam TBa_NL_PRD  = 3'b101;
-localparam TBa_NL_NEW  = 3'b110;
+localparam TBa_TBb     = 3'b101;
+// localparam TBa_NL_PRD  = 3'b101;
+// localparam TBa_NL_NEW  = 3'b110;
 localparam TBa_NL_UPD  = 3'b111;
 
 localparam DIR_IDLE = 2'b00;
@@ -89,6 +91,9 @@ integer i_TB_non_linear;
                       TB_dina <= 0;
                   endcase
                 end
+        TBa_TBb:  begin
+                    TB_dina <= TB_doutb_TB_dina;
+                  end
         TBa_NL_UPD: begin   //只写vt
                   case(seq_cnt_out)    
                     'd1:begin
