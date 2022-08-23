@@ -1379,4 +1379,453 @@ addrb_new: NEW_2_PE_in+N+3
 
 先不改动数据寄存位置
 
-把S转置移到TB_
+#### 转置冲突
+
+把S转置移到TB_dinb，直接存入已转置的S
+
+UPD_8只是读出到B_cache
+
+
+
+### 220724 改动
+
+#### 延迟(不可行！对于循环，写入也是在一整个周期内完成的)
+
+* PE_n_WR, seq_cnt_WR都只延迟7T
+* 写时序中，等计数到PE_n_WR再开始写
+
+#### UPD_9 UPD_10冲突：插入HALT
+
+HALT: 写在WR_d_addr, 保持为延迟2
+
+HALT结束，延迟写入的时序也正好切换为UPD_HALT
+
+HALT的TBb_mode不能为写入
+
+HALT无读取
+
+刚好也能衔接上UPD_10
+
+HALT持续时间：cnt_max = 8 这样从0计到8，即为9=N+2
+
+#### 保护vt
+
+* 写入使能移位dshift需引入移位数量
+* 最后再去写vt?
+
+#### en应该放在存储读写处，而非PE输入输出处
+
+
+
+#### last question
+
+en问题
+
+把en统一改到存储读写吧！
+
+en/we也是受DIR控制的！
+
+
+
+UPD_2 UPD_3 UPD_4 UPD_5
+
+重新安排B_cache_起始地址
+
+
+
+可以继续保留TBb输出，通过插入HALT的方式避免读写冲突
+
+
+
+### 220726
+
+* 最后计算chi2的方法
+  * vt存在TB，然后用RSA算？
+    * 需存在BANK0
+  * 直接在map中算完？
+* 求逆中需调用多周期触发器，需乘法
+  * 分配时序？
+* 如何避免vt被覆盖？
+  * 加入额外一步写入vt
+
+
+
+* 解决：
+  * PRD_3：CB_b IDLE也不改变门控
+  * 加HALT
+
+
+
+## 数据关联流程
+
+PS端准备好
+
+
+
+state:
+
+Cout 输出到share存储器
+
+share_in_map
+
+* state输出并转串
+
+
+
+chi2:
+
+* vt存储在cache
+* 利用BRAM的写通！写完后会直接出现在读通道！
+* 直接在PL比较就完事了
+* **写一个单独的模块做最后一步**
+
+
+
+### 220816
+
+Top对外接口：
+
+AXI-Lite：传输stage，vlr，alpha等数据
+
+AXI-BRAM-controller：状态向量
+
+
+
+添加AXI-BRAM
+
+* 并转串
+* 在PLB_din_map中完成求和！
+
+搭建SoC
+
+
+
+数据关联全部在PL上完成
+
+地标总数landmark_num: PL上完成计算，初始为0，完成一次new_init则加1
+
+地标编号l_k：根据数据关联结果得到，片上完成
+
+
+
+若用于仿真，则均为外部输入
+
+
+
+## 220817
+
+### PLB
+
+* 全部接口都在PLB_in_map中实现
+
+### IP
+
+* 现有工程中实例化的IP需设置为Global
+* 对现有工程打包IP
+* <img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220817154300926.png" alt="image-20220817154300926" style="zoom:33%;" />
+* 新建一个AXI总线的IP
+* 在AXI总线的IP中**添加工程IP，并实例化工程IP**
+
+
+
+### cal_en
+
+* 现在cal_en cal_done会与B_in_en相与
+
+
+
+地址覆盖问题：
+
+* 非线性传回done后，RSA会采样，保存数据
+* 进行到RCV才会写入到B_cache中
+
+
+
+## 220818
+
+landmark_num， l_k由本地决定，不再外部输入
+
+* Top RSA 注释input，注释实例化
+* PE_config input改output
+* PE_config 计算blcok
+
+### 多轮数据关联
+
+* PS发送ASSOC信号
+* 计算ASSOC 非线性部分
+* 计算ASSOC 矩阵运算。此时可以开始下一步的非线性运算（未实现）
+* PLB_din_map中得到chi2，小于5.9则保存，小于之前结果则代替
+* 计算ASSOC 矩阵运算。此时可以开始下一步的非线性运算
+* temp_l_k不断递增，直到l_k增加到landmark_num
+
+
+
+一级状态机
+
+二级状态机
+
+l_k变化
+
+### 求逆，除法器
+
+
+
+### PS代码
+
+
+
+## 算法调试记录
+
+### PS软件
+
+先进行一系列预测。此时landmark_num == 0 （判断）
+
+然后，PS控制，对第一轮观测全部进行初始化 （l_k?） 
+
+之后开始循环
+
+### Testbench
+
+#### Task
+
+* 自定义输入输出（可以没有）
+* 内部可以有时延
+* 语句需要用begin end 包裹
+
+#### wait语句
+
+wait语句是一种不可综合的电平触发事件控制语句，有如下两种形式：
+
+
+wait(条件[表达式](https://so.csdn.net/so/search?q=表达式&spm=1001.2101.3001.7020)) 语句/语句块;
+wait(条件表达式);
+对于第一种形式，语句块可以是串行块（begin…end）或并行块（fork…join）。当逻辑表达式为“真”时，语句块立即得到执行；否则，暂停进程并等待，直到逻辑表达式变为“真”，再开始执行。
+
+对于第二种形式，当仿真执行到wait语句时，如果条件表达式为真，那么立即结束该语句的执行，仿真程序继续往下执行；否则，仿真程序进入等待状态，直到条件表达式为真。
+
+
+
+blk_mem_gen_v8_4_3 collision detected at time: 11510000
+
+[(13条消息) 1.1 FPGA项目问题 之 RAM的collision_DDHKing的博客-CSDN博客](https://blog.csdn.net/baidu_34674626/article/details/77714219)
+
+另外书上推荐，对于同一个时钟驱动的RDCLK和WRCLK，SDP模式，使用Read_first。假如是不同时钟，请使用Write_first模式。
+
+在 WRITE_FIRST 模式下，输入数据同时写入存储器并存入数据输出（透明写）
+
+在 READ_FIRST 模式下，原存储在写地址的数据出现在输出锁存器上，而输入数据则存入存储器（先读后写）。
+
+在 NO_CHANGE 模式下，输出锁存器在写操作过程中保持不变。
+在配置界面会存在一个叫“common  clk”，鼠标放在上面会提示你，假如你的CLKA，CLKB是同一个是中，请勾选上，在勾选这个之后，仿真就不会出现warning了。
+
+### NonLinear
+
+角度：1+1+15
+
+输出时已经转为1+12+19的格式
+
+读取时
+
+### 除法器
+
+[(13条消息) Vivado 除法器IP核 小数模式（Fractional)下结果的修正_pyh880的博客-CSDN博客_vivado除法器ip核](https://blog.csdn.net/bingkuoluo/article/details/122337883)
+
+在使用Vivado的除法器IP核时，Remainder Type可以选择为余数模式（Remainder),或者小数模式（Fractional)。输出的结果即为整数+余数(或者小数)：而当输入信号是有符号数据时，小数模式下的数据是无法直接使用的，因为小数部分也会自带一个符号（可视作一个无整数位的定点数），所以需要进一步修正。
+
+在使用过程中，对可能出现的三种情况 进行说明
+
+1. 若结果无整数部分，则直接对小数部分（带符号位）根据要求进行操作即可。
+
+2. 若结果存在整数部分，则对数据的正负进行判断：
+   1. 若为正数，则舍去小数部分的符号位的0，再按要求进行截位；
+   2. 为负数，则负数部分减去1（补码运算），再舍去小数部分的符号位的1，最后按要求进行截位。
+
+和同学交流后，发现更好的做法：
+
+1.是先行判断结果的正负，然后将操作数全部取为正数；
+
+2.进行除法运算，正常得出结果，舍去小数部分的符号位的0；
+
+3.根据最初的判断调整结果的正负。
+
+
+
+### PRD
+
+初始值
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823004410759.png" alt="image-20220823004410759" style="zoom:50%;" />
+
+得到两帧才开始算
+
+### NEW
+
+进入new则l_k+1(已修改)
+
+* 从assoc进入：已+1
+* 直接给STAGE_NEW：+1
+
+NEW算完后再landmark_num+1
+
+#### NL
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823123647625.png" alt="image-20220823123647625" style="zoom:50%;" />
+
+![image-20220823123707075](C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823123707075.png)
+
+C++算法中没有加负号
+
+硬件部分先修改
+
+#### NEW_2
+
+landmark_num = 0时直接跳到NEW_3
+
+#### NEW_3
+
+结果先暂存至CB
+
+加入cov_ll模式下CBa读出到M的模式
+
+OK
+
+### UPD
+
+### NL
+
+第一次更新 feature1 -> landmark 1
+
+observation 和 prediction 量化位宽不一样，结果转为浮点有细微差别
+
+但数据关联结果一致
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823161713524.png" alt="image-20220823161713524" style="zoom:50%;" />
+
+#### UPD_1
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220817195844638.png" alt="image-20220817195844638" style="zoom:50%;" />
+
+由于数据给的是一样的，所以好像中间没有变化
+
+220823
+
+地址错位
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823190950205.png" alt="image-20220823190950205" style="zoom:50%;" />
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220823191032905.png" alt="image-20220823191032905" style="zoom:50%;" />
+
+应当连cov_mv也转置
+
+#### UPD_6
+
+H已经再cache里了
+
+cov_HT应存放在TB中
+
+将以前的TBb->bcache通道改为TBb->TBa
+
+需改动
+
+* TB_doutb_map
+* Tb_dina_map
+* TBa 地址译码
+* 删去B_cache_din_map 及其地址控制相应部分
+* 修改PE_config中相应宏定义
+* 修改数据传输路径
+
+220823 已完成修改，功能正常
+
+
+
+#### UPD_8
+
+* 需等待除法器计算完结果
+* cnt达到cnt_max后，切换到UPD_89_HALT，由除法器完成信号作为状态切换，进入UPD_9
+
+### ASSOC
+
+数据流正确
+
+计算结果未验证，但ASSOC_3计算结果正确
+
+**发现是噪声矩阵M Q不为单位阵**
+
+#### ASSOC_NL
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220822162349598.png" alt="image-20220822162349598" style="zoom:50%;" />
+
+z_pred 的角度是**arctan - 位姿**
+
+**vt = z_t - z_pred**
+
+在NonLinear中修改
+
+
+
+#### ASSOC_1
+
+OK
+
+#### ASSOC_2
+
+正确的计算式：
+$$
+S=H_v\check{\Sigma_i^{vv}}H_v^T + H_l\check{\Sigma_i^{lv}}H_v^T + H_v\check{\Sigma_i^{vl}}H_l^T + H_l\check{\Sigma_i^{ll}}H_l^T + Q\\
+H_v\check{\Sigma_i^{vl}}H_l^T = (H_l\check{\Sigma_i^{lv}}H_v^T)^T
+$$
+考虑到转置在右乘，不用额外操作的特性，计算
+$$
+H_v\check{\Sigma_i^{vl}}H_l^T\\
+H_v*\check{\Sigma_i^{vl}}=H_v*\check{\Sigma_i^{lv}}^T: (2*3)\times(3*2)=(2*2)\\
+$$
+
+
+#### ASSOC_3
+
+原来是coe文件打漏了
+
+#### ASSOC_7
+
+发现vt不对
+
+现在状态向量不在CB里了！
+
+非线性读取部分需修改
+
+#### INV
+
+<img src="C:\Users\KevinZ\AppData\Roaming\Typora\typora-user-images\image-20220822151414825.png" alt="image-20220822151414825" style="zoom:50%;" />
+
+
+
+## 各模块调试记录
+
+### RSA
+
+拼接的信号不应声明为signed
+
+
+
+## 2019.2 调试
+
+只改SDK
+
+需要把IP加入到本地！
+
+把更新后的IP文件拷贝到学长电脑里就可以了
+
+
+
+## 改进方向
+
+数据关联
+
+z_pred H S矩阵只与本次提取的地标点有关
+
+因此，应当
+
+* 计算一个地标的z_pred  H S矩阵（非线性计算）
+* 将该地标与特征点计算chi2，得到关联结果，保存
+* 计算下一个地标的，重复以上步骤
+* 根据数据关联结果，逐个进行初始化/更新 （全部都关联完后再做更新）
