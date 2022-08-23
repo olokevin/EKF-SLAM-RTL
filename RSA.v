@@ -29,6 +29,9 @@ module RSA
   // //当前地标编号
   //   input   [ROW_LEN-1 : 0]  l_k,  
 
+  //Testbench test
+    input   state_vector_start,
+
 /****************** RSA -> PS **************************/
   //AXI BRAM
     output          PLB_en,   
@@ -734,6 +737,8 @@ u_PLB_din_map(
   .xita_hat    (xita_hat    ),
   .lkx_hat     (lkx_hat         ),
   .lky_hat     (lky_hat         ),
+
+  .state_vector_start (state_vector_start),
 
   .C_PLB_din   (C_PLB_din   ),
   .PLB_dout    (PLB_dout    ),

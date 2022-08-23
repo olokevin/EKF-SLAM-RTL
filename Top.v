@@ -23,6 +23,10 @@ module Top
 
   //当前地标编号
     // input   [9 : 0]  l_k, 
+
+  //Testbench test
+    input   state_vector_start,
+    output  signed [31:0]  state_vector,
   
   //AXI BRAM
     output          PLB_clk,
@@ -84,6 +88,8 @@ module Top
       .dina(PLB_din),    // input wire [31 : 0] dina
       .douta(PLB_dout)  // output wire [31 : 0] douta
     );
+
+    assign state_vector = PLB_dout;
 
 /******************PS ->  RSA*********************/
   //预测步数据
@@ -176,6 +182,8 @@ u_RSA(
   .phi          (phi_reg      ),
   // .landmark_num (landmark_num ),
   // .l_k          (l_k          ),
+
+  .state_vector_start (state_vector_start),
 
   .PLB_en        (PLB_en        ),
   .PLB_we        (PLB_we        ),

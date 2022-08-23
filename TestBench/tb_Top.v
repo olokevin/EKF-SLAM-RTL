@@ -38,7 +38,6 @@ reg   signed [RSA_DW - 1 : 0]  phi                = (1 <<< (DATA_DEC_BIT-2));
 // reg   [RSA_AW - 1 : 0]  phi                = (1 <<< (ANGLE_DEC_BIT-1));
 reg  [31:0]  PLB_dout;
 
-
 // Top Outputs
 wire          stage_rdy                     ;
 
@@ -49,6 +48,12 @@ wire          PLB_en;
 wire          PLB_we;   
 wire  [9:0]   PLB_addr;
 wire   [31:0]  PLB_din;
+
+//Testbench
+reg   state_vector_start;
+wire  signed [31:0]  state_vector;
+
+
 
 //stage
   localparam      STAGE_IDLE       = 3'b000 ;
@@ -173,6 +178,7 @@ endtask
     ************************ From time 0 **************************
 */
 integer i_stage = 0;
+integer i_stage_max = 20;
 integer i_assoc = 0;
 
 integer init_flag = 1;
@@ -195,8 +201,9 @@ initial begin
 
     // wait(stage_rdy == 1'b1);  //wait for 1st prediction
 
-    while(i_stage < 100) begin
+    while(i_stage < i_stage_max) begin
       i_stage = i_stage + 1;
+      $display("i_stage= %d", i_stage);
       //Predicition
         vlr   = int_vlr;    //output buffered data
         alpha = int_alpha;
@@ -237,6 +244,45 @@ initial begin
         end
       end
     end
+end
+
+/*
+    ************************ display state vector **************************
+*/
+reg [9:0] i_state_vector;
+wire [9:0] state_vector_len;
+
+reg signed [31:0] r_state_vector [0:1023];
+assign  state_vector_len = 4 + landmark_num << 2;
+
+real f_state_vector;
+
+always @(posedge clk) begin
+  if(!sys_rst_n) begin
+    i_state_vector = 0;
+  end
+  if(i_stage == i_stage_max) begin
+    if(i_state_vector < state_vector_len) begin
+      state_vector_start <= 1;
+      if(i_state_vector >= 3) begin
+        r_state_vector[i_state_vector-2] <= state_vector;
+      end
+      i_state_vector <= i_state_vector + 1;
+    end
+    else begin
+      $stop;
+    end
+  end
+end
+
+reg signed [31:0] reg_temp;
+initial begin
+  wait(i_state_vector == state_vector_len);
+  for(i_state_vector=0; i_state_vector<state_vector_len; i_state_vector = i_state_vector + 1) begin
+    reg_temp = r_state_vector[i_state_vector] >>> 19;
+    f_state_vector = $bitstoreal(reg_temp);
+    $display("%f", f_state_vector);
+  end
 end
 
 /*
@@ -308,6 +354,8 @@ Top
     // .landmark_num            ( landmark_num            [ROW_LEN-1 : 0]  ),
     // .l_k                     ( l_k                     [ROW_LEN-1 : 0]  ),
     
+    .state_vector_start (state_vector_start),
+    .state_vector       (state_vector),
     // .PLB_clk       (PLB_clk       ),
 	  // .PLB_rst       (PLB_rst       ),
 	  // .PLB_en        (PLB_en        ),
