@@ -1,3 +1,7 @@
 macro.v
 *.xml
 /xgui
+axi_ekf_slam_core_v1_0.v
+axi_ekf_slam_core_v1_0_S00_AXI.v
+test_top.v
+key_debounce.v
