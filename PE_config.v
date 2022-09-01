@@ -105,12 +105,12 @@ module PE_config #(
   input        done_inv,
 
 //states
-  output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
-  output [2:0]              stage_cur_out,
-  output [3:0]              prd_cur_out,
-  output [5:0]              new_cur_out,
-  output [5:0]              upd_cur_out,
-  output [5:0]              assoc_cur_out,
+  (*mark_debug = "true" *)output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
+  (*mark_debug = "true" *)output [2:0]              stage_cur_out,
+  (*mark_debug = "true" *)output [3:0]              prd_cur_out,
+  (*mark_debug = "true" *)output [5:0]              new_cur_out,
+  (*mark_debug = "true" *)output [5:0]              upd_cur_out,
+  (*mark_debug = "true" *)output [5:0]              assoc_cur_out,
 
   input  [1:0]              assoc_status,
   input  [ROW_LEN-1 : 0]    assoc_l_k,
@@ -731,7 +731,7 @@ module PE_config #(
 */
 
   reg [2:0]      stage_next ;   
-  reg [2:0]      stage_cur ;   
+  (*mark_debug = "true" *)reg [2:0]      stage_cur ;   
   reg          stage_change_err;  
 
   assign stage_cur_out = stage_cur;   //输出当前阶段
@@ -750,9 +750,9 @@ module PE_config #(
   reg [5:0]   assoc_cur;
   reg [SEQ_CNT_DW-1:0]   seq_cnt;      //时序计数器
   reg [SEQ_CNT_DW-1:0]   seq_cnt_max;  //计数器上限
-  reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
+  (*mark_debug = "true" *)reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
   reg [ROW_LEN-1 : 0] v_group_cnt_max;    //组数目
-  reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
+  (*mark_debug = "true" *)reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
   assign seq_cnt_out = seq_cnt;       //时序计数器输出
@@ -842,17 +842,33 @@ module PE_config #(
   //     stage_rdy <= BUSY;
   //   end
   //   else
-  //     stage_rdy <= READY;
+  //     stage_rdy <= READY; 
   // end
 
   always @(posedge clk) begin
     if(sys_rst)
       stage_rdy <= 1'b0;
-    else if((stage_next == STAGE_IDLE) && (stage_cur != STAGE_IDLE)) begin
-      stage_rdy <= 1'b1;
+    else if(stage_rdy == 1'b0) begin
+      if(stage_next == STAGE_IDLE) begin
+        case(stage_cur)
+          STAGE_PRD, STAGE_NEW, STAGE_UPD: begin
+            stage_rdy <= 1'b1;
+          end
+          default: begin
+            stage_rdy <= 1'b0;
+          end
+        endcase
+      end
+      else
+        stage_rdy <= 1'b0;
     end
-    else
-      stage_rdy <= 1'b0;
+    else begin //stage_rdy == 1'b1
+      if(stage_cur == STAGE_IDLE && stage_next != STAGE_IDLE) begin
+        stage_rdy <= 1'b0;
+      end
+      else
+        stage_rdy <= 1'b1;
+    end
   end
 
 //(4)output: calculate the landmark_num
@@ -863,7 +879,8 @@ module PE_config #(
       //FOR SIMULATIOM
         // landmark_num <= 10'b111;
       //FOR ITERATION
-        if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+        // if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+        if(stage_cur == STAGE_NEW && stage_next == STAGE_IDLE)
           landmark_num <= landmark_num + 1'b1;
         else 
           landmark_num <= landmark_num;
@@ -5705,7 +5722,7 @@ module PE_config #(
       end
       else begin
         case(stage_cur)
-          STAGE_UPD: l_k_AGD_en <= 1'b1;
+          STAGE_PRD: l_k_AGD_en <= 1'b1;
           STAGE_NEW: l_k_AGD_en <= 1'b1;
           STAGE_UPD: l_k_AGD_en <= 1'b1;
           STAGE_ASSOC: l_k_AGD_en <= 1'b1;

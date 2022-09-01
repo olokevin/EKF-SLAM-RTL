@@ -42,16 +42,16 @@ module RSA
 
 /******************RSA ->  NonLinear*********************/
   //开始信号
-    output init_predict, init_newlm, init_update,
+    (*mark_debug = "true" *)output init_predict, init_newlm, init_update,
   //数据
-    output signed [RSA_DW-1 : 0] xk, yk, xita,     //机器人状态
-    output signed [RSA_DW-1 : 0] lkx, lky,        //地图坐标
+    (*mark_debug = "true" *)output signed [RSA_DW-1 : 0] xk, yk, xita,     //机器人状态
+    (*mark_debug = "true" *)output signed [RSA_DW-1 : 0] lkx, lky,        //地图坐标
   
 /******************NonLinear ->  RSA*********************/
   //完成信号
-    input done_predict, done_newlm, done_update,
+    (*mark_debug = "true" *)input done_predict, done_newlm, done_update,
   //数据
-    input signed [RSA_DW - 1 : 0] result_0, result_1, result_2, result_3, result_4, result_5
+    (*mark_debug = "true" *)input signed [RSA_DW - 1 : 0] result_0, result_1, result_2, result_3, result_4, result_5
 
 );
 
@@ -73,8 +73,8 @@ module RSA
 /*
   ************************* 当前状态量 ***********************
 */
-  wire   [ROW_LEN-1 : 0]  landmark_num;  //总地标数
-  wire   [ROW_LEN-1 : 0]  l_k;           //当前地标编号
+  (*mark_debug = "true" *)wire   [ROW_LEN-1 : 0]  landmark_num;  //总地标数
+  (*mark_debug = "true" *)wire   [ROW_LEN-1 : 0]  l_k;           //当前地标编号
   
   wire l_k_0;
   assign l_k_0 = l_k[0];
@@ -383,10 +383,34 @@ wire   signed [Y*RSA_DW-1 : 0]  B_data;
 wire   signed [X*RSA_DW-1 : 0]  M_data;
 wire   signed [X*RSA_DW-1 : 0]  C_data;
 
+(*mark_debug = "true" *)wire signed [RSA_DW-1 : 0] A_0, A_1, A_2, A_3;
+assign A_0 = A_data[0 +: RSA_DW];
+assign A_1 = A_data[1*RSA_DW +: RSA_DW];
+assign A_2 = A_data[2*RSA_DW +: RSA_DW];
+assign A_3 = A_data[3*RSA_DW +: RSA_DW];
+
+(*mark_debug = "true" *)wire signed [RSA_DW-1 : 0] B_0, B_1, B_2, B_3;
+assign B_0 = B_data[0 +: RSA_DW];
+assign B_1 = B_data[1*RSA_DW +: RSA_DW];
+assign B_2 = B_data[2*RSA_DW +: RSA_DW];
+assign B_3 = B_data[3*RSA_DW +: RSA_DW];
+
+(*mark_debug = "true" *)wire signed [RSA_DW-1 : 0] C_0, C_1, C_2, C_3;
+assign C_0 = C_data[0 +: RSA_DW];
+assign C_1 = C_data[1*RSA_DW +: RSA_DW];
+assign C_2 = C_data[2*RSA_DW +: RSA_DW];
+assign C_3 = C_data[3*RSA_DW +: RSA_DW];
+
+(*mark_debug = "true" *)wire signed [RSA_DW-1 : 0] M_0, M_1, M_2, M_3;
+assign M_0 = M_data[0 +: RSA_DW];
+assign M_1 = M_data[1*RSA_DW +: RSA_DW];
+assign M_2 = M_data[2*RSA_DW +: RSA_DW];
+assign M_3 = M_data[3*RSA_DW +: RSA_DW];
+
 wire   [2*X-1 : 0]    M_adder_mode;
 wire   [1:0]          PE_mode;
-wire   [Y-1 : 0]      new_cal_en;
-wire   [Y-1 : 0]      new_cal_done;
+(*mark_debug = "true" *)wire   [Y-1 : 0]      new_cal_en;
+(*mark_debug = "true" *)wire   [Y-1 : 0]      new_cal_done;
 
   PE_array 
   #(
@@ -792,6 +816,8 @@ wire [L*CB_AW-1 : 0] CB_addrb;
 
 wire signed [L*RSA_DW-1 : 0] CB_douta;
 wire signed [L*RSA_DW-1 : 0] CB_doutb;
+
+assign CB_dina = 0;
 
 //l_k
 // `ifndef L_k_IN
