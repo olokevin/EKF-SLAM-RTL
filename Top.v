@@ -23,10 +23,14 @@ module Top
 
   //当前地标编号
     // input   [9 : 0]  l_k, 
+
+  //Testbench test
+    // input   state_vector_start,
+    // output  signed [31:0]  state_vector,
   
   //AXI BRAM
-    output          PLB_clk,
-    output          PLB_rst,
+    // output          PLB_clk,
+    // output          PLB_rst,
 
     (*mark_debug = "true" *) output          PLB_en,   
     (*mark_debug = "true" *) output          PLB_we,   
@@ -66,24 +70,26 @@ module Top
   assign sys_rst = ~sys_rst_n;
 
 /******************RSA ->  PS*********************/
-  assign PLB_clk = clk;
-  assign PLB_rst = sys_rst;
+  // assign PLB_clk = clk;
+  // assign PLB_rst = sys_rst;
   
   /******************PS-PL BRAM for simulation*********************/
-    // wire          PLB_en;   
-    // wire          PLB_we;   
-    // wire  [31:0]   PLB_addr;
-    // wire  signed [31:0]  PLB_din;
-    // wire  signed [31:0]  PLB_dout;
+    // (*mark_debug = "true" *)wire          PLB_en;   
+    // (*mark_debug = "true" *)wire          PLB_we;   
+    // (*mark_debug = "true" *)wire  [31:0]   PLB_addr;
+    // (*mark_debug = "true" *)wire  signed [31:0]  PLB_din;
+    // (*mark_debug = "true" *)wire  signed [31:0]  PLB_dout;
 
     // PLB u_PLB (
-    //   .clka(PLB_clk),    // input wire clka
+    //   .clka(clk),    // input wire clka
     //   .ena(PLB_en),      // input wire ena
     //   .wea(PLB_we),      // input wire [0 : 0] wea
     //   .addra(PLB_addr[9:0]),  // input wire [9 : 0] addra
     //   .dina(PLB_din),    // input wire [31 : 0] dina
     //   .douta(PLB_dout)  // output wire [31 : 0] douta
     // );
+
+    // assign state_vector = PLB_dout;
 
 /******************PS ->  RSA*********************/
   //预测步数据
@@ -176,6 +182,8 @@ u_RSA(
   .phi          (phi_reg      ),
   // .landmark_num (landmark_num ),
   // .l_k          (l_k          ),
+
+  // .state_vector_start (state_vector_start),
 
   .PLB_en        (PLB_en        ),
   .PLB_we        (PLB_we        ),

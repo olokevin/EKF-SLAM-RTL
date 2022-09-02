@@ -26,6 +26,9 @@ module PLB_din_map #(
   input signed [RSA_DW - 1 : 0] x_hat, y_hat, xita_hat,
   input signed [RSA_DW - 1 : 0] lkx_hat, lky_hat,
 
+//Testbench test
+  // input   state_vector_start,
+
 //Update state vector
   input   signed [X*RSA_DW-1 : 0]    C_PLB_din, 
   input   signed [RSA_DW-1 : 0]      PLB_dout,
@@ -136,6 +139,8 @@ localparam ASSOC_10        = 6'b001100;
   reg [RSA_DW-1 : 0] result_2;
   reg [RSA_DW-1 : 0] result_3;
 
+//For Testbench
+
 always @(posedge clk) begin
   if(sys_rst) begin
     PLB_en <= 1'b0;
@@ -144,6 +149,15 @@ always @(posedge clk) begin
     PLB_din <= 0;
     PLB_addr <= 0;
   end
+  //For Testbench
+  // else if(state_vector_start) begin
+  //   PLB_en <= 1'b1;
+  //   PLB_we <= 1'b0;
+
+  //   PLB_din <= 0;
+  //   PLB_addr <= PLB_addr + 1'b1;
+  // end
+  
   else begin
   //Output state vector to NonLinear
     if(prd_cur_out == PRD_NL_SEND || new_cur_out == NEW_NL_SEND ||upd_cur_out == UPD_NL_SEND ||assoc_cur_out == ASSOC_NL_SEND) begin

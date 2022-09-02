@@ -105,12 +105,12 @@ module PE_config #(
   input        done_inv,
 
 //states
-  output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
-  output [2:0]              stage_cur_out,
-  output [3:0]              prd_cur_out,
-  output [5:0]              new_cur_out,
-  output [5:0]              upd_cur_out,
-  output [5:0]              assoc_cur_out,
+  (*mark_debug = "true" *)output [SEQ_CNT_DW-1:0]   seq_cnt_out, 
+  (*mark_debug = "true" *)output [2:0]              stage_cur_out,
+  (*mark_debug = "true" *)output [3:0]              prd_cur_out,
+  (*mark_debug = "true" *)output [5:0]              new_cur_out,
+  (*mark_debug = "true" *)output [5:0]              upd_cur_out,
+  (*mark_debug = "true" *)output [5:0]              assoc_cur_out,
 
   input  [1:0]              assoc_status,
   input  [ROW_LEN-1 : 0]    assoc_l_k,
@@ -731,7 +731,7 @@ module PE_config #(
 */
 
   reg [2:0]      stage_next ;   
-  reg [2:0]      stage_cur ;   
+  (*mark_debug = "true" *)reg [2:0]      stage_cur ;   
   reg          stage_change_err;  
 
   assign stage_cur_out = stage_cur;   //输出当前阶段
@@ -750,9 +750,9 @@ module PE_config #(
   reg [5:0]   assoc_cur;
   reg [SEQ_CNT_DW-1:0]   seq_cnt;      //时序计数器
   reg [SEQ_CNT_DW-1:0]   seq_cnt_max;  //计数器上限
-  reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
+  (*mark_debug = "true" *)reg [ROW_LEN-1:0]   v_group_cnt;    //组计数器（4行，2个地标为1组）
   reg [ROW_LEN-1 : 0] v_group_cnt_max;    //组数目
-  reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
+  (*mark_debug = "true" *)reg [ROW_LEN-1:0]   h_group_cnt;    //横向列计数器（UPD_7更新cov）
   reg [ROW_LEN-1 : 0] h_group_cnt_max;    //列组数目
 
   assign seq_cnt_out = seq_cnt;       //时序计数器输出
