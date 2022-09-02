@@ -788,6 +788,8 @@ wire [L*CB_AW-1 : 0] CB_addrb;
 wire signed [L*RSA_DW-1 : 0] CB_douta;
 wire signed [L*RSA_DW-1 : 0] CB_doutb;
 
+assign CB_dina = 0;
+
 //l_k
 // `ifndef L_k_IN
 //   reg [ROW_LEN-1 : 0] l_k = 3'b100;

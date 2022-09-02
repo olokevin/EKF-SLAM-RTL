@@ -842,17 +842,33 @@ module PE_config #(
   //     stage_rdy <= BUSY;
   //   end
   //   else
-  //     stage_rdy <= READY;
+  //     stage_rdy <= READY; 
   // end
 
   always @(posedge clk) begin
     if(sys_rst)
       stage_rdy <= 1'b0;
-    else if((stage_next == STAGE_IDLE) && (stage_cur != STAGE_IDLE)) begin
-      stage_rdy <= 1'b1;
+    else if(stage_rdy == 1'b0) begin
+      if(stage_next == STAGE_IDLE) begin
+        case(stage_cur)
+          STAGE_PRD, STAGE_NEW, STAGE_UPD: begin
+            stage_rdy <= 1'b1;
+          end
+          default: begin
+            stage_rdy <= 1'b0;
+          end
+        endcase
+      end
+      else
+        stage_rdy <= 1'b0;
     end
-    else
-      stage_rdy <= 1'b0;
+    else begin //stage_rdy == 1'b1
+      if(stage_cur == STAGE_IDLE && stage_next != STAGE_IDLE) begin
+        stage_rdy <= 1'b0;
+      end
+      else
+        stage_rdy <= 1'b1;
+    end
   end
 
 //(4)output: calculate the landmark_num
@@ -863,7 +879,8 @@ module PE_config #(
       //FOR SIMULATIOM
         // landmark_num <= 10'b111;
       //FOR ITERATION
-        if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+        // if(stage_cur == STAGE_NEW && new_cur == NEW_5 && seq_cnt == seq_cnt_max)
+        if(stage_cur == STAGE_NEW && stage_next == STAGE_IDLE)
           landmark_num <= landmark_num + 1'b1;
         else 
           landmark_num <= landmark_num;
@@ -5705,7 +5722,7 @@ module PE_config #(
       end
       else begin
         case(stage_cur)
-          STAGE_UPD: l_k_AGD_en <= 1'b1;
+          STAGE_PRD: l_k_AGD_en <= 1'b1;
           STAGE_NEW: l_k_AGD_en <= 1'b1;
           STAGE_UPD: l_k_AGD_en <= 1'b1;
           STAGE_ASSOC: l_k_AGD_en <= 1'b1;
