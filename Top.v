@@ -16,8 +16,8 @@ module Top
   input sys_rst_n,    //AXI总线为低电平复位
 
   //模式控制
-    input   [2:0]   stage_val,
-    output          stage_rdy,
+    (*mark_debug = "true" *)input   [2:0]   stage_val,
+    (*mark_debug = "true" *)output          stage_rdy,
   //landmark numbers, 当前地图总坐标点数目
     // input   [9 : 0]  landmark_num,    
 
@@ -29,8 +29,8 @@ module Top
     // output  signed [31:0]  state_vector,
   
   //AXI BRAM
-    // output          PLB_clk,
-    // output          PLB_rst,
+    output          PLB_clk,
+    output          PLB_rst,
 
     (*mark_debug = "true" *) output          PLB_en,   
     (*mark_debug = "true" *) output          PLB_we,   
@@ -39,12 +39,12 @@ module Top
     (*mark_debug = "true" *) input   signed [31:0]  PLB_dout,
 
   //预测步数据
-    input signed [31 : 0] vlr,
-    input signed [31 : 0] alpha,    //角度输入也为32位
+    (*mark_debug = "true" *)input signed [31 : 0] vlr,
+    (*mark_debug = "true" *)input signed [31 : 0] alpha,    //角度输入也为32位
 
   //更新步数据
-    input signed [31 : 0] rk,
-    input signed [31 : 0] phi
+    (*mark_debug = "true" *)input signed [31 : 0] rk,
+    (*mark_debug = "true" *)input signed [31 : 0] phi
 );
 /******************PARAMETERS*********************/
   parameter X = 4;
@@ -70,8 +70,8 @@ module Top
   assign sys_rst = ~sys_rst_n;
 
 /******************RSA ->  PS*********************/
-  // assign PLB_clk = clk;
-  // assign PLB_rst = sys_rst;
+  assign PLB_clk = clk;
+  assign PLB_rst = sys_rst;
   
   /******************PS-PL BRAM for simulation*********************/
     // (*mark_debug = "true" *)wire          PLB_en;   
